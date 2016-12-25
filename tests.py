@@ -2,7 +2,7 @@ import unittest
 
 from core.parse_exp import parse_exp, partition
 from exceptions import SyntaxError, NotATypeError, SyntaxIfThenError
-from core.types import String
+from core.types import String, ForEach, Array, Nil, Comma
 from parser import parse, Statement, IfThenStatement, parse_strings, tokenize
 from parser import Variable as V, OPERATORS as OP
 
@@ -119,14 +119,12 @@ class TestParse(unittest.TestCase):
     def test_array(self):
         test = '["AirS", nil];'
         result = parse(test)
-        self.assertEqual(str(result[0]), '["AirS", nil]')
+        expected = Statement([Array([[String('AirS'), Comma, Nil]])], ending=True)
+
+        self.assertEqual(expected, result)
 
         test = '["AirS" nil];'
         with self.assertRaises(SyntaxError):
-            parse(test)
-
-        test = '["AirS", if];'
-        with self.assertRaises(NotATypeError):
             parse(test)
 
     def test_string2(self):
@@ -198,3 +196,68 @@ class TestParse(unittest.TestCase):
                               Statement([V('_civs'), OP['spawn'], V('_fPscareC')])], ending=True)
 
         self.assertEqual(expected, result)
+
+    def test_analyse_expression2(self):
+        test = 'isNil{_x getvariable "AirS"}'
+        result = parse(test)
+        expected = Statement([OP['isNil'], Statement([V('_x'), OP['getvariable'], String('AirS')], parenthesis='{}')])
+
+        self.assertEqual(expected, result)
+
+    def test_random(self):
+
+        test = """
+            _n = 0;
+            {
+            if (!isNil{_x getvariable "AirS"} && {{alive _x} count units _x > 0}) then {
+            _nul = [_x, (getmarkerpos "WestChopStart"),5] SPAWN FUNKTIO_MAD;
+            if (!isNull _x) then {_x setvariable ["AirS",nil];};
+            _n = 1;
+            };
+            sleep 0.1;
+            } foreach allgroups;
+            """
+
+        result = parse(test)
+
+        self.assertEqual(2, len(result))
+        self.assertEqual(Statement([V('_n'), OP['='], V('0')], ending=True), result[0])
+        self.assertEqual(ForEach, result[1][1])
+        self.assertEqual('{}', result[1][0].parenthesis)
+        self.assertEqual('{}', result[1][0].parenthesis)
+        self.assertTrue(isinstance(result[1][0][0], IfThenStatement))
+
+        # '!isNil{_x getvariable "AirS"} && {{alive _x} count units _x > 0}'
+        cond = result[1][0][0]._condition
+        expected0 = Statement([OP['!'],
+                                    Statement([OP['isNil'],
+                                               Statement([V('_x'), OP['getvariable'], String('AirS')],
+                                                         parenthesis='{}')])
+                                    ])
+        expected2 = Statement([Statement([OP['alive'], V('_x')], parenthesis='{}'),
+                              OP['count'], Statement([
+                                  Statement([OP['units'], V('_x')]), OP['>'], V('0')])
+                              ], parenthesis='{}')
+
+        expected = Statement([expected0, OP['&&'], expected2], parenthesis='()')
+        self.assertEqual(expected, cond)
+
+        outcome = result[1][0][0]._outcome
+        # _nul = [_x, (getmarkerpos "WestChopStart"),5] SPAWN FUNKTIO_MAD;
+        expected0 = Statement([V('_nul'), OP['='],
+                               Statement([Array([[V('_x'),
+                                                  Comma,
+                                                  Statement([OP['getmarkerpos'], String('WestChopStart')], parenthesis='()'),
+                                                  Comma, V('5')]]),
+                                          OP['SPAWN'], V('FUNKTIO_MAD')])
+                               ], ending=True)
+        self.assertEqual(expected0, outcome[0])
+
+        # if (!isNull _x) then {_x setvariable ["AirS",nil];};
+        expected1 = IfThenStatement(Statement([OP['!'], Statement([OP['isNull'], V('_x')])], parenthesis='()'),
+                                    Statement([Statement(
+                                        [V('_x'), OP['setvariable'], Array([[String("AirS"), Comma, Nil]])],
+                                        ending=True)], parenthesis='{}'),
+                                    ending=True)
+
+        self.assertEqual(expected1, outcome[1])

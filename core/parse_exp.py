@@ -23,4 +23,7 @@ def parse_exp(exp, operators, container=list):
                 else:
                     result.append(i)
             return container(result)
-    return container(exp)
+    if isinstance(exp, container):
+        return exp
+    else:
+        return container(exp)

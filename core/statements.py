@@ -21,13 +21,13 @@ class Statement:
     def __getitem__(self, other):
         return self._tokens[other]
 
-    def __str__(self):
+    def _as_str(self, func):
         as_str = ''
         for i, s in enumerate(self._tokens):
             if i == 0:
-                as_str += '%s' % s
+                as_str += '%s' % func(s)
             else:
-                as_str += ' %s' % s
+                as_str += ' %s' % func(s)
 
         if self.parenthesis:
             as_str = '%s%s%s' % (self.parenthesis[0], as_str, self.parenthesis[1])
@@ -35,8 +35,11 @@ class Statement:
             as_str += ';'
         return as_str
 
+    def __str__(self):
+        return self._as_str(str)
+
     def __repr__(self):
-        return 'S<%s>' % self
+        return 'S<%s>' % self._as_str(repr)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):

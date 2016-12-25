@@ -5,22 +5,6 @@ from core.statements import *
 from core.parse_exp import parse_exp
 
 
-test = """
-_n = 0;
-{
-if (!isNil{_x getvariable "AirS"} && {{alive _x} count units _x > 0}) then {
-_nul = [_x, (getmarkerpos "WestChopStart"),5] SPAWN FUNKTIO_MAD;
-if (!isNull _x) then {_x setvariable ["AirS",nil];};
-_n = 1;
-};
-sleep 0.1;
-} foreach allgroups;
-
-if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else
-{"You have no called air support operating currently" SPAWN HINTSAOK;};
-"""
-
-
 def identify_token(token):
     if token in OPERATORS:
         return OPERATORS[token]
@@ -35,28 +19,24 @@ def identify_token(token):
 def parse_strings(all_tokens):
     tokens = []
     string_mode = False
-    string = []
+    string = ''
     for i, token in enumerate(all_tokens):
         if token == '"':
             if string_mode:
                 tokens.append(String(string))
-                string = []
+                string = ''
                 string_mode = False
             else:
                 string_mode = True
         else:
             if string_mode:
-                string.append(token)
+                string += token
             else:
                 if token != ' ':
                     # remove space tokens since they do not contribute to syntax
                     # identify the token
                     tokens.append(identify_token(token))
     return tokens
-
-
-def next_is_ending(all_tokens, i):
-    return i + 1 < len(all_tokens) and all_tokens[i + 1] == EndOfStatement
 
 
 def analise_tokens(tokens, parenthesis=None):
@@ -156,8 +136,6 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
 
             return _flatten(statements, tokens, '()'), i - start
         elif token == BracketClose:
-            if parenthesis_lvl != 0:
-                raise Exception('Trying to close brackets with opened brackets.')
             if block_lvl == 0:
                 raise Exception('Trying to close brackets without opened brackets.')
 

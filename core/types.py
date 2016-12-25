@@ -15,6 +15,7 @@ class Type:
 class String(Type):
 
     def __init__(self, tokens):
+        assert(isinstance(tokens, str))
         self._tokens = tokens
 
     @property
@@ -25,7 +26,7 @@ class String(Type):
         return '"%s"' % self.string
 
     def __repr__(self):
-        return 'S<%s>' % self
+        return 's<%s>' % self
 
 
 class Array(Type):
@@ -37,16 +38,17 @@ class Array(Type):
         i = 0
         for item in items[0]:
             i += 1
-            if i%2 == 0:
+            if i % 2 == 0:
                 if item != Comma:
                     raise SyntaxError('Array syntax is `[item1, item2, ...]`')
             else:
-                if not isinstance(item, Type):
-                    raise NotATypeError('Elements of an array must be types.')
                 self._items.append(item)
 
     def __str__(self):
         return '[%s]' % ', '.join(str(item) for item in self._items)
+
+    def __repr__(self):
+        return 'A%s' % self
 
 
 class Nothing(Type):
@@ -73,10 +75,10 @@ class Operator:
         return self._op
 
     def __str__(self):
-        return self._op
+        return self.op
 
     def __repr__(self):
-        return 'O{%s}' % self
+        return 'O<%s>' % self
 
 
 class UnaryOperator(Operator):
@@ -101,6 +103,7 @@ class ReservedToken:
 IfToken = ReservedToken('if')
 ThenToken = ReservedToken('then')
 ElseToken = ReservedToken('else')
+ForEach = ReservedToken('foreach')
 Private = ReservedToken('private')
 ParenthesisOpen = ReservedToken('(')
 ParenthesisClose = ReservedToken(')')
@@ -110,16 +113,10 @@ BracketOpen = ReservedToken('{')
 BracketClose = ReservedToken('}')
 Comma = ReservedToken(',')
 EndOfStatement = ReservedToken(';')
+Nil = ReservedToken('nil')
 
-
-class Void(Type, ReservedToken):
-    def __init__(self):
-        ReservedToken.__init__(self, 'nil')
-Void = Void()
-
-
-RESERVED = [IfToken, ThenToken, ElseToken, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
-            BracketOpen, BracketClose, Void, Private, Comma, EndOfStatement]
+RESERVED = [IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
+            BracketOpen, BracketClose, Nil, Private, Comma, EndOfStatement]
 
 
 RESERVED_MAPPING = dict()
@@ -132,8 +129,10 @@ OPERATORS = {
     '+': BinaryOperator,
     '*': BinaryOperator,
     'setvariable': BinaryOperator,
+    'getvariable': BinaryOperator,
     'set': BinaryOperator,
     'spawn': BinaryOperator,
+    'SPAWN': BinaryOperator,
     '==': BinaryOperator,
     '!=':  BinaryOperator,
     '&&': BinaryOperator,
@@ -141,8 +140,14 @@ OPERATORS = {
     '||': BinaryOperator,
     'or': BinaryOperator,
     '!': UnaryOperator,
+    '>': BinaryOperator,
     'not': UnaryOperator,
     'isNull': UnaryOperator,
+    'isNil': UnaryOperator,
+    'units': UnaryOperator,
+    'count': BinaryOperator,
+    'alive': UnaryOperator,
+    'getmarkerpos': UnaryOperator,
 }
 
 
@@ -150,7 +155,7 @@ for s in OPERATORS:
     OPERATORS[s] = OPERATORS[s](s)
 
 # operators by precedence
-ORDERED_OPERATORS = [OPERATORS[s] for s in ('=', 'spawn')]
+ORDERED_OPERATORS = [OPERATORS[s] for s in ('=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getvariable')]
 
 
 LOGICAL_OPERATORS = {OPERATORS['=='], OPERATORS['!='], OPERATORS['||'], OPERATORS['&&']}
