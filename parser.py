@@ -1,6 +1,4 @@
 from core.base_tokenizer import tokenize
-from exceptions import NotATypeError, SyntaxError
-from core.reserved_words import *
 from core.types import *
 from core.statements import *
 
@@ -16,7 +14,8 @@ _n = 1;
 sleep 0.1;
 } foreach allgroups;
 
-if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else {"You have no called air support operating currently" SPAWN HINTSAOK;};
+if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else
+{"You have no called air support operating currently" SPAWN HINTSAOK;};
 """
 
 
@@ -58,51 +57,63 @@ def next_is_ending(all_tokens, i):
     return i + 1 < len(all_tokens) and all_tokens[i + 1] == EndOfStatement
 
 
-def analize_tokens(statements):
-    statement = Statement(statements)
+def analise_tokens(tokens, parenthesis=None):
+    ending = False
+    if tokens[-1] == EndOfStatement:
+        del tokens[-1]
+        ending = True
 
-    if isinstance(statements[1], BinaryOperator):
-        if len(statements) < 3:
-            raise SyntaxError
+    statement = Statement(tokens, parenthesis=parenthesis, ending=ending)
 
-        if statements[1] in ASSIGMENT_OPERATORS:
-            statement = AssignmentStatement(statements[0], statements[1], statements[2])
-        elif statements[1] in LOGICAL_OPERATORS:
-            statement = LogicalStatement(statements[0], statements[1], statements[2])
-        else:
-            statement = BinaryStatement(statements[0], statements[1], statements[2])
-
-        if len(statements) > 3:
-            statement = Statement([statement] + statements[3:])
-    elif statements[0] == IfToken:
-        if len(statements) < 4 or \
-                not (isinstance(statements[1], Statement) and statements[1].parenthesis == '()') or \
-                    statements[2] != ThenToken:
+    if tokens[0] == IfToken:
+        if len(tokens) < 4 or \
+                not (isinstance(tokens[1], Statement) and tokens[1].parenthesis == '()') or \
+                tokens[2] != ThenToken:
             raise SyntaxIfThenError('If construction syntactically incorrect.')
 
-        statement = IfThenStatement(condition=statements[1], outcome=statements[3])
-        if len(statements) >= 5 and statements[4] == ElseToken:
-            statement = IfThenStatement(condition=statements[1], outcome=statements[3], _else=statements[5])
-            print(repr(statement), repr(statement[0]))
-            if len(statements) > 5:
-                statement = Statement([statement] + statements[6:])
-                print(repr(statement[0]), repr(statement[0][0]))
-        elif len(statements) > 4:
-            statement = Statement([statement] + statements[4:])
+        statement = IfThenStatement(tokens[1], tokens[3], parenthesis=parenthesis, ending=ending)
+        if len(tokens) >= 5 and tokens[4] == ElseToken:
+
+            if len(tokens) > 6:
+                statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5])
+                statement = Statement([statement] + tokens[6:], parenthesis=parenthesis, ending=ending)
+            else:
+                statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5], parenthesis=parenthesis,
+                                            ending=ending)
+        elif len(tokens) > 4:
+            statement = Statement([statement] + tokens[4:], parenthesis=parenthesis, ending=ending)
 
     return statement
+
+
+def _flatten(statements, tokens, parenthesis):
+    if len(statements) == 0:
+        if len(tokens) == 1 and isinstance(tokens[0], Statement):
+            final_statement = tokens[0]
+        else:
+            final_statement = analise_tokens(tokens, parenthesis)
+    elif len(statements) == 1 and parenthesis and not statements[0].ending:
+        statements[0]._parenthesis = parenthesis
+        final_statement = statements[0]
+    elif len(statements) == 1 and not parenthesis:
+        final_statement = statements[0]
+    else:
+        if tokens:
+            statements.append(analise_tokens(tokens, parenthesis))
+        final_statement = Statement(statements, parenthesis=parenthesis)
+    return final_statement
 
 
 def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthesis_lvl=0):
 
     statements = []
-    statement = []
+    tokens = []
     i = start
 
     while i < len(all_tokens):
         token = all_tokens[i]
 
-        #print(i, '%d%d%d' % (block_lvl, parenthesis_lvl, rparenthesis_lvl), token)
+        # print(i, '%d%d%d' % (block_lvl, parenthesis_lvl, rparenthesis_lvl), token)
         if block_lvl and token == '}':
             raise Exception('Close bracket without open bracket.')
 
@@ -111,70 +122,57 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
                                             block_lvl=block_lvl,
                                             parenthesis_lvl=parenthesis_lvl,
                                             rparenthesis_lvl=rparenthesis_lvl+1)
-            statement.append(expression)
+            tokens.append(expression)
             i += size + 1
         elif token == ParenthesisOpen:
             expression, size = _parse_block(all_tokens, i + 1,
                                             block_lvl=block_lvl,
                                             parenthesis_lvl=parenthesis_lvl + 1,
                                             rparenthesis_lvl=rparenthesis_lvl)
-            statement.append(expression)
+            tokens.append(expression)
             i += size + 1
         elif token == BracketOpen:
             expression, size = _parse_block(all_tokens, i + 1,
                                             block_lvl=block_lvl + 1,
                                             parenthesis_lvl=parenthesis_lvl,
                                             rparenthesis_lvl=rparenthesis_lvl)
-            statement.append(expression)
+            tokens.append(expression)
             i += size + 1
 
         elif token == RParenthesisClose:
             if rparenthesis_lvl == 0:
                 raise Exception('Trying to close right parenthesis without them opened.')
 
-            if statement:
-                statements.append(statement)
+            if tokens:
+                statements.append(tokens)
             return Array(statements), i - start
         elif token == ParenthesisClose:
             if parenthesis_lvl == 0:
                 raise Exception('Trying to close parenthesis without opened parenthesis.')
 
-            if statement:
-                statements.append(analize_tokens(statement))
-            return Statement(statements, parenthesis='()'), i - start
+            return _flatten(statements, tokens, '()'), i - start
         elif token == BracketClose:
             if parenthesis_lvl != 0:
                 raise Exception('Trying to close brackets with opened brackets.')
             if block_lvl == 0:
                 raise Exception('Trying to close brackets without opened brackets.')
 
-            if statement:
-                statements.append(analize_tokens(statement))
-            return Statement(statements, parenthesis='{}'), i - start
+            return _flatten(statements, tokens, '{}'), i - start
         elif token == EndOfStatement:
-            assert(isinstance(statement, list))
-            statement.append(EndOfStatement)
-            statements.append(analize_tokens(statement))
-            statement = []
+            if len(tokens) == 1 and isinstance(tokens[0], Statement):
+                tokens[0]._ending = True
+                statements.append(tokens[0])
+            else:
+                tokens.append(EndOfStatement)
+                statements.append(analise_tokens(tokens))
+            tokens = []
         else:
-            statement.append(token)
+            tokens.append(token)
         i += 1
 
-    return Statement(statements), i - start
+    return _flatten(statements, tokens, None), i - start
 
 
 def parse(script):
     tokens = parse_strings(tokenize(script))
     return _parse_block(tokens)[0]
-
-
-# if __name__ == '__main__':
-#
-#     test = '''
-#     private ["_text","_f"];
-#     _f = diag_fps;
-#     _text = format ["Units %1 Groups %2 DeadUnits %3 Vehicles %4 FPS %5 CIVLIANS %6 EAST %7 WEST %8 OBJECTS %9 ENTITES %10",count Allunits, count allgroups, count alldeadmen, count vehicles,diag_fps, {side _x == CIVILIAN} count allunits, {side _x == EAST} count allunits, {side _x == WEST} count allunits,count allMissionObjects "All",count entities "All"];
-#     hint _text;
-# '''
-#     print(len(parse(test)))
-#     print(str(parse(test)))

@@ -2,13 +2,18 @@ from core.types import EndOfStatement, IfToken, ThenToken, ElseToken
 
 
 class Statement:
-    def __init__(self, tokens, parenthesis=None):
+    def __init__(self, tokens, parenthesis=None, ending=False):
         self._tokens = tokens
         self._parenthesis = parenthesis
+        self._ending = ending
 
     @property
     def parenthesis(self):
         return self._parenthesis
+
+    @property
+    def ending(self):
+        return self._ending
 
     def __len__(self):
         return len(self._tokens)
@@ -19,13 +24,15 @@ class Statement:
     def __str__(self):
         as_str = ''
         for i, s in enumerate(self._tokens):
-            if i == 0 or s == EndOfStatement:
+            if i == 0:
                 as_str += '%s' % s
             else:
                 as_str += ' %s' % s
 
-        if self._parenthesis:
-            as_str = '%s%s%s' % (self._parenthesis[0], as_str, self._parenthesis[1])
+        if self.parenthesis:
+            as_str = '%s%s%s' % (self.parenthesis[0], as_str, self.parenthesis[1])
+        if self.ending:
+            as_str += ';'
         return as_str
 
     def __repr__(self):
@@ -41,22 +48,14 @@ class Statement:
         return not self.__eq__(other)
 
 
-class BinaryStatement(Statement):
-    def __init__(self, lhs, op, rhs):
-        super().__init__([lhs, op, rhs])
-
-
-class AssignmentStatement(BinaryStatement):
-    pass
-
-
-class LogicalStatement(BinaryStatement):
-    pass
-
-
 class IfThenStatement(Statement):
-    def __init__(self, condition, outcome, _else=None):
+    def __init__(self, condition, outcome, _else=None, parenthesis=None, ending=False):
+        self._condition = condition
+        self._outcome = outcome
+        self._else = _else
+
         all = [IfToken, condition, ThenToken, outcome]
+
         if _else:
             all += [ElseToken, _else]
-        super().__init__(all)
+        super().__init__(all, parenthesis=parenthesis, ending=ending)
