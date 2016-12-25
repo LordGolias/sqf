@@ -149,6 +149,9 @@ OPERATORS = {
 for s in OPERATORS:
     OPERATORS[s] = OPERATORS[s](s)
 
+# operators by precedence
+ORDERED_OPERATORS = [OPERATORS[s] for s in ('=', 'spawn')]
+
 
 LOGICAL_OPERATORS = {OPERATORS['=='], OPERATORS['!='], OPERATORS['||'], OPERATORS['&&']}
 ASSIGMENT_OPERATORS = {OPERATORS['='], OPERATORS['setvariable'], OPERATORS['set']}

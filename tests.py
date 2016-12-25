@@ -1,6 +1,6 @@
 import unittest
 
-from parse_exp import parse_exp, partition
+from core.parse_exp import parse_exp, partition
 from exceptions import SyntaxError, NotATypeError, SyntaxIfThenError
 from core.types import String
 from parser import parse, Statement, IfThenStatement, parse_strings, tokenize
@@ -49,7 +49,7 @@ class TestExpParser(unittest.TestCase):
     def test_with_statement(self):
         test = Statement([V('a'), OP['+'], V('b'), OP['='], V('c')])
         self.assertEqual(Statement([Statement([V('a'), OP['+'], V('b')]), OP['='], V('c')]),
-                         parse_exp(test, [OP['='], OP['+'], OP['*']]))
+                         parse_exp(test, [OP['='], OP['+'], OP['*']], Statement))
 
 
 class TestParse(unittest.TestCase):
@@ -191,13 +191,10 @@ class TestParse(unittest.TestCase):
 
         self.assertEqual(expected, result)
 
-    @unittest.expectedFailure
-    # todo: add parse_exp to the parser to sub-split expressions with more than one operator
-    def test_analyse_assigment2(self):
+    def test_analyse_expression(self):
         test = '_h = _civs spawn _fPscareC;'
         result = parse(test)
-        print(repr(result))
-        print(repr(result[2]))
-        expected = Statement([V('_h'), OP['='], Statement([V('_civs'), OP['spawn'], V('_fPscareC')])], ending=True)
+        expected = Statement([V('_h'), OP['='],
+                              Statement([V('_civs'), OP['spawn'], V('_fPscareC')])], ending=True)
 
         self.assertEqual(expected, result)

@@ -1,6 +1,8 @@
 from core.base_tokenizer import tokenize
+
 from core.types import *
 from core.statements import *
+from core.parse_exp import parse_exp
 
 
 test = """
@@ -63,7 +65,9 @@ def analise_tokens(tokens, parenthesis=None):
         del tokens[-1]
         ending = True
 
-    statement = Statement(tokens, parenthesis=parenthesis, ending=ending)
+    statement = parse_exp(tokens, ORDERED_OPERATORS, Statement)
+    statement._parenthesis = parenthesis
+    statement._ending = ending
 
     if tokens[0] == IfToken:
         if len(tokens) < 4 or \

@@ -1,4 +1,4 @@
-from core.types import EndOfStatement, IfToken, ThenToken, ElseToken
+from core.types import IfToken, ThenToken, ElseToken
 
 
 class Statement:
