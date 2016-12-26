@@ -10,8 +10,6 @@ def identify_token(token):
         return OPERATORS[token]
     if token in RESERVED_MAPPING:
         return RESERVED_MAPPING[token]
-    if token == ';':
-        return EndOfStatement
     else:
         return Variable(token)
 
@@ -53,19 +51,17 @@ def analise_tokens(tokens, parenthesis=None):
         if len(tokens) < 4 or \
                 not (isinstance(tokens[1], Statement) and tokens[1].parenthesis == '()') or \
                 tokens[2] != ThenToken:
-            raise SyntaxIfThenError('If construction syntactically incorrect.')
+            raise IfThenSyntaxError('If construction syntactically incorrect.')
 
         statement = IfThenStatement(tokens[1], tokens[3], parenthesis=parenthesis, ending=ending)
         if len(tokens) >= 5 and tokens[4] == ElseToken:
-
             if len(tokens) > 6:
-                statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5])
-                statement = Statement([statement] + tokens[6:], parenthesis=parenthesis, ending=ending)
-            else:
-                statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5], parenthesis=parenthesis,
-                                            ending=ending)
+                raise IfThenSyntaxError('If construction syntactically incorrect.')
+
+            statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5], parenthesis=parenthesis,
+                                        ending=ending)
         elif len(tokens) > 4:
-            statement = Statement([statement] + tokens[4:], parenthesis=parenthesis, ending=ending)
+            raise IfThenSyntaxError('If construction syntactically incorrect.')
 
     return statement
 
@@ -98,9 +94,6 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
         token = all_tokens[i]
 
         # print(i, '%d%d%d' % (block_lvl, parenthesis_lvl, rparenthesis_lvl), token)
-        if block_lvl and token == '}':
-            raise Exception('Close bracket without open bracket.')
-
         if token == RParenthesisOpen:
             expression, size = _parse_block(all_tokens, i + 1,
                                             block_lvl=block_lvl,
@@ -125,19 +118,19 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
 
         elif token == RParenthesisClose:
             if rparenthesis_lvl == 0:
-                raise Exception('Trying to close right parenthesis without them opened.')
+                raise UnbalancedParenthesisSyntaxError('Trying to close right parenthesis without them opened.')
 
             if tokens:
                 statements.append(tokens)
             return Array(statements), i - start
         elif token == ParenthesisClose:
             if parenthesis_lvl == 0:
-                raise Exception('Trying to close parenthesis without opened parenthesis.')
+                raise UnbalancedParenthesisSyntaxError('Trying to close parenthesis without opened parenthesis.')
 
             return _flatten(statements, tokens, '()'), i - start
         elif token == BracketClose:
             if block_lvl == 0:
-                raise Exception('Trying to close brackets without opened brackets.')
+                raise UnbalancedParenthesisSyntaxError('Trying to close brackets without opened brackets.')
 
             return _flatten(statements, tokens, '{}'), i - start
         elif token == EndOfStatement:
@@ -152,6 +145,8 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
             tokens.append(token)
         i += 1
 
+    if block_lvl != 0 or rparenthesis_lvl != 0 or parenthesis_lvl != 0:
+        raise UnbalancedParenthesisSyntaxError('Brackets not closed')
     return _flatten(statements, tokens, None), i - start
 
 

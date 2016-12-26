@@ -1,7 +1,7 @@
 import unittest
 
 from core.parse_exp import parse_exp, partition
-from exceptions import SyntaxError, NotATypeError, SyntaxIfThenError
+from exceptions import SyntaxError, UnbalancedParenthesisSyntaxError, IfThenSyntaxError
 from core.types import String, ForEach, Array, Nil, Comma
 from parser import parse, Statement, IfThenStatement, parse_strings, tokenize
 from parser import Variable as V, OPERATORS as OP
@@ -105,6 +105,18 @@ class TestParse(unittest.TestCase):
 
         self.assertEqual(expected, result)
 
+    def test_no_open_parenthesis(self):
+        with self.assertRaises(UnbalancedParenthesisSyntaxError):
+            parse('_a = x + 2)')
+        with self.assertRaises(UnbalancedParenthesisSyntaxError):
+            parse('_a = x + 2}')
+        with self.assertRaises(UnbalancedParenthesisSyntaxError):
+            parse('_a = x + 2]')
+
+    def test_no_close_parenthesis(self):
+        with self.assertRaises(UnbalancedParenthesisSyntaxError):
+            parse('_a = (x + 2')
+
     def test_string(self):
 
         self.assertEqual('_a = ((_x == _y) || (_y == _z));',
@@ -130,64 +142,6 @@ class TestParse(unittest.TestCase):
     def test_string2(self):
         self.assertEqual('if (! isNull _x) then {_x setvariable ["AirS", nil];};',
                          str(parse('if (!isNull _x) then {_x setvariable ["AirS",nil];};')))
-
-    def test_if_statement(self):
-        test = "if (_x == 2) then {_x = 1;};"
-        result = parse(test)
-        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
-        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
-        expected = IfThenStatement(condition, outcome, ending=True)
-        self.assertEqual(expected, result)
-
-        test += ' _y = 4;'
-        result = parse(test)
-
-        expected = Statement([IfThenStatement(condition, outcome, ending=True),
-                              Statement([V('_y'), OP['='], V('4')], ending=True)])
-        self.assertEqual(expected, result)
-
-    def test_if_syntax(self):
-        test = "if (_x == 2) {_x = 1;};"
-        with self.assertRaises(SyntaxIfThenError):
-            parse(test)
-
-        test = "if _x == 2 then {_x = 1;};"
-        with self.assertRaises(SyntaxIfThenError):
-            parse(test)
-
-        test = "if {_x == 2} then {_x = 1;};"
-        with self.assertRaises(SyntaxIfThenError):
-            parse(test)
-
-        test = "if {_x == 2} then (_x = 1;);"
-        with self.assertRaises(SyntaxIfThenError):
-            parse(test)
-
-    def test_if_with_extra(self):
-        test = "if (_x == 2) then {_x = 1;}; _y = 4;"
-        result = parse(test)
-        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
-        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
-        expected = Statement([IfThenStatement(condition, outcome, ending=True),
-                              Statement([V('_y'), OP['='], V('4')], ending=True)])
-        self.assertEqual(expected, result)
-
-    def test_if_else_statement(self):
-        test = "if (_x == 2) then {_x = 1;} else {_x = 3;};"
-        result = parse(test)
-
-        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
-        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
-        _else = Statement([Statement([V('_x'), OP['='], V('3')], ending=True)], parenthesis='{}')
-
-        expected = IfThenStatement(condition, outcome, _else, ending=True)
-        self.assertEqual(expected, result)
-
-        test += " _y = 4;"
-        result = parse(test)
-        expected = Statement([expected, Statement([V('_y'), OP['='], V('4')], ending=True)])
-
-        self.assertEqual(expected, result)
 
     def test_analyse_expression(self):
         test = '_h = _civs spawn _fPscareC;'
@@ -261,3 +215,71 @@ class TestParse(unittest.TestCase):
                                     ending=True)
 
         self.assertEqual(expected1, outcome[1])
+
+
+class TestIfThenStatement(unittest.TestCase):
+
+    def test_if_statement(self):
+        test = "if (_x == 2) then {_x = 1;};"
+        result = parse(test)
+        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
+        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
+        expected = IfThenStatement(condition, outcome, ending=True)
+        self.assertEqual(expected, result)
+
+        test += ' _y = 4;'
+        result = parse(test)
+
+        expected = Statement([IfThenStatement(condition, outcome, ending=True),
+                              Statement([V('_y'), OP['='], V('4')], ending=True)])
+        self.assertEqual(expected, result)
+
+    def test_if_syntax(self):
+        test = "if (_x == 2) {_x = 1;};"
+        with self.assertRaises(IfThenSyntaxError):
+            parse(test)
+
+        test = "if _x == 2 then {_x = 1;};"
+        with self.assertRaises(IfThenSyntaxError):
+            parse(test)
+
+        test = "if {_x == 2} then {_x = 1;};"
+        with self.assertRaises(IfThenSyntaxError):
+            parse(test)
+
+        test = "if {_x == 2} then (_x = 1;);"
+        with self.assertRaises(IfThenSyntaxError):
+            parse(test)
+
+    def test_if_with_extra(self):
+        test = "if (_x == 2) then {_x = 1;}; _y = 4;"
+        result = parse(test)
+        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
+        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
+        expected = Statement([IfThenStatement(condition, outcome, ending=True),
+                              Statement([V('_y'), OP['='], V('4')], ending=True)])
+        self.assertEqual(expected, result)
+
+    def test_if_else_statement(self):
+        test = "if (_x == 2) then {_x = 1;} else {_x = 3;};"
+        result = parse(test)
+
+        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
+        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
+        _else = Statement([Statement([V('_x'), OP['='], V('3')], ending=True)], parenthesis='{}')
+
+        expected = IfThenStatement(condition, outcome, _else, ending=True)
+        self.assertEqual(expected, result)
+
+        test += " _y = 4;"
+        result = parse(test)
+        expected = Statement([expected, Statement([V('_y'), OP['='], V('4')], ending=True)])
+
+        self.assertEqual(expected, result)
+
+    def test_wrong_if(self):
+        with self.assertRaises(IfThenSyntaxError):
+            parse('if (_x == 2) then {_x = 1;} else {_x = 3;} = 2')
+
+        with self.assertRaises(IfThenSyntaxError):
+            parse('if (_x == 2) then {_x = 1;} = 2')

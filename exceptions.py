@@ -6,5 +6,9 @@ class SyntaxError(Exception):
     pass
 
 
-class SyntaxIfThenError(SyntaxError):
+class IfThenSyntaxError(SyntaxError):
+    pass
+
+
+class UnbalancedParenthesisSyntaxError(SyntaxError):
     pass

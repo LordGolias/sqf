@@ -1,8 +1,6 @@
 def partition(exp, op, container):
-    try:
-        index = next(index for index, value in enumerate(exp) if value == op)
-    except StopIteration:
-        return container([exp, container([]), container([])])
+    # one is always found because of the condition used in parse_exp
+    index = next(index for index, value in enumerate(exp) if value == op)
     return container([container(exp[:index]), exp[index], container(exp[index+1:])])
 
 
