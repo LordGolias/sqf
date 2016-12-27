@@ -8,6 +8,10 @@ class Statement:
         self._ending = ending
 
     @property
+    def tokens(self):
+        return self._tokens
+
+    @property
     def parenthesis(self):
         return self._parenthesis
 
@@ -29,7 +33,7 @@ class Statement:
             else:
                 as_str += ' %s' % func(s)
 
-        if self.parenthesis:
+        if self.parenthesis is not None:
             as_str = '%s%s%s' % (self.parenthesis[0], as_str, self.parenthesis[1])
         if self.ending:
             as_str += ';'

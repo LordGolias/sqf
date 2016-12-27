@@ -8,10 +8,18 @@ from core.parse_exp import parse_exp
 def identify_token(token):
     if token in OPERATORS:
         return OPERATORS[token]
-    if token in RESERVED_MAPPING:
+    elif token in RESERVED_MAPPING:
         return RESERVED_MAPPING[token]
+    elif token in ('true', 'false'):
+        return Boolean(token == 'true')
     else:
-        return Variable(token)
+        try:
+            return Number(int(token))
+        except ValueError:
+            try:
+                return Number(float(token))
+            except ValueError:
+                return Variable(token)
 
 
 def parse_strings(all_tokens):
@@ -35,6 +43,19 @@ def parse_strings(all_tokens):
                     # identify the token
                     tokens.append(identify_token(token))
     return tokens
+
+
+def _parse_array(tokens):
+    i = 0
+    result = []
+    for token in tokens:
+        i += 1
+        if i % 2 == 0:
+            if token != Comma:
+                raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+        else:
+            result.append(token)
+    return result
 
 
 def analise_tokens(tokens, parenthesis=None):
@@ -72,14 +93,12 @@ def _flatten(statements, tokens, parenthesis):
             final_statement = tokens[0]
         else:
             final_statement = analise_tokens(tokens, parenthesis)
-    elif len(statements) == 1 and parenthesis and not statements[0].ending:
-        statements[0]._parenthesis = parenthesis
-        final_statement = statements[0]
-    elif len(statements) == 1 and not parenthesis:
+    elif len(statements) == 1 and not parenthesis and not tokens:
         final_statement = statements[0]
     else:
         if tokens:
-            statements.append(analise_tokens(tokens, parenthesis))
+            res = _flatten([], tokens, None)
+            statements.append(res)
         final_statement = Statement(statements, parenthesis=parenthesis)
     return final_statement
 
@@ -122,7 +141,7 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
 
             if tokens:
                 statements.append(tokens)
-            return Array(statements), i - start
+            return Array(_parse_array(statements[0])), i - start
         elif token == ParenthesisClose:
             if parenthesis_lvl == 0:
                 raise UnbalancedParenthesisSyntaxError('Trying to close parenthesis without opened parenthesis.')

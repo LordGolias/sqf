@@ -1,13 +1,34 @@
-import unittest
+from unittest import TestCase, expectedFailure
 
 from core.parse_exp import parse_exp, partition
-from exceptions import SyntaxError, UnbalancedParenthesisSyntaxError, IfThenSyntaxError
-from core.types import String, ForEach, Array, Nil, Comma
+from exceptions import SyntaxError, UnbalancedParenthesisSyntaxError, IfThenSyntaxError, WrongTypes
+from core.types import String, ForEach, Array, Nil, Comma, Boolean, Nothing
 from parser import parse, Statement, IfThenStatement, parse_strings, tokenize
-from parser import Variable as V, OPERATORS as OP
+from parser import Variable as V, OPERATORS as OP, Number as N
+from core.interpreter import interpret
 
 
-class TestExpParser(unittest.TestCase):
+class TestTypesToString(TestCase):
+
+    def test_bool(self):
+        self.assertEqual('true', str(Boolean(True)))
+        self.assertEqual('false', str(Boolean(False)))
+
+    def test_number(self):
+        self.assertEqual('1', str(N(1)))
+        self.assertEqual('1.10', str(N(1.1)))
+
+    def test_array(self):
+        self.assertEqual('[1, 1]', str(Array([1, 1])))
+
+    def test_reservedtoken(self):
+        self.assertEqual('foreach', str(ForEach))
+
+    def test_nothing(self):
+        self.assertEqual('Nothing', str(Nothing))
+
+
+class TestExpParser(TestCase):
 
     def test_partition(self):
         res = partition([V('_x'), OP['='], V('2')], OP['='], list)
@@ -52,7 +73,7 @@ class TestExpParser(unittest.TestCase):
                          parse_exp(test, [OP['='], OP['+'], OP['*']], Statement))
 
 
-class TestParse(unittest.TestCase):
+class TestParse(TestCase):
 
     def test_parse_string(self):
         test = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
@@ -66,32 +87,47 @@ class TestParse(unittest.TestCase):
     def test_one(self):
         test = "_x setvariable 2;"
         result = parse(test)
-        expected = Statement([V('_x'), OP['setvariable'], V('2')], ending=True)
+        expected = Statement([V('_x'), OP['setvariable'], N(2)], ending=True)
 
         self.assertEqual(expected, result)
 
     def test_one_bracketed(self):
-        result = parse('{_x setvariable 2};')
-        expected = Statement([V('_x'), OP['setvariable'], V('2')], ending=True, parenthesis='{}')
+        code = '{_x setvariable 2};'
+        result = parse(code)
+        self.assertEqual(code, str(result))
+
+        expected = Statement([V('_x'), OP['setvariable'], N(2)], ending=True, parenthesis='{}')
         self.assertEqual(expected, result)
 
     def test_one_bracketed_2(self):
         result = parse('{_x setvariable 2;}')
-        expected = Statement([Statement([V('_x'), OP['setvariable'], V('2')], ending=True)], parenthesis='{}')
+        expected = Statement([Statement([V('_x'), OP['setvariable'], N(2)], ending=True)], parenthesis='{}')
+        self.assertEqual(expected, result)
+
+    def test_parse_bracketed_3(self):
+        result = parse('_x = true; _x = false')
+        expected = Statement([Statement([V('_x'), OP['='], Boolean(True)], ending=True),
+                              Statement([V('_x'), OP['='], Boolean(False)])])
+        self.assertEqual(expected, result)
+
+    def test_parse_bracketed_4(self):
+        result = parse('_x = true; {_x = false}')
+        expected = Statement([Statement([V('_x'), OP['='], Boolean(True)], ending=True),
+                              Statement([V('_x'), OP['='], Boolean(False)], parenthesis='{}')])
         self.assertEqual(expected, result)
 
     def test_two(self):
         result = parse('_x setvariable 2; _y setvariable 3;')
-        expected = Statement([Statement([V('_x'), OP['setvariable'], V('2')], ending=True),
-                              Statement([V('_y'), OP['setvariable'], V('3')], ending=True)])
+        expected = Statement([Statement([V('_x'), OP['setvariable'], N(2)], ending=True),
+                              Statement([V('_y'), OP['setvariable'], N(3)], ending=True)])
 
         self.assertEqual(expected, result)
 
     def test_two_bracketed(self):
         result = parse('{_x setvariable 2; _y setvariable 3;};')
 
-        expected = Statement([Statement([V('_x'), OP['setvariable'], V('2')], ending=True),
-                              Statement([V('_y'), OP['setvariable'], V('3')], ending=True)],
+        expected = Statement([Statement([V('_x'), OP['setvariable'], N(2)], ending=True),
+                              Statement([V('_y'), OP['setvariable'], N(3)], ending=True)],
                              parenthesis='{}', ending=True)
 
         self.assertEqual(expected, result)
@@ -100,7 +136,7 @@ class TestParse(unittest.TestCase):
         test = "_x = (_y == 2);"
         result = parse(test)
 
-        s1 = Statement([V('_y'), OP['=='], V('2')], parenthesis='()')
+        s1 = Statement([V('_y'), OP['=='], N(2)], parenthesis='()')
         expected = Statement([V('_x'), OP['='], s1], ending=True)
 
         self.assertEqual(expected, result)
@@ -117,31 +153,11 @@ class TestParse(unittest.TestCase):
         with self.assertRaises(UnbalancedParenthesisSyntaxError):
             parse('_a = (x + 2')
 
-    def test_string(self):
-
-        self.assertEqual('_a = ((_x == _y) || (_y == _z));',
-                         str(parse('_a = ((_x == _y) || (_y == _z));')))
-
-    def test_string1(self):
+    def test_wrong_parenthesis(self):
         with self.assertRaises(Exception):
             parse('{(_a = 2;});')
         with self.assertRaises(Exception):
             parse('({_a = 2);};')
-
-    def test_array(self):
-        test = '["AirS", nil];'
-        result = parse(test)
-        expected = Statement([Array([[String('AirS'), Comma, Nil]])], ending=True)
-
-        self.assertEqual(expected, result)
-
-        test = '["AirS" nil];'
-        with self.assertRaises(SyntaxError):
-            parse(test)
-
-    def test_string2(self):
-        self.assertEqual('if (! isNull _x) then {_x setvariable ["AirS", nil];};',
-                         str(parse('if (!isNull _x) then {_x setvariable ["AirS",nil];};')))
 
     def test_analyse_expression(self):
         test = '_h = _civs spawn _fPscareC;'
@@ -175,7 +191,7 @@ class TestParse(unittest.TestCase):
         result = parse(test)
 
         self.assertEqual(2, len(result))
-        self.assertEqual(Statement([V('_n'), OP['='], V('0')], ending=True), result[0])
+        self.assertEqual(Statement([V('_n'), OP['='], N(0)], ending=True), result[0])
         self.assertEqual(ForEach, result[1][1])
         self.assertEqual('{}', result[1][0].parenthesis)
         self.assertEqual('{}', result[1][0].parenthesis)
@@ -190,7 +206,7 @@ class TestParse(unittest.TestCase):
                                     ])
         expected2 = Statement([Statement([OP['alive'], V('_x')], parenthesis='{}'),
                               OP['count'], Statement([
-                                  Statement([OP['units'], V('_x')]), OP['>'], V('0')])
+                                  Statement([OP['units'], V('_x')]), OP['>'], N(0)])
                               ], parenthesis='{}')
 
         expected = Statement([expected0, OP['&&'], expected2], parenthesis='()')
@@ -199,10 +215,9 @@ class TestParse(unittest.TestCase):
         outcome = result[1][0][0]._outcome
         # _nul = [_x, (getmarkerpos "WestChopStart"),5] SPAWN FUNKTIO_MAD;
         expected0 = Statement([V('_nul'), OP['='],
-                               Statement([Array([[V('_x'),
-                                                  Comma,
+                               Statement([Array([V('_x'),
                                                   Statement([OP['getmarkerpos'], String('WestChopStart')], parenthesis='()'),
-                                                  Comma, V('5')]]),
+                                                  N(5)]),
                                           OP['SPAWN'], V('FUNKTIO_MAD')])
                                ], ending=True)
         self.assertEqual(expected0, outcome[0])
@@ -210,20 +225,37 @@ class TestParse(unittest.TestCase):
         # if (!isNull _x) then {_x setvariable ["AirS",nil];};
         expected1 = IfThenStatement(Statement([OP['!'], Statement([OP['isNull'], V('_x')])], parenthesis='()'),
                                     Statement([Statement(
-                                        [V('_x'), OP['setvariable'], Array([[String("AirS"), Comma, Nil]])],
+                                        [V('_x'), OP['setvariable'], Array([String("AirS"), Nil])],
                                         ending=True)], parenthesis='{}'),
                                     ending=True)
 
         self.assertEqual(expected1, outcome[1])
 
 
-class TestIfThenStatement(unittest.TestCase):
+class TestParseArray(TestCase):
+
+    def test_array(self):
+        test = '["AirS", nil];'
+        result = parse(test)
+        expected = Statement([Array([String('AirS'), Nil])], ending=True)
+
+        self.assertEqual(expected, result)
+
+        test = '["AirS" nil];'
+        with self.assertRaises(SyntaxError):
+            parse(test)
+
+        with self.assertRaises(SyntaxError):
+            Array([String('AirS'), Comma, Nil])
+
+
+class TestIfThenStatement(TestCase):
 
     def test_if_statement(self):
         test = "if (_x == 2) then {_x = 1;};"
         result = parse(test)
-        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
-        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
+        condition = Statement([V('_x'), OP['=='], N(2)], parenthesis='()')
+        outcome = Statement([Statement([V('_x'), OP['='], N(1)], ending=True)], parenthesis='{}')
         expected = IfThenStatement(condition, outcome, ending=True)
         self.assertEqual(expected, result)
 
@@ -231,7 +263,7 @@ class TestIfThenStatement(unittest.TestCase):
         result = parse(test)
 
         expected = Statement([IfThenStatement(condition, outcome, ending=True),
-                              Statement([V('_y'), OP['='], V('4')], ending=True)])
+                              Statement([V('_y'), OP['='], N(4)], ending=True)])
         self.assertEqual(expected, result)
 
     def test_if_syntax(self):
@@ -254,26 +286,26 @@ class TestIfThenStatement(unittest.TestCase):
     def test_if_with_extra(self):
         test = "if (_x == 2) then {_x = 1;}; _y = 4;"
         result = parse(test)
-        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
-        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
+        condition = Statement([V('_x'), OP['=='], N(2)], parenthesis='()')
+        outcome = Statement([Statement([V('_x'), OP['='], N(1)], ending=True)], parenthesis='{}')
         expected = Statement([IfThenStatement(condition, outcome, ending=True),
-                              Statement([V('_y'), OP['='], V('4')], ending=True)])
+                              Statement([V('_y'), OP['='], N(4)], ending=True)])
         self.assertEqual(expected, result)
 
     def test_if_else_statement(self):
         test = "if (_x == 2) then {_x = 1;} else {_x = 3;};"
         result = parse(test)
 
-        condition = Statement([V('_x'), OP['=='], V('2')], parenthesis='()')
-        outcome = Statement([Statement([V('_x'), OP['='], V('1')], ending=True)], parenthesis='{}')
-        _else = Statement([Statement([V('_x'), OP['='], V('3')], ending=True)], parenthesis='{}')
+        condition = Statement([V('_x'), OP['=='], N(2)], parenthesis='()')
+        outcome = Statement([Statement([V('_x'), OP['='], N(1)], ending=True)], parenthesis='{}')
+        _else = Statement([Statement([V('_x'), OP['='], N(3)], ending=True)], parenthesis='{}')
 
         expected = IfThenStatement(condition, outcome, _else, ending=True)
         self.assertEqual(expected, result)
 
         test += " _y = 4;"
         result = parse(test)
-        expected = Statement([expected, Statement([V('_y'), OP['='], V('4')], ending=True)])
+        expected = Statement([expected, Statement([V('_y'), OP['='], N(4)], ending=True)])
 
         self.assertEqual(expected, result)
 
@@ -283,3 +315,74 @@ class TestIfThenStatement(unittest.TestCase):
 
         with self.assertRaises(IfThenSyntaxError):
             parse('if (_x == 2) then {_x = 1;} = 2')
+
+
+class TestInterpreter(TestCase):
+
+    def test_one_statement(self):
+        test = '_y = 2; _x = (_y == 3);'
+        glob, loc, outcome = interpret(test)
+        self.assertEqual(Boolean(False), loc.variables_values['_x'])
+        self.assertEqual(Nothing, outcome)
+
+    def test_var_not_defined(self):
+        with self.assertRaises(WrongTypes):
+            interpret('_y == 3;')
+
+    def test_one_statement2(self):
+        test = '(3 - 1) == (3 + 1)'
+        glob, loc, outcome = interpret(test)
+        self.assertEqual(Boolean(False), outcome)
+
+    def test_cant_compare_booleans(self):
+        with self.assertRaises(WrongTypes):
+            interpret('true == false;')
+
+    def test_wrong_type_arithmetic(self):
+        interpret('_x = true;')
+        with self.assertRaises(WrongTypes):
+            interpret('_x = true; _x + 2;')
+
+    def test_brackets(self):
+        glob, loc, outcome = interpret('_x = true; {_x = false}')
+        self.assertEqual(Boolean(True), loc.variables_values['_x'])
+        self.assertEqual(Boolean(False), outcome)
+
+    def test_one_statement1(self):
+        test = '_y = 2; (_y == 3)'
+        glob, loc, outcome = interpret(test)
+        self.assertEqual(Boolean(False), outcome)
+
+
+class TestInterpretArray(TestCase):
+
+    def test_assign(self):
+        test = '_x = [1, 2];'
+        glob, loc, outcome = interpret(test)
+
+        self.assertEqual(Array([N(1), N(2)]), loc.variables_values['_x'])
+
+    def test_add(self):
+        test = '_x = [1, 2]; _y = [3, 4]; _z = _x + _y'
+        _, _, outcome = interpret(test)
+
+        self.assertEqual(Array([N(1), N(2), N(3), N(4)]), outcome)
+
+    def test_subtract(self):
+        test = '_x = [1, 2, 3, 2, 4]; _y = [2, 3]; _z = _x - _y'
+        _, _, outcome = interpret(test)
+
+        self.assertEqual(Array([N(1), N(4)]), outcome)
+
+
+class TestInterpretString(TestCase):
+    def test_assign(self):
+        test = '_x = "ABA";'
+        glob, loc, outcome = interpret(test)
+
+        self.assertEqual(String('ABA'), loc.variables_values['_x'])
+
+    def test_add(self):
+        test = '_x = "ABA"; _y = "BAB"; _x + _y'
+        _, _, outcome = interpret(test)
+        self.assertEqual(String('ABABAB'), outcome)

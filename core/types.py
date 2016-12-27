@@ -2,6 +2,7 @@ from exceptions import *
 
 
 class Type:
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.__dict__ == other.__dict__
@@ -12,15 +13,39 @@ class Type:
         return not self.__eq__(other)
 
 
-class String(Type):
+class ConstantValue(Type):
+    def __init__(self, value=None):
+        self._value = value
 
-    def __init__(self, tokens):
-        assert(isinstance(tokens, str))
-        self._tokens = tokens
+    @property
+    def value(self):
+        return self._value
+
+
+class Boolean(ConstantValue):
+    def __init__(self, value):
+        assert (value is True or value is False)
+        super().__init__(value)
+
+    def __str__(self):
+        if self._value:
+            return 'true'
+        else:
+            return 'false'
+
+    def __repr__(self):
+        return 'B<%s>' % self
+
+
+class String(ConstantValue):
+
+    def __init__(self, value):
+        assert(isinstance(value, str))
+        super().__init__(value)
 
     @property
     def string(self):
-        return ''.join(self._tokens)
+        return self.value
 
     def __str__(self):
         return '"%s"' % self.string
@@ -29,20 +54,39 @@ class String(Type):
         return 's<%s>' % self
 
 
+class Nothing(ConstantValue):
+    def __str__(self):
+        return 'Nothing'
+
+    def __repr__(self):
+        return '<%s>' % self
+Nothing = Nothing()
+
+
+class Number(ConstantValue):
+    def __init__(self, value):
+        assert(isinstance(value, (int, float)))
+        super().__init__(value)
+
+    def __str__(self):
+        if isinstance(self._value, int):
+            return '%d' % self._value
+        # todo: use a better representation of float
+        return '%2.2f' % self._value
+
+    def __repr__(self):
+        return 'N%s' % self
+
+
 class Array(Type):
     def __init__(self, items):
         self._items = []
         # asserts below check that it is a list of the form `A,B,C`
         # where A B and C are instances of a Type.
-        assert(len(items) == 1)
         i = 0
-        for item in items[0]:
-            i += 1
-            if i % 2 == 0:
-                if item != Comma:
-                    raise SyntaxError('Array syntax is `[item1, item2, ...]`')
-            else:
-                self._items.append(item)
+        if Comma in items:
+            raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+        self._items = items
 
     def __str__(self):
         return '[%s]' % ', '.join(str(item) for item in self._items)
@@ -50,14 +94,18 @@ class Array(Type):
     def __repr__(self):
         return 'A%s' % self
 
-
-class Nothing(Type):
-    pass
+    @property
+    def value(self):
+        return self._items
 
 
 class Variable(Type):
     def __init__(self, name):
         self._name = name
+
+    @property
+    def name(self):
+        return self._name
 
     def __str__(self):
         return self._name
@@ -67,6 +115,7 @@ class Variable(Type):
 
 
 class Operator:
+
     def __init__(self, op):
         self._op = op
 
@@ -126,21 +175,35 @@ for word in RESERVED:
 
 OPERATORS = {
     '=': BinaryOperator,
+
     '+': BinaryOperator,
+    '-': BinaryOperator,
     '*': BinaryOperator,
+    '/': BinaryOperator,
+    '%': BinaryOperator,
+    'mod': BinaryOperator,
+    '^': BinaryOperator,
+
     'setvariable': BinaryOperator,
     'getvariable': BinaryOperator,
     'set': BinaryOperator,
     'spawn': BinaryOperator,
     'SPAWN': BinaryOperator,
-    '==': BinaryOperator,
-    '!=':  BinaryOperator,
+
     '&&': BinaryOperator,
     'and': BinaryOperator,
     '||': BinaryOperator,
     'or': BinaryOperator,
-    '!': UnaryOperator,
+
+    'isEqualTo': BinaryOperator,
+    '==': BinaryOperator,
+    '!=':  BinaryOperator,
     '>': BinaryOperator,
+    '<': BinaryOperator,
+    '>=': BinaryOperator,
+    '<=': BinaryOperator,
+
+    '!': UnaryOperator,
     'not': UnaryOperator,
     'isNull': UnaryOperator,
     'isNil': UnaryOperator,
@@ -157,6 +220,41 @@ for s in OPERATORS:
 # operators by precedence
 ORDERED_OPERATORS = [OPERATORS[s] for s in ('=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getvariable')]
 
+OP_ARITHMETIC = {OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^')}
 
-LOGICAL_OPERATORS = {OPERATORS['=='], OPERATORS['!='], OPERATORS['||'], OPERATORS['&&']}
-ASSIGMENT_OPERATORS = {OPERATORS['='], OPERATORS['setvariable'], OPERATORS['set']}
+OP_LOGICAL = {OPERATORS[s] for s in ('&&', 'and', '||', 'or')}
+
+OP_COMPARISON = {OPERATORS[s] for s in ('==', '!=', '<', '>', '<=', '>=')}
+
+OP_OPERATIONS = {
+    OPERATORS['+']: lambda x, y: x + y,
+    OPERATORS['-']: lambda x, y: x - y,
+    OPERATORS['*']: lambda x, y: x * y,
+    OPERATORS['/']: lambda x, y: x / y,
+    OPERATORS['%']: lambda x, y: x % y,
+    OPERATORS['mod']: lambda x, y: x % y,
+    OPERATORS['^']: lambda x, y: x ** y,
+
+    OPERATORS['==']: lambda x, y: x == y,
+    OPERATORS['!=']: lambda x, y: x != y,
+    OPERATORS['<']: lambda x, y: x < y,
+    OPERATORS['>']: lambda x, y: x < y,
+    OPERATORS['<=']: lambda x, y: x <= y,
+    OPERATORS['>=']: lambda x, y: x >= y,
+
+    OPERATORS['&&']: lambda x, y: x and y,
+    OPERATORS['and']: lambda x, y: x and y,
+    OPERATORS['||']: lambda x, y: x or y,
+    OPERATORS['or']: lambda x, y: x or y,
+}
+
+
+def _subtract_lists(x, y):
+    yset = set([y_i.value for y_i in y])
+    return [x_i for x_i in x if x_i.value not in yset]
+
+
+OP_ARRAY_OPERATIONS = {
+    OPERATORS['+']: lambda x, y: x + y,
+    OPERATORS['-']: lambda x, y: _subtract_lists(x, y),
+}
