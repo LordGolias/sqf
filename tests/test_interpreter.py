@@ -2,7 +2,8 @@ from unittest import TestCase
 
 from core.exceptions import SyntaxError, UnbalancedParenthesisSyntaxError, IfThenSyntaxError, WrongTypes
 from core.types import String, ForEach, Array, Nil, Comma, Boolean, Nothing, \
-    Variable as V, OPERATORS as OP, Number as N
+    Variable as V, Number as N
+from core.operators import OPERATORS as OP
 from core.statements import Statement, IfThenStatement
 from core.interpreter import interpret
 

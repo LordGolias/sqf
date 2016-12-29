@@ -2,6 +2,7 @@ from core.base_tokenizer import tokenize
 
 from core.exceptions import UnbalancedParenthesisSyntaxError, IfThenSyntaxError
 from core.types import *
+from core.operators import OPERATORS, ORDERED_OPERATORS
 from core.statements import Statement, IfThenStatement
 from core.parse_exp import parse_exp
 

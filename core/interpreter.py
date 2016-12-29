@@ -1,5 +1,5 @@
-from core.types import Number, Boolean, Nothing, Variable, Operator, Array, String, \
-    OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
+from core.types import Number, Boolean, Nothing, Variable, Array, String
+from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
 from core.statements import Statement
 from core.parser import parse
 from core.exceptions import WrongTypes

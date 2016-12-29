@@ -1,7 +1,8 @@
 from unittest import TestCase
 
 from core.types import String, ForEach, Array, Nil, Comma, Boolean, Nothing, \
-    Variable as V, OPERATORS as OP, Number as N
+    Variable as V, Number as N
+from core.operators import OPERATORS as OP
 
 
 class TestTypesToString(TestCase):
