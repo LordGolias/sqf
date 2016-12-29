@@ -1,4 +1,4 @@
-from exceptions import *
+from core.exceptions import SyntaxError
 
 
 class Type:
