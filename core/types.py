@@ -1,4 +1,5 @@
 from core.exceptions import SyntaxError
+from core.operators import Operator
 
 
 class Type:
@@ -103,9 +104,6 @@ class Array(Type):
     def reverse(self):
         self._items.reverse()
 
-    def append(self, other):
-        self._items.append(other)
-
     def add(self, other):
         self._items += other
 
@@ -123,6 +121,64 @@ class Variable(Type):
 
     def __repr__(self):
         return 'V<%s>' % self
+
+
+class _Statement(Type):
+    def __init__(self, tokens, parenthesis=None, ending=False):
+        assert (isinstance(tokens, list))
+        for s in tokens:
+            if not isinstance(s, (Type, Operator, ReservedToken, Statement)):
+                raise SyntaxError('"%s" is not a type or op or keyword' % repr(s))
+        self._tokens = tokens
+        self._parenthesis = parenthesis
+        self._ending = ending
+
+    @property
+    def tokens(self):
+        return self._tokens
+
+    @property
+    def parenthesis(self):
+        return self._parenthesis
+
+    @property
+    def ending(self):
+        return self._ending
+
+    def __len__(self):
+        return len(self._tokens)
+
+    def __getitem__(self, other):
+        return self._tokens[other]
+
+    def _as_str(self, func):
+        as_str = ''
+        for i, s in enumerate(self._tokens):
+            if i == 0:
+                as_str += '%s' % func(s)
+            else:
+                as_str += ' %s' % func(s)
+
+        if self.parenthesis is not None:
+            as_str = '%s%s%s' % (self.parenthesis[0], as_str, self.parenthesis[1])
+        if self.ending:
+            as_str += ';'
+        return as_str
+
+    def __str__(self):
+        return self._as_str(str)
+
+    def __repr__(self):
+        return 'S<%s>' % self._as_str(repr)
+
+
+class Statement(_Statement):
+    pass
+
+
+class Code(_Statement):
+    def __init__(self, tokens):
+        super().__init__(tokens, parenthesis='{}')
 
 
 class ReservedToken:

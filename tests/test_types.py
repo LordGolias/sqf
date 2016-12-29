@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from core.types import String, ForEach, Array, Nil, Comma, Boolean, Nothing, \
+from core.types import Statement, String, ForEach, Array, Nil, Comma, Boolean, Code, Nothing, \
     Variable as V, Number as N
 from core.operators import OPERATORS as OP
 
@@ -23,3 +23,6 @@ class TestTypesToString(TestCase):
 
     def test_nothing(self):
         self.assertEqual('Nothing', str(Nothing))
+
+    def test_code(self):
+        self.assertEqual('{_x = 2;}', str(Code([Statement([V('_x'), OP['='], N(2)], ending=True)])))

@@ -1,6 +1,5 @@
-from core.types import Number, Boolean, Nothing, Variable, Array, String
+from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String
 from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
-from core.statements import Statement
 from core.parser import parse
 from core.exceptions import WrongTypes
 
@@ -10,32 +9,38 @@ class Scope:
     def __init__(self):
         self.variables_values = {}
 
-    def _return_value(self, result):
-        if isinstance(result, Variable):
-            if result.name in self.variables_values:
-                value = self.variables_values[result.name]
+    def value(self, token):
+        """
+        Returns the value of the token taking into account that
+        it may be a
+        """
+        if isinstance(token, Variable):
+            if token.name in self.variables_values:
+                return self.variables_values[token.name]
             else:
                 # undeclared variables return Nothing
-                value = Nothing
+                return Nothing
+        elif isinstance(token, (ConstantValue, Array, Code)):
+            return token
         else:
-            value = result
+            raise NotImplementedError(token)
 
-        return value
+    def type(self, token):
+        return type(self.value(token))
 
     def _interpret_token(self, token):
         """
-        Given a single token, recursively evalute it and return its value.
+        Given a single token, recursively evaluate it and return its value.
         """
-        # we first interpret the statement recursively
+        # interpret the statement recursively
         if isinstance(token, Statement):
             result = self.interpret_statement(statement=token)
         else:
             result = token
 
-        return result, self._return_value(result)
+        return result, self.value(result)
 
     def interpret_statement(self, statement):
-
         scope = self
         if statement.parenthesis == '{}':
             scope = Scope()
@@ -44,7 +49,7 @@ class Scope:
 
         tokens = statement.tokens
         if len(tokens) == 3 and isinstance(tokens[1], Operator):
-            # it is a binary statement (token, operation, token)
+            # it is a binary statement: token, operation, token
             lhs = tokens[0]
             op = tokens[1]
             rhs = tokens[2]
@@ -58,9 +63,12 @@ class Scope:
             if op == OPERATORS['=']:
                 assert(isinstance(lhs, Variable))
 
+                rhs, rhs_v = scope._interpret_token(rhs)
+
                 scope.variables_values[lhs.name] = rhs_v
                 outcome = rhs
             elif op in OP_COMPARISON:
+
                 if lhs_t != rhs_t:
                     raise WrongTypes('Comparing wrong types with "==" operator')
                 if lhs_t == rhs_t == Boolean:
@@ -150,9 +158,12 @@ class Scope:
                     outcome = Nothing
                 else:
                     raise WrongTypes()
+        elif len(tokens) == 1 and isinstance(tokens[0], Statement):
+            outcome = self.interpret_statement(tokens[0])
+        elif len(tokens) == 1 and isinstance(tokens[0], Code):
+            outcome = tokens[0]
         else:
-            # it is a non-binary operator
-            raise NotImplementedError
+            raise NotImplementedError('Interpretation of %s not implemented' % tokens)
 
         if statement.ending:
             outcome = Nothing
@@ -165,9 +176,7 @@ def interpret(script):
     global_scope = Scope()
     local_scope = Scope()
 
-    if len(statements) > 1 and all(isinstance(statement, Statement) for statement in statements):
-        for statement in statements:
-            outcome = local_scope.interpret_statement(statement)
-    else:
-        outcome = local_scope.interpret_statement(statements)
+    for statement in statements:
+        outcome = local_scope.interpret_statement(statement)
+
     return global_scope, local_scope, outcome

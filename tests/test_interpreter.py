@@ -1,10 +1,7 @@
 from unittest import TestCase
 
-from core.exceptions import SyntaxError, UnbalancedParenthesisSyntaxError, IfThenSyntaxError, WrongTypes
-from core.types import String, ForEach, Array, Nil, Comma, Boolean, Nothing, \
-    Variable as V, Number as N
-from core.operators import OPERATORS as OP
-from core.statements import Statement, IfThenStatement
+from core.exceptions import WrongTypes
+from core.types import String, Array, Boolean, Nothing, Number as N
 from core.interpreter import interpret
 
 
@@ -34,10 +31,10 @@ class TestInterpreter(TestCase):
         with self.assertRaises(WrongTypes):
             interpret('_x = true; _x + 2;')
 
-    def test_brackets(self):
-        glob, loc, outcome = interpret('_x = true; {_x = false}')
+    def test_code_dont_execute(self):
+        glob, loc, outcome = interpret('_x = true; {_x = false};')
         self.assertEqual(Boolean(True), loc.variables_values['_x'])
-        self.assertEqual(Boolean(False), outcome)
+        self.assertEqual(Nothing, outcome)
 
     def test_one_statement1(self):
         test = '_y = 2; (_y == 3)'

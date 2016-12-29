@@ -1,11 +1,10 @@
 from core.base_tokenizer import tokenize
 
 from core.exceptions import UnbalancedParenthesisSyntaxError, IfThenSyntaxError, SyntaxError
-from core.types import Number, Boolean, Nothing, Variable, Array, String, RESERVED_MAPPING, \
+from core.types import Statement, Code, Number, Boolean, Nothing, Variable, Array, String, RESERVED_MAPPING, \
     RParenthesisOpen, RParenthesisClose, ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, \
     Comma, IfToken, ThenToken, ElseToken
 from core.operators import OPERATORS, ORDERED_OPERATORS
-from core.statements import Statement, IfThenStatement
 from core.parse_exp import parse_exp
 
 
@@ -62,49 +61,35 @@ def _parse_array(tokens):
     return result
 
 
-def analise_tokens(tokens, parenthesis=None):
+def analise_tokens(tokens):
     ending = False
     if tokens[-1] == EndOfStatement:
         del tokens[-1]
         ending = True
 
     statement = parse_exp(tokens, ORDERED_OPERATORS, Statement)
-    statement._parenthesis = parenthesis
-    statement._ending = ending
+    if isinstance(statement, Statement):
+        statement._ending = ending
+    else:
+        statement = Statement([statement], ending=ending)
 
-    if tokens[0] == IfToken:
-        if len(tokens) < 4 or \
-                not (isinstance(tokens[1], Statement) and tokens[1].parenthesis == '()') or \
-                tokens[2] != ThenToken:
-            raise IfThenSyntaxError('If construction syntactically incorrect.')
-
-        statement = IfThenStatement(tokens[1], tokens[3], parenthesis=parenthesis, ending=ending)
-        if len(tokens) >= 5 and tokens[4] == ElseToken:
-            if len(tokens) > 6:
-                raise IfThenSyntaxError('If construction syntactically incorrect.')
-
-            statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5], parenthesis=parenthesis,
-                                        ending=ending)
-        elif len(tokens) > 4:
-            raise IfThenSyntaxError('If construction syntactically incorrect.')
+    # if tokens[0] == IfToken:
+    #     if len(tokens) < 4 or \
+    #             not (isinstance(tokens[1], Statement) and tokens[1].parenthesis == '()') or \
+    #             tokens[2] != ThenToken:
+    #         raise IfThenSyntaxError('If construction syntactically incorrect.')
+    #
+    #     statement = IfThenStatement(tokens[1], tokens[3], parenthesis=parenthesis, ending=ending)
+    #     if len(tokens) >= 5 and tokens[4] == ElseToken:
+    #         if len(tokens) > 6:
+    #             raise IfThenSyntaxError('If construction syntactically incorrect.')
+    #
+    #         statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5], parenthesis=parenthesis,
+    #                                     ending=ending)
+    #     elif len(tokens) > 4:
+    #         raise IfThenSyntaxError('If construction syntactically incorrect.')
 
     return statement
-
-
-def _flatten(statements, tokens, parenthesis):
-    if len(statements) == 0:
-        if len(tokens) == 1 and isinstance(tokens[0], Statement):
-            final_statement = tokens[0]
-        else:
-            final_statement = analise_tokens(tokens, parenthesis)
-    elif len(statements) == 1 and not parenthesis and not tokens:
-        final_statement = statements[0]
-    else:
-        if tokens:
-            res = _flatten([], tokens, None)
-            statements.append(res)
-        final_statement = Statement(statements, parenthesis=parenthesis)
-    return final_statement
 
 
 def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthesis_lvl=0):
@@ -150,19 +135,21 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
             if parenthesis_lvl == 0:
                 raise UnbalancedParenthesisSyntaxError('Trying to close parenthesis without opened parenthesis.')
 
-            return _flatten(statements, tokens, '()'), i - start
+            if tokens:
+                statements.append(analise_tokens(tokens))
+
+            return Statement(statements, parenthesis='()'), i - start
         elif token == BracketClose:
             if block_lvl == 0:
                 raise UnbalancedParenthesisSyntaxError('Trying to close brackets without opened brackets.')
 
-            return _flatten(statements, tokens, '{}'), i - start
-        elif token == EndOfStatement:
-            if len(tokens) == 1 and isinstance(tokens[0], Statement):
-                tokens[0]._ending = True
-                statements.append(tokens[0])
-            else:
-                tokens.append(EndOfStatement)
+            if tokens:
                 statements.append(analise_tokens(tokens))
+
+            return Code(statements), i - start
+        elif token == EndOfStatement:
+            tokens.append(EndOfStatement)
+            statements.append(analise_tokens(tokens))
             tokens = []
         else:
             tokens.append(token)
@@ -170,7 +157,11 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
 
     if block_lvl != 0 or rparenthesis_lvl != 0 or parenthesis_lvl != 0:
         raise UnbalancedParenthesisSyntaxError('Brackets not closed')
-    return _flatten(statements, tokens, None), i - start
+
+    if tokens:
+        statements.append(analise_tokens(tokens))
+
+    return Statement(statements), i - start
 
 
 def parse(script):
