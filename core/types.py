@@ -43,12 +43,8 @@ class String(ConstantValue):
         assert(isinstance(value, str))
         super().__init__(value)
 
-    @property
-    def string(self):
-        return self.value
-
     def __str__(self):
-        return '"%s"' % self.string
+        return '"%s"' % self.value
 
     def __repr__(self):
         return 's<%s>' % self
@@ -97,6 +93,21 @@ class Array(Type):
     @property
     def value(self):
         return self._items
+
+    def set(self, index, value):
+        self._items[index] = value
+
+    def extend(self, index):
+        self._items += [Nothing] * (index - len(self._items) + 1)
+
+    def reverse(self):
+        self._items.reverse()
+
+    def append(self, other):
+        self._items.append(other)
+
+    def add(self, other):
+        self._items += other
 
 
 class Variable(Type):
@@ -186,7 +197,16 @@ OPERATORS = {
 
     'setvariable': BinaryOperator,
     'getvariable': BinaryOperator,
+
     'set': BinaryOperator,
+    'in': BinaryOperator,
+    'select': BinaryOperator,
+    'find': BinaryOperator,
+    'append': BinaryOperator,
+    'pushBack': BinaryOperator,
+    'pushBackUnique': BinaryOperator,
+    'reverse': UnaryOperator,
+
     'spawn': BinaryOperator,
     'SPAWN': BinaryOperator,
 
