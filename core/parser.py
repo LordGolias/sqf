@@ -1,7 +1,9 @@
 from core.base_tokenizer import tokenize
 
-from core.exceptions import UnbalancedParenthesisSyntaxError, IfThenSyntaxError
-from core.types import *
+from core.exceptions import UnbalancedParenthesisSyntaxError, IfThenSyntaxError, SyntaxError
+from core.types import Number, Boolean, Nothing, Variable, Array, String, RESERVED_MAPPING, \
+    RParenthesisOpen, RParenthesisClose, ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, \
+    Comma, IfToken, ThenToken, ElseToken
 from core.operators import OPERATORS, ORDERED_OPERATORS
 from core.statements import Statement, IfThenStatement
 from core.parse_exp import parse_exp
