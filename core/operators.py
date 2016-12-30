@@ -1,3 +1,6 @@
+import math
+
+
 class Operator:
 
     def __init__(self, op):
@@ -33,6 +36,8 @@ OPERATORS = {
     'mod': BinaryOperator,
     '^': BinaryOperator,
     'max': BinaryOperator,
+
+    'floor': UnaryOperator,
 
     'setvariable': BinaryOperator,
     'getvariable': BinaryOperator,
@@ -81,7 +86,7 @@ for s in OPERATORS:
 # operators by precedence
 ORDERED_OPERATORS = [OPERATORS[s] for s in ('=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getvariable')]
 
-OP_ARITHMETIC = {OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max')}
+OP_ARITHMETIC = {OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')}
 
 OP_LOGICAL = {OPERATORS[s] for s in ('&&', 'and', '||', 'or')}
 
@@ -109,6 +114,7 @@ OP_OPERATIONS = {
     OPERATORS['or']: lambda x, y: x or y,
 
     OPERATORS['max']: lambda x, y: max(x, y),
+    OPERATORS['floor']: lambda x: math.floor(x),
 }
 
 

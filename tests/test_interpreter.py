@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from core.exceptions import WrongTypes, IfThenSyntaxError
-from core.types import String, Array, Boolean, Nothing, Number as N
+from core.types import String, Number, Array, Boolean, Nothing, Number as N
 from core.interpreter import interpret
 
 
@@ -44,6 +44,13 @@ class TestInterpreter(TestCase):
     def test_assign_to_statement(self):
         with self.assertRaises(WrongTypes):
             interpret('(_y) = 2;')
+
+    def test_floor(self):
+        _, outcome = interpret('floor 5.25')
+        self.assertEqual(Number(5), outcome)
+
+        _, outcome = interpret('floor -5.25')
+        self.assertEqual(Number(-6), outcome)
 
 
 class TestInterpretArray(TestCase):

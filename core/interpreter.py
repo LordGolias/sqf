@@ -98,7 +98,6 @@ class Interpreter:
         outcome = Nothing
         tokens = statement.tokens
 
-        print(tokens)
         if len(tokens) == 2 and tokens[0] == PrivateToken:
             if isinstance(tokens[1], String):
                 self.add_privates([tokens[1].value])
@@ -219,7 +218,11 @@ class Interpreter:
             rhs, rhs_v = self.execute_token(rhs)
             rhs_t = type(rhs_v)
 
-            if op == OPERATORS['reverse']:
+            if op == OPERATORS['floor']:
+                if rhs_t != Number:
+                    raise WrongTypes()
+                outcome = Number(OP_OPERATIONS[op](rhs_v.value))
+            elif op == OPERATORS['reverse']:
                 # https://community.bistudio.com/wiki/reverse
                 if rhs_t == Array:
                     rhs_v.reverse()
