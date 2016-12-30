@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from core.parse_exp import parse_exp, partition
 from core.exceptions import SyntaxError, UnbalancedParenthesisSyntaxError
-from core.types import String, Statement, Code, Array, Nil, Comma, IfToken, ThenToken, PrivateToken, Boolean, Variable as V, Number as N
+from core.types import String, Statement, Code, Array, Nil, Comma, IfToken, ThenToken, Boolean, Variable as V, Number as N
 from core.operators import OPERATORS as OP
 from core.parser import parse, parse_strings, tokenize
 
@@ -173,12 +173,18 @@ class ParseCode(TestCase):
 
         self.assertEqual(expected, result)
 
-        test = '["AirS" nil];'
         with self.assertRaises(SyntaxError):
-            parse(test)
+            parse('["AirS" nil];')
 
         with self.assertRaises(SyntaxError):
             Array([String('AirS'), Comma, Nil])
+
+        with self.assertRaises(SyntaxError):
+            parse('["AirS"; nil];')
+
+        result = parse('[];')
+        expected = Statement([Statement([Array([])], ending=True)])
+        self.assertEqual(expected, result)
 
     def test_code(self):
         result = parse('_is1 = {_x == 1};')
@@ -190,7 +196,7 @@ class ParseCode(TestCase):
         result = parse('if (true) then {private "_x"; _x}')
         expected = Statement([Statement([IfToken, Statement([Statement([Boolean(True)])], parenthesis=True),
                                          ThenToken, Code([
-                Statement([PrivateToken, String('_x')], ending=True),
+                Statement([OP['private'], String('_x')], ending=True),
                 Statement([V('_x')])])
         ])])
         self.assertEqual(expected, result)

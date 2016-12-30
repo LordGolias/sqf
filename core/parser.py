@@ -112,9 +112,9 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
             if rparenthesis_lvl == 0:
                 raise UnbalancedParenthesisSyntaxError('Trying to close right parenthesis without them opened.')
 
-            if tokens:
-                statements.append(tokens)
-            return Array(_parse_array(statements[0])), i - start
+            if statements:
+                raise SyntaxError('Statement cannot be in an array')
+            return Array(_parse_array(tokens)), i - start
         elif token == ParenthesisClose:
             if parenthesis_lvl == 0:
                 raise UnbalancedParenthesisSyntaxError('Trying to close parenthesis without opened parenthesis.')
