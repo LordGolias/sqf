@@ -288,7 +288,6 @@ class Interpreter:
                     break
                 outcome = self.execute_code(tokens[3])
         # forspecs loop
-        # [R<for>, s<"_i">, V<from>, N1, V<to>, N10, R<do>, {S<V<y> O<=> V<_i>;>}]
         elif len(tokens) == 4 and tokens[0] == ForToken and isinstance(tokens[1], Array) and \
                 tokens[2] == DoToken and isinstance(tokens[3], Code):
             start = tokens[1].value[0]
@@ -305,7 +304,6 @@ class Interpreter:
                 outcome = self.execute_code(do)
                 self.execute_code(increment)
         # forvar loop
-        # [R<for>, s<"_i">, R<from>, N1, R<to>, N10, R<do>, {S<V<y> O<=> V<_i>;>}]
         elif len(tokens) >= 8 and \
                 tokens[0] == ForToken and \
                 isinstance(tokens[1], String) and \

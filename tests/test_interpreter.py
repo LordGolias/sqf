@@ -60,6 +60,10 @@ class TestInterpreter(TestCase):
         loc, outcome = interpret('private "_x";')
         self.assertEqual(Nothing, loc['_x'])
 
+        loc, outcome = interpret('private ["_x", "_y"];')
+        self.assertTrue('_x' in loc)
+        self.assertTrue('_y' in loc)
+
 
 class TestInterpretArray(TestCase):
 
