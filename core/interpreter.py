@@ -1,5 +1,5 @@
 from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken, PrivateToken, WhileToken, DoToken, ForToken
+    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken
 from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
 from core.parser import parse
 from core.exceptions import WrongTypes, IfThenSyntaxError
@@ -98,11 +98,17 @@ class Interpreter:
         outcome = Nothing
         tokens = statement.tokens
 
-        if len(tokens) == 2 and tokens[0] == PrivateToken:
+        if len(tokens) == 2 and tokens[0] == OPERATORS['private']:
             if isinstance(tokens[1], String):
                 self.add_privates([tokens[1].value])
             elif isinstance(tokens[1], Array):
                 self.add_privates([s.value for s in tokens[1].value])
+            elif isinstance(tokens[1], Statement) and len(tokens[1]) == 3 and \
+                 isinstance(tokens[1][0], Variable) and tokens[1][1] == OPERATORS['=']:
+                self.add_privates([tokens[1][0].name])
+                outcome = self.execute(tokens[1])
+            else:
+                raise SyntaxError()
         elif len(tokens) == 3 and isinstance(tokens[1], Operator):
             # it is a binary statement: token, operation, token
             lhs = tokens[0]

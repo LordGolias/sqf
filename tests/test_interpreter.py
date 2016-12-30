@@ -52,6 +52,14 @@ class TestInterpreter(TestCase):
         _, outcome = interpret('floor -5.25')
         self.assertEqual(Number(-6), outcome)
 
+    def test_private(self):
+        loc, outcome = interpret('private _x = 2')
+        self.assertEqual(Number(2), loc['_x'])
+        self.assertEqual(Number(2), outcome)
+
+        loc, outcome = interpret('private "_x";')
+        self.assertEqual(Nothing, loc['_x'])
+
 
 class TestInterpretArray(TestCase):
 
