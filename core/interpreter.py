@@ -1,5 +1,5 @@
 from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken, PrivateToken
+    IfToken, ThenToken, ElseToken, PrivateToken, WhileToken, DoToken
 from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
 from core.parser import parse
 from core.exceptions import WrongTypes, IfThenSyntaxError
@@ -266,6 +266,15 @@ class Interpreter:
                     outcome = self.execute_code(tokens[5])
             else:
                 raise IfThenSyntaxError()
+        elif len(tokens) == 4 and tokens[0] == WhileToken and isinstance(tokens[1], Code) and \
+                tokens[2] == DoToken and isinstance(tokens[3], Code):
+
+            while True:
+                condition_outcome = self.execute_code(tokens[1])
+                if condition_outcome.value is False:
+                    break
+                self.execute_code(tokens[3])
+
         else:
             raise NotImplementedError('Interpretation of "%s" not implemented' % tokens)
 

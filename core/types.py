@@ -210,6 +210,8 @@ class ReservedToken:
 
 
 IfToken = ReservedToken('if')
+WhileToken = ReservedToken('while')
+DoToken = ReservedToken('do')
 ThenToken = ReservedToken('then')
 ElseToken = ReservedToken('else')
 ForEach = ReservedToken('foreach')
@@ -225,7 +227,7 @@ EndOfStatement = ReservedToken(';')
 Nil = ReservedToken('nil')
 
 RESERVED = [IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
-            BracketOpen, BracketClose, Nil, PrivateToken, Comma, EndOfStatement]
+            BracketOpen, BracketClose, Nil, PrivateToken, WhileToken, DoToken, Comma, EndOfStatement]
 
 
 RESERVED_MAPPING = dict()
