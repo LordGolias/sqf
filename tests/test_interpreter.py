@@ -10,7 +10,7 @@ class TestInterpreter(TestCase):
     def test_one_statement(self):
         test = '_y = 2; _x = (_y == 3);'
         glob, loc, outcome = interpret(test)
-        self.assertEqual(Boolean(False), loc.variables_values['_x'])
+        self.assertEqual(Boolean(False), loc['_x'])
         self.assertEqual(Nothing, outcome)
 
     def test_var_not_defined(self):
@@ -33,7 +33,7 @@ class TestInterpreter(TestCase):
 
     def test_code_dont_execute(self):
         glob, loc, outcome = interpret('_x = true; {_x = false};')
-        self.assertEqual(Boolean(True), loc.variables_values['_x'])
+        self.assertEqual(Boolean(True), loc['_x'])
         self.assertEqual(Nothing, outcome)
 
     def test_one_statement1(self):
@@ -41,12 +41,16 @@ class TestInterpreter(TestCase):
         glob, loc, outcome = interpret(test)
         self.assertEqual(Boolean(False), outcome)
 
+    def test_assign_to_statement(self):
+        with self.assertRaises(WrongTypes):
+            interpret('(_y) = 2;')
+
 
 class TestInterpretArray(TestCase):
 
     def test_assign(self):
         glob, loc, outcome = interpret('_x = [1, 2];')
-        self.assertEqual(Array([N(1), N(2)]), loc.variables_values['_x'])
+        self.assertEqual(Array([N(1), N(2)]), loc['_x'])
 
     def test_add(self):
         test = '_x = [1, 2]; _y = [3, 4]; _z = _x + _y'
@@ -57,7 +61,7 @@ class TestInterpretArray(TestCase):
     def test_append(self):
         _, local, outcome = interpret('_x = [1, 2]; _x append [3, 4]')
         self.assertEqual(Nothing, outcome)
-        self.assertEqual(Array([N(1), N(2), N(3), N(4)]), local.variables_values['_x'])
+        self.assertEqual(Array([N(1), N(2), N(3), N(4)]), local['_x'])
 
     def test_subtract(self):
         test = '_x = [1, 2, 3, 2, 4]; _y = [2, 3]; _z = _x - _y'
@@ -68,11 +72,11 @@ class TestInterpretArray(TestCase):
     def test_set(self):
         test = '_x = [1, 2]; _x set [0, 2];'
         _, local, _ = interpret(test)
-        self.assertEqual(Array([N(2), N(2)]), local.variables_values['_x'])
+        self.assertEqual(Array([N(2), N(2)]), local['_x'])
 
         test = '_x = [1, 2]; _x set [2, 3];'
         _, local, _ = interpret(test)
-        self.assertEqual(Array([N(1), N(2), N(3)]), local.variables_values['_x'])
+        self.assertEqual(Array([N(1), N(2), N(3)]), local['_x'])
 
     def test_in(self):
         _, _, outcome = interpret('2 in [1, 2]')
@@ -115,31 +119,31 @@ class TestInterpretArray(TestCase):
 
     def test_pushBack(self):
         _, loc, outcome = interpret('_x = [1]; _x pushBack 2')
-        self.assertEqual(Array([N(1), N(2)]), loc.variables_values['_x'])
+        self.assertEqual(Array([N(1), N(2)]), loc['_x'])
         self.assertEqual(N(1), outcome)
 
     def test_pushBackUnique(self):
         _, loc, outcome = interpret('_x = [1]; _x pushBackUnique 2')
-        self.assertEqual(Array([N(1), N(2)]), loc.variables_values['_x'])
+        self.assertEqual(Array([N(1), N(2)]), loc['_x'])
         self.assertEqual(N(1), outcome)
 
         _, loc, outcome = interpret('_x = [1, 2]; _x pushBackUnique 2')
-        self.assertEqual(Array([N(1), N(2)]), loc.variables_values['_x'])
+        self.assertEqual(Array([N(1), N(2)]), loc['_x'])
         self.assertEqual(N(-1), outcome)
 
     def test_reverse(self):
         _, local, outcome = interpret('_x = [1, 2]; reverse _x')
         self.assertEqual(Nothing, outcome)
-        self.assertEqual(Array([N(2), N(1)]), local.variables_values['_x'])
+        self.assertEqual(Array([N(2), N(1)]), local['_x'])
 
     def test_reference(self):
         # tests that changing _x affects _y when _y = _x.
         _, loc, _ = interpret('_x = [1, 2]; _y = _x; _x set [0, 2];')
-        self.assertEqual(Array([N(2), N(2)]), loc.variables_values['_x'])
-        self.assertEqual(Array([N(2), N(2)]), loc.variables_values['_y'])
+        self.assertEqual(Array([N(2), N(2)]), loc['_x'])
+        self.assertEqual(Array([N(2), N(2)]), loc['_y'])
 
         _, loc, _ = interpret('_x = [1, 2]; _y = _x; reverse _x;')
-        self.assertEqual(Array([N(2), N(1)]), loc.variables_values['_y'])
+        self.assertEqual(Array([N(2), N(1)]), loc['_y'])
 
 
 class TestInterpretString(TestCase):
@@ -147,7 +151,7 @@ class TestInterpretString(TestCase):
         test = '_x = "ABA";'
         glob, loc, outcome = interpret(test)
 
-        self.assertEqual(String('ABA'), loc.variables_values['_x'])
+        self.assertEqual(String('ABA'), loc['_x'])
 
     def test_add(self):
         test = '_x = "ABA"; _y = "BAB"; _x + _y'
@@ -163,29 +167,29 @@ class IfThen(TestCase):
     def test_then(self):
         _, loc, outcome = interpret('_x = 1; if (true) then {_x = 2}')
         self.assertEqual(N(2), outcome)
-        self.assertEqual(N(2), loc.variables_values['_x'])
+        self.assertEqual(N(2), loc['_x'])
 
         _, loc, outcome = interpret('_x = 1; if (false) then {_x = 2}')
         self.assertEqual(Nothing, outcome)
-        self.assertEqual(N(1), loc.variables_values['_x'])
+        self.assertEqual(N(1), loc['_x'])
 
     def test_then_array(self):
         _, loc, outcome = interpret('if (true) then [{_x = 2}, {_x = 3}]')
         self.assertEqual(N(2), outcome)
-        self.assertEqual(N(2), loc.variables_values['_x'])
+        self.assertEqual(N(2), loc['_x'])
 
         _, loc, outcome = interpret('if (false) then [{_x = 2}, {_x = 3}]')
         self.assertEqual(N(3), outcome)
-        self.assertEqual(N(3), loc.variables_values['_x'])
+        self.assertEqual(N(3), loc['_x'])
 
     def test_then_else(self):
         _, loc, outcome = interpret('if (true) then {_x = 2} else {_x = 3}')
         self.assertEqual(N(2), outcome)
-        self.assertEqual(N(2), loc.variables_values['_x'])
+        self.assertEqual(N(2), loc['_x'])
 
         _, loc, outcome = interpret('if (false) then {_x = 2} else {_x = 3}')
         self.assertEqual(N(3), outcome)
-        self.assertEqual(N(3), loc.variables_values['_x'])
+        self.assertEqual(N(3), loc['_x'])
 
     def test_exceptions(self):
         with self.assertRaises(IfThenSyntaxError):
@@ -193,3 +197,30 @@ class IfThen(TestCase):
 
         with self.assertRaises(WrongTypes):
             interpret('if (1) then {_x = 2} else {_x = 3}')
+
+
+class Scopes(TestCase):
+
+    def test_assign(self):
+        global_scope, local_scope, outcome = interpret('x = 2; _x = 1;')
+
+        self.assertEqual(N(1), local_scope.values['_x'])
+        self.assertEqual(N(2), global_scope.values['x'])
+
+    def test_one_scope(self):
+        _, local_scope, outcome = interpret('_x = 1;')
+        self.assertEqual(N(1), local_scope.values['_x'])
+
+        _, local_scope, outcome = interpret('_x = 1; if true then {_x}')
+        self.assertEqual(N(1), outcome)
+
+        _, local_scope, outcome = interpret('_x = 1; if (true) then {private "_x"; _x}')
+        self.assertEqual(Nothing, outcome)
+
+        _, local_scope, outcome = interpret('_x = 1; if (true) then {private "_x"; _x = 2}')
+        self.assertEqual(N(2), outcome)
+        self.assertEqual(N(1), local_scope['_x'])
+
+    def test_private_global_error(self):
+        with self.assertRaises(SyntaxError):
+            _, _, _ = interpret('private "x"')

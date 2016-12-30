@@ -73,22 +73,6 @@ def analise_tokens(tokens):
     else:
         statement = Statement([statement], ending=ending)
 
-    # if tokens[0] == IfToken:
-    #     if len(tokens) < 4 or \
-    #             not (isinstance(tokens[1], Statement) and tokens[1].parenthesis == '()') or \
-    #             tokens[2] != ThenToken:
-    #         raise IfThenSyntaxError('If construction syntactically incorrect.')
-    #
-    #     statement = IfThenStatement(tokens[1], tokens[3], parenthesis=parenthesis, ending=ending)
-    #     if len(tokens) >= 5 and tokens[4] == ElseToken:
-    #         if len(tokens) > 6:
-    #             raise IfThenSyntaxError('If construction syntactically incorrect.')
-    #
-    #         statement = IfThenStatement(tokens[1], tokens[3], _else=tokens[5], parenthesis=parenthesis,
-    #                                     ending=ending)
-    #     elif len(tokens) > 4:
-    #         raise IfThenSyntaxError('If construction syntactically incorrect.')
-
     return statement
 
 
@@ -138,7 +122,7 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
             if tokens:
                 statements.append(analise_tokens(tokens))
 
-            return Statement(statements, parenthesis='()'), i - start
+            return Statement(statements, parenthesis=True), i - start
         elif token == BracketClose:
             if block_lvl == 0:
                 raise UnbalancedParenthesisSyntaxError('Trying to close brackets without opened brackets.')

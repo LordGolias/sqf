@@ -1,5 +1,5 @@
 from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken
+    IfToken, ThenToken, ElseToken, PrivateToken
 from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
 from core.parser import parse
 from core.exceptions import WrongTypes, IfThenSyntaxError
@@ -7,29 +7,40 @@ from core.exceptions import WrongTypes, IfThenSyntaxError
 
 class Scope:
 
-    def __init__(self):
-        self.variables_values = {}
+    def __init__(self, values=None):
+        if values is None:
+            values = {}
+        self.values = values
+
+    def __contains__(self, other):
+        return other in self.values
+
+    def __getitem__(self, name):
+        if name in self.values:
+            return self.values[name]
+        else:
+            return Nothing
+
+    def __setitem__(self, item, value):
+        self.values[item] = value
+
+
+class Interpreter:
+
+    def __init__(self, global_vars=None, local_vars=None):
+        self.global_scope = Scope(global_vars)
+        self._stack = [Scope(local_vars)]  # the stack of scopes
 
     def value(self, token):
-        """
-        Returns the value of the token taking into account that
-        it may be a
-        """
         if isinstance(token, Variable):
-            if token.name in self.variables_values:
-                return self.variables_values[token.name]
-            else:
-                # undeclared variables return Nothing
-                return Nothing
+            scope = self.get_scope(token.name)
+            return scope[token.name]
         elif isinstance(token, (ConstantValue, Array, Code)):
             return token
         else:
             raise NotImplementedError(token)
 
-    def type(self, token):
-        return type(self.value(token))
-
-    def _interpret_token(self, token):
+    def execute_token(self, token):
         """
         Given a single token, recursively evaluate it and return its value.
         """
@@ -41,28 +52,75 @@ class Scope:
 
         return result, self.value(result)
 
-    def execute(self, statement):
-        outcome = Nothing
+    def get_scope(self, name):
+        if name.startswith('_'):
+            for i in reversed(range(1, len(self._stack))):
+                scope = self._stack[i]
+                if name in scope:
+                    return scope
+            return self._stack[0]
+        else:
+            return self.global_scope
 
+    def add_scope(self):
+        self._stack.append(Scope())
+
+    def del_scope(self):
+        del self._stack[-1]
+
+    @property
+    def current_scope(self):
+        return self._stack[-1]
+
+    def add_privates(self, private_names):
+        for name in private_names:
+            if name.startswith('_'):
+                self.current_scope[name] = Nothing
+            else:
+                raise SyntaxError('Cannot set variables without "_" as `private`')
+
+    def execute_code(self, code):
+        assert(isinstance(code, Code))
+        self.add_scope()
+        outcome = Nothing
+        for statement in code.tokens:
+            outcome = self.execute(statement)
+        self.del_scope()
+        return outcome
+
+    def execute(self, statement):
+        assert(not isinstance(statement, Code))
+
+        outcome = Nothing
         tokens = statement.tokens
-        if len(tokens) == 3 and isinstance(tokens[1], Operator):
+
+        if len(tokens) == 2 and tokens[0] == PrivateToken:
+            if isinstance(tokens[1], String):
+                self.add_privates([tokens[1].value])
+            elif isinstance(tokens[1], Array):
+                self.add_privates([s.value for s in tokens[1].value])
+            else:
+                raise WrongTypes()
+        elif len(tokens) == 3 and isinstance(tokens[1], Operator):
             # it is a binary statement: token, operation, token
             lhs = tokens[0]
             op = tokens[1]
             rhs = tokens[2]
 
             # a token has its type (lhs), its return value (lhs_v), and its type (lhs_t)
-            lhs, lhs_v = self._interpret_token(lhs)
+            lhs, lhs_v = self.execute_token(lhs)
             lhs_t = type(lhs_v)
-            rhs, rhs_v = self._interpret_token(rhs)
+            rhs, rhs_v = self.execute_token(rhs)
             rhs_t = type(rhs_v)
 
             if op == OPERATORS['=']:
-                assert(isinstance(lhs, Variable))
+                if not isinstance(lhs, Variable):
+                    raise WrongTypes()
 
-                rhs, rhs_v = self._interpret_token(rhs)
+                rhs, rhs_v = self.execute_token(rhs)
 
-                self.variables_values[lhs.name] = rhs_v
+                variable_scope = self.get_scope(lhs.name)
+                variable_scope[lhs.name] = rhs_v
                 outcome = rhs
             elif op in OP_COMPARISON:
 
@@ -84,9 +142,11 @@ class Scope:
                 if lhs_t == rhs_t == Array:
                     index = rhs_v.value[0].value
                     value = rhs_v.value[1]
+
+                    variable_scope = self.get_scope(lhs.name)
                     if index >= len(lhs_v.value):
-                        self.variables_values[lhs.name].extend(index)
-                    self.variables_values[lhs.name].set(index, value)
+                        variable_scope[lhs.name].extend(index)
+                    variable_scope[lhs.name].set(index, value)
                     outcome = Nothing
                 else:
                     raise WrongTypes('"set" requires two arrays')
@@ -145,7 +205,7 @@ class Scope:
             rhs = tokens[1]
 
             # a token has its type (lhs), its return value (lhs_v), and its type (lhs_t)
-            rhs, rhs_v = self._interpret_token(rhs)
+            rhs, rhs_v = self.execute_token(rhs)
             rhs_t = type(rhs_v)
 
             if op == OPERATORS['reverse']:
@@ -157,11 +217,11 @@ class Scope:
                     raise WrongTypes()
         elif len(tokens) == 1 and isinstance(tokens[0], Statement):
             outcome = self.execute(tokens[0])
-        elif len(tokens) == 1 and isinstance(tokens[0], (ConstantValue, Code)):
-            outcome = tokens[0]
-        elif len(tokens) >= 4 and tokens[0] == IfToken and isinstance(tokens[1], Statement) and \
-                tokens[1].parenthesis == '()' and tokens[2] == ThenToken:
-            condition_outcome = self.execute(tokens[1])
+        elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Variable)):
+            outcome = self.execute_token(tokens[0])[1]
+        elif len(tokens) >= 4 and tokens[0] == IfToken and (isinstance(tokens[1], Statement) and
+                tokens[1].parenthesis or isinstance(tokens[1], Boolean)) and tokens[2] == ThenToken:
+            condition_outcome = self.execute_token(tokens[1])[1]
             if isinstance(condition_outcome, Boolean):
                 if condition_outcome.value is True:
                     _then = True
@@ -172,18 +232,18 @@ class Scope:
 
             if len(tokens) == 4 and isinstance(tokens[3], Code):
                 if _then:
-                    outcome = self.execute(tokens[3])
+                    outcome = self.execute_code(tokens[3])
             elif len(tokens) == 4 and isinstance(tokens[3], Array) and \
                     len(tokens[3].value) == 2 and isinstance(tokens[3].value[0], Code) and isinstance(tokens[3].value[1], Code):
                 if _then:
-                    outcome = self.execute(tokens[3].value[0])
+                    outcome = self.execute_code(tokens[3].value[0])
                 else:
-                    outcome = self.execute(tokens[3].value[1])
+                    outcome = self.execute_code(tokens[3].value[1])
             elif len(tokens) == 6 and isinstance(tokens[3], Code) and tokens[4] == ElseToken and isinstance(tokens[5], Code):
                 if _then:
-                    outcome = self.execute(tokens[3])
+                    outcome = self.execute_code(tokens[3])
                 else:
-                    outcome = self.execute(tokens[5])
+                    outcome = self.execute_code(tokens[5])
             else:
                 raise IfThenSyntaxError()
         else:
@@ -197,10 +257,10 @@ class Scope:
 def interpret(script):
     statements = parse(script)
 
-    global_scope = Scope()
-    local_scope = Scope()
+    interpreter = Interpreter()
 
+    outcome = Nothing
     for statement in statements:
-        outcome = local_scope.execute(statement)
+        outcome = interpreter.execute(statement)
 
-    return global_scope, local_scope, outcome
+    return interpreter.global_scope, interpreter.current_scope, outcome

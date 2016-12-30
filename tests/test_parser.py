@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from core.parse_exp import parse_exp, partition
 from core.exceptions import SyntaxError, UnbalancedParenthesisSyntaxError
-from core.types import String, Statement, Code, Array, Nil, Comma, Boolean, Variable as V, Number as N
+from core.types import String, Statement, Code, Array, Nil, Comma, IfToken, ThenToken, PrivateToken, Boolean, Variable as V, Number as N
 from core.operators import OPERATORS as OP
 from core.parser import parse, parse_strings, tokenize
 
@@ -77,19 +77,19 @@ class ParseCode(TestCase):
     def test_not_delayed(self):
         result = parse('(_x = "AirS";)')
         expected = Statement([Statement([
-            Statement([V('_x'), OP['='], String('AirS')], ending=True)], parenthesis='()')])
+            Statement([V('_x'), OP['='], String('AirS')], ending=True)], parenthesis=True)])
         self.assertEqual(expected, result)
 
         result = parse('(_x = "AirS";);')
         expected = Statement([Statement([Statement([V('_x'), OP['='], String('AirS')], ending=True)],
-                                        parenthesis='()', ending=True)
+                                        parenthesis=True, ending=True)
                               ])
         self.assertEqual(expected, result)
 
     def test_assign(self):
         result = parse('_x = (_x == "AirS");')
         expected = Statement([Statement([V('_x'), OP['='],
-                              Statement([Statement([V('_x'), OP['=='], String('AirS')])], parenthesis='()')], ending=True)])
+                              Statement([Statement([V('_x'), OP['=='], String('AirS')])], parenthesis=True)], ending=True)])
         self.assertEqual(expected, result)
 
     def test_two_statements(self):
@@ -127,7 +127,7 @@ class ParseCode(TestCase):
         result = parse(test)
 
         s1 = Statement([V('_y'), OP['=='], N(2)])
-        expected = Statement([Statement([V('_x'), OP['='], Statement([s1], parenthesis='()')], ending=True)])
+        expected = Statement([Statement([V('_x'), OP['='], Statement([s1], parenthesis=True)], ending=True)])
 
         self.assertEqual(expected, result)
 
@@ -184,4 +184,13 @@ class ParseCode(TestCase):
         result = parse('_is1 = {_x == 1};')
         expected = Statement([Statement([V('_is1'), OP['='],
                                          Code([Statement([V('_x'), OP['=='], N(1)])])], ending=True)])
+        self.assertEqual(expected, result)
+
+    def test_if_then(self):
+        result = parse('if (true) then {private "_x"; _x}')
+        expected = Statement([Statement([IfToken, Statement([Statement([Boolean(True)])], parenthesis=True),
+                                         ThenToken, Code([
+                Statement([PrivateToken, String('_x')], ending=True),
+                Statement([V('_x')])])
+        ])])
         self.assertEqual(expected, result)

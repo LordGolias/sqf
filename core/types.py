@@ -138,10 +138,6 @@ class _Statement:
         return self._tokens
 
     @property
-    def parenthesis(self):
-        return self._parenthesis
-
-    @property
     def ending(self):
         return self._ending
 
@@ -159,8 +155,8 @@ class _Statement:
             else:
                 as_str += ' %s' % func(s)
 
-        if self.parenthesis is not None:
-            as_str = '%s%s%s' % (self.parenthesis[0], as_str, self.parenthesis[1])
+        if self._parenthesis is not None:
+            as_str = '%s%s%s' % (self._parenthesis[0], as_str, self._parenthesis[1])
         if self.ending:
             as_str += ';'
         return as_str
@@ -182,7 +178,16 @@ class _Statement:
 
 
 class Statement(_Statement):
-    pass
+    def __init__(self, tokens, parenthesis=False, ending=False):
+        if parenthesis:
+            parenthesis = '()'
+        else:
+            parenthesis = None
+        super().__init__(tokens, parenthesis, ending)
+
+    @property
+    def parenthesis(self):
+        return self._parenthesis == '()'
 
 
 class Code(_Statement, Type):
@@ -208,7 +213,7 @@ IfToken = ReservedToken('if')
 ThenToken = ReservedToken('then')
 ElseToken = ReservedToken('else')
 ForEach = ReservedToken('foreach')
-Private = ReservedToken('private')
+PrivateToken = ReservedToken('private')
 ParenthesisOpen = ReservedToken('(')
 ParenthesisClose = ReservedToken(')')
 RParenthesisOpen = ReservedToken('[')
@@ -220,7 +225,7 @@ EndOfStatement = ReservedToken(';')
 Nil = ReservedToken('nil')
 
 RESERVED = [IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
-            BracketOpen, BracketClose, Nil, Private, Comma, EndOfStatement]
+            BracketOpen, BracketClose, Nil, PrivateToken, Comma, EndOfStatement]
 
 
 RESERVED_MAPPING = dict()
