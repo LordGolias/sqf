@@ -27,9 +27,9 @@ class Scope:
 
 class Interpreter:
 
-    def __init__(self, global_vars=None, local_vars=None):
-        self.global_scope = Scope(global_vars)
-        self._stack = [Scope(local_vars)]  # the stack of scopes
+    def __init__(self, all_vars=None):
+        # the stack of scopes. The outermost also contains global variables
+        self._stack = [Scope(all_vars)]
 
     def value(self, token):
         if isinstance(token, Variable):
@@ -60,7 +60,7 @@ class Interpreter:
                     return scope
             return self._stack[0]
         else:
-            return self.global_scope
+            return self._stack[0]
 
     def add_scope(self):
         self._stack.append(Scope())
@@ -263,4 +263,4 @@ def interpret(script):
     for statement in statements:
         outcome = interpreter.execute(statement)
 
-    return interpreter.global_scope, interpreter.current_scope, outcome
+    return interpreter.current_scope, outcome
