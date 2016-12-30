@@ -206,10 +206,16 @@ class IfThen(TestCase):
             interpret('if (1) then {_x = 2} else {_x = 3}')
 
 
-class WhileDo(TestCase):
+class Loops(TestCase):
     def test_while(self):
         loc, outcome = interpret('_x = 0; while {_x != 10} do {_x = _x + 1};')
         self.assertEqual(N(10), loc['_x'])
+
+    def test_forspec(self):
+        loc, outcome = interpret('_y = 0; for [{_x = 1},{_x <= 10},{_x = _x + 1}] do {_y = _y + 2}')
+        self.assertEqual(N(20), loc['_y'])
+        self.assertEqual(N(11), loc['_x'])
+        self.assertEqual(N(20), outcome)
 
 
 class Scopes(TestCase):

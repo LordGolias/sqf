@@ -1,5 +1,5 @@
 from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken, PrivateToken, WhileToken, DoToken
+    IfToken, ThenToken, ElseToken, PrivateToken, WhileToken, DoToken, ForToken
 from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
 from core.parser import parse
 from core.exceptions import WrongTypes, IfThenSyntaxError
@@ -103,8 +103,6 @@ class Interpreter:
                 self.add_privates([tokens[1].value])
             elif isinstance(tokens[1], Array):
                 self.add_privates([s.value for s in tokens[1].value])
-            else:
-                raise WrongTypes()
         elif len(tokens) == 3 and isinstance(tokens[1], Operator):
             # it is a binary statement: token, operation, token
             lhs = tokens[0]
@@ -239,6 +237,7 @@ class Interpreter:
             outcome = self.execute(tokens[0])
         elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Variable)):
             outcome = self.execute_token(tokens[0])[1]
+        # if then else
         elif len(tokens) >= 4 and tokens[0] == IfToken and (isinstance(tokens[1], Statement) and
                 tokens[1].parenthesis or isinstance(tokens[1], Boolean)) and tokens[2] == ThenToken:
             condition_outcome = self.execute_token(tokens[1])[1]
@@ -266,15 +265,30 @@ class Interpreter:
                     outcome = self.execute_code(tokens[5])
             else:
                 raise IfThenSyntaxError()
+        # While loop
         elif len(tokens) == 4 and tokens[0] == WhileToken and isinstance(tokens[1], Code) and \
                 tokens[2] == DoToken and isinstance(tokens[3], Code):
-
             while True:
                 condition_outcome = self.execute_code(tokens[1])
                 if condition_outcome.value is False:
                     break
-                self.execute_code(tokens[3])
+                outcome = self.execute_code(tokens[3])
+        # for loop
+        elif len(tokens) == 4 and tokens[0] == ForToken and isinstance(tokens[1], Array) and \
+                tokens[2] == DoToken and isinstance(tokens[3], Code):
+            start = tokens[1].value[0]
+            stop = tokens[1].value[1]
+            do = tokens[3]
+            increment = tokens[1].value[2]
 
+            self.execute_code(start)
+            while True:
+                condition_outcome = self.execute_code(stop)
+                if condition_outcome.value is False:
+                    break
+
+                outcome = self.execute_code(do)
+                self.execute_code(increment)
         else:
             raise NotImplementedError('Interpretation of "%s" not implemented' % tokens)
 
