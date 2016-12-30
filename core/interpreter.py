@@ -1,6 +1,6 @@
 from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken
-from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON
+    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken
+from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON, OP_LOGICAL
 from core.parser import parse
 from core.exceptions import WrongTypes, IfThenSyntaxError
 
@@ -81,11 +81,14 @@ class Interpreter:
             else:
                 raise SyntaxError('Cannot set variables without "_" as `private`')
 
-    def execute_code(self, code, params=None):
+    def execute_code(self, code, params=None, extra_scope=None):
+        assert (isinstance(code, Code))
         if params is None:
             params = Array([])
-        assert(isinstance(code, Code))
-        self.add_scope({'_this': params})
+        if extra_scope is None:
+            extra_scope = {}
+        extra_scope['_this'] = params
+        self.add_scope(extra_scope)
         outcome = Nothing
         for statement in code.tokens:
             outcome = self.execute(statement)
@@ -145,6 +148,11 @@ class Interpreter:
                     outcome = lhs_t(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
                 else:
                     raise WrongTypes('Can only use arithmetic operators on numbers')
+            elif op in OP_LOGICAL:
+                if lhs_t == rhs_t == Boolean:
+                    outcome = Boolean(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
+                else:
+                    raise WrongTypes('Logical operators require booleans')
             elif op == OPERATORS['set']:
                 # https://community.bistudio.com/wiki/set
                 if lhs_t == rhs_t == Array:
@@ -279,7 +287,8 @@ class Interpreter:
                 if condition_outcome.value is False:
                     break
                 outcome = self.execute_code(tokens[3])
-        # for loop
+        # forspecs loop
+        # [R<for>, s<"_i">, V<from>, N1, V<to>, N10, R<do>, {S<V<y> O<=> V<_i>;>}]
         elif len(tokens) == 4 and tokens[0] == ForToken and isinstance(tokens[1], Array) and \
                 tokens[2] == DoToken and isinstance(tokens[3], Code):
             start = tokens[1].value[0]
@@ -295,6 +304,29 @@ class Interpreter:
 
                 outcome = self.execute_code(do)
                 self.execute_code(increment)
+        # forvar loop
+        # [R<for>, s<"_i">, R<from>, N1, R<to>, N10, R<do>, {S<V<y> O<=> V<_i>;>}]
+        elif len(tokens) >= 8 and \
+                tokens[0] == ForToken and \
+                isinstance(tokens[1], String) and \
+                tokens[2] == FromToken and \
+                isinstance(tokens[3], Number) and \
+                tokens[4] == ToToken and \
+                isinstance(tokens[5], Number) and \
+                tokens[-2] == DoToken and isinstance(tokens[-1], Code):
+            if len(tokens) == 8:
+                step = 1
+            elif len(tokens) == 10 and tokens[6] == StepToken and isinstance(tokens[7], Number):
+                step = tokens[7].value
+            else:
+                raise SyntaxError()
+
+            start = tokens[3].value
+            stop = tokens[5].value
+            code = tokens[-1]
+
+            for i in range(start, stop + 1, step):
+                outcome = self.execute_code(code, extra_scope={tokens[1].value: Number(i)})
         else:
             raise NotImplementedError('Interpretation of "%s" not implemented' % tokens)
 

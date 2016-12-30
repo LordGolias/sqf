@@ -225,6 +225,42 @@ class Loops(TestCase):
         self.assertEqual(N(11), loc['_x'])
         self.assertEqual(N(20), outcome)
 
+    def test_forspec_exit_with_bool(self):
+        test = 'a = 0; b = true; for [{_i = 0},{_i < 10 && b},{_i = _i + 1}] do {a = a + 1; if (a >= 7) then {b = false}}'
+        loc, outcome = interpret(test)
+        self.assertEqual(Boolean(False), outcome)
+        self.assertEqual(N(7), loc['a'])
+
+    def test_for_var(self):
+        test = 'y = []; for "_i" from 1 to 10 do {y pushBack _i;};'
+        loc, outcome = interpret(test)
+        self.assertEqual(Array([N(i) for i in range(1, 11)]), loc['y'])
+
+        test = 'y = []; for "_i" from 1 to 10 step 2 do {y pushBack _i;};'
+        loc, outcome = interpret(test)
+        self.assertEqual(Array([N(1), N(3), N(5), N(7), N(9)]), loc['y'])
+
+    def test_forvar_edges(self):
+        # see comments on https://community.bistudio.com/wiki/for_var
+
+        # start = end => runs once
+        test = 'y = -10; for "_i" from 0 to 0 do {y = _i;};'
+        loc, _ = interpret(test)
+        self.assertEqual(N(0), loc['y'])
+
+        # start < end => never runs
+        loc, _ = interpret('y = -10; for "_i" from 0 to -1 do {y = _i;};')
+        self.assertEqual(N(-10), loc['y'])
+
+        # do not overwrite globals
+        loc, _ = interpret('for "x" from 0 to 0 do {};')
+        self.assertEqual(Nothing, loc['x'])
+
+        # nested
+        test = '_array = []; for "_i" from 0 to 1 do {for "_i" from 0 to 1 do {_array pushBack _i;}; _array pushBack _i;};'
+        loc, _ = interpret(test)
+        self.assertEqual(Array([N(0), N(1), N(0), N(0), N(1), N(1)]), loc['_array'])
+
 
 class Scopes(TestCase):
 

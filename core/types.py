@@ -214,6 +214,9 @@ WhileToken = ReservedToken('while')
 ForToken = ReservedToken('for')
 DoToken = ReservedToken('do')
 ThenToken = ReservedToken('then')
+ToToken = ReservedToken('to')
+FromToken = ReservedToken('from')
+StepToken = ReservedToken('step')
 ElseToken = ReservedToken('else')
 ForEach = ReservedToken('foreach')
 ParenthesisOpen = ReservedToken('(')
@@ -227,7 +230,7 @@ EndOfStatement = ReservedToken(';')
 Nil = ReservedToken('nil')
 
 RESERVED = [IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
-            BracketOpen, BracketClose, Nil, WhileToken, DoToken, ForToken, Comma, EndOfStatement]
+            BracketOpen, BracketClose, Nil, WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken, Comma, EndOfStatement]
 
 
 RESERVED_MAPPING = dict()
