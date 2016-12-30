@@ -229,3 +229,8 @@ class Scopes(TestCase):
     def test_private_global_error(self):
         with self.assertRaises(SyntaxError):
             interpret('private "x"')
+
+    def test_function(self):
+        scope, outcome = interpret('_max = {(_this select 0) max (_this select 1)};'
+                                   '_maxValue = [3,5] call _max;')
+        self.assertEqual(N(5), scope['_maxValue'])

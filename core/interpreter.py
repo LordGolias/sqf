@@ -62,8 +62,10 @@ class Interpreter:
         else:
             return self._stack[0]
 
-    def add_scope(self):
-        self._stack.append(Scope())
+    def add_scope(self, vars=None):
+        if vars is None:
+            vars = {}
+        self._stack.append(Scope(vars))
 
     def del_scope(self):
         del self._stack[-1]
@@ -79,9 +81,11 @@ class Interpreter:
             else:
                 raise SyntaxError('Cannot set variables without "_" as `private`')
 
-    def execute_code(self, code):
+    def execute_code(self, code, params=None):
+        if params is None:
+            params = Array([])
         assert(isinstance(code, Code))
-        self.add_scope()
+        self.add_scope({'_this': params})
         outcome = Nothing
         for statement in code.tokens:
             outcome = self.execute(statement)
@@ -94,6 +98,7 @@ class Interpreter:
         outcome = Nothing
         tokens = statement.tokens
 
+        print(tokens)
         if len(tokens) == 2 and tokens[0] == PrivateToken:
             if isinstance(tokens[1], String):
                 self.add_privates([tokens[1].value])
@@ -200,6 +205,12 @@ class Interpreter:
                     outcome = Nothing
                 else:
                     raise WrongTypes()
+            elif op == OPERATORS['call']:
+                if not isinstance(lhs_v, Array) or not isinstance(rhs_v, Code):
+                    raise WrongTypes()
+                outcome = self.execute_code(rhs_v, params=lhs_v)
+            else:
+                raise NotImplementedError([lhs, op, rhs])
         elif len(tokens) == 2 and isinstance(tokens[0], Operator):
             op = tokens[0]
             rhs = tokens[1]
@@ -215,6 +226,12 @@ class Interpreter:
                     outcome = Nothing
                 else:
                     raise WrongTypes()
+            elif op == OPERATORS['call']:
+                if not isinstance(tokens[1], Code):
+                    raise WrongTypes()
+                outcome = self.execute_code(tokens[1])
+            else:
+                raise NotImplementedError
         elif len(tokens) == 1 and isinstance(tokens[0], Statement):
             outcome = self.execute(tokens[0])
         elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Variable)):

@@ -32,6 +32,7 @@ OPERATORS = {
     '%': BinaryOperator,
     'mod': BinaryOperator,
     '^': BinaryOperator,
+    'max': BinaryOperator,
 
     'setvariable': BinaryOperator,
     'getvariable': BinaryOperator,
@@ -44,6 +45,8 @@ OPERATORS = {
     'pushBack': BinaryOperator,
     'pushBackUnique': BinaryOperator,
     'reverse': UnaryOperator,
+
+    'call': BinaryOperator,
 
     'spawn': BinaryOperator,
     'SPAWN': BinaryOperator,
@@ -78,7 +81,7 @@ for s in OPERATORS:
 # operators by precedence
 ORDERED_OPERATORS = [OPERATORS[s] for s in ('=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getvariable')]
 
-OP_ARITHMETIC = {OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^')}
+OP_ARITHMETIC = {OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max')}
 
 OP_LOGICAL = {OPERATORS[s] for s in ('&&', 'and', '||', 'or')}
 
@@ -104,6 +107,8 @@ OP_OPERATIONS = {
     OPERATORS['and']: lambda x, y: x and y,
     OPERATORS['||']: lambda x, y: x or y,
     OPERATORS['or']: lambda x, y: x or y,
+
+    OPERATORS['max']: lambda x, y: max(x, y),
 }
 
 
