@@ -92,13 +92,6 @@ class ParseCode(TestCase):
                               Statement([Statement([V('_x'), OP['=='], String('AirS')])], parenthesis='()')], ending=True)])
         self.assertEqual(expected, result)
 
-    def test_one(self):
-        test = "_x setvariable 2;"
-        result = parse(test)
-        expected = Statement([Statement([V('_x'), OP['setvariable'], N(2)], ending=True)])
-
-        self.assertEqual(expected, result)
-
     def test_two_statements(self):
         result = parse('_x = true; _x = false')
         expected = Statement([Statement([V('_x'), OP['='], Boolean(True)], ending=True),
@@ -186,3 +179,9 @@ class ParseCode(TestCase):
 
         with self.assertRaises(SyntaxError):
             Array([String('AirS'), Comma, Nil])
+
+    def test_code(self):
+        result = parse('_is1 = {_x == 1};')
+        expected = Statement([Statement([V('_is1'), OP['='],
+                                         Code([Statement([V('_x'), OP['=='], N(1)])])], ending=True)])
+        self.assertEqual(expected, result)

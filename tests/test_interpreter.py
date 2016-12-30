@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from core.exceptions import WrongTypes
+from core.exceptions import WrongTypes, IfThenSyntaxError
 from core.types import String, Array, Boolean, Nothing, Number as N
 from core.interpreter import interpret
 
@@ -157,3 +157,39 @@ class TestInterpretString(TestCase):
     def test_find(self):
         _, _, outcome = interpret('"Hello world!" find "world!"')
         self.assertEqual(N(6), outcome)
+
+
+class IfThen(TestCase):
+    def test_then(self):
+        _, loc, outcome = interpret('_x = 1; if (true) then {_x = 2}')
+        self.assertEqual(N(2), outcome)
+        self.assertEqual(N(2), loc.variables_values['_x'])
+
+        _, loc, outcome = interpret('_x = 1; if (false) then {_x = 2}')
+        self.assertEqual(Nothing, outcome)
+        self.assertEqual(N(1), loc.variables_values['_x'])
+
+    def test_then_array(self):
+        _, loc, outcome = interpret('if (true) then [{_x = 2}, {_x = 3}]')
+        self.assertEqual(N(2), outcome)
+        self.assertEqual(N(2), loc.variables_values['_x'])
+
+        _, loc, outcome = interpret('if (false) then [{_x = 2}, {_x = 3}]')
+        self.assertEqual(N(3), outcome)
+        self.assertEqual(N(3), loc.variables_values['_x'])
+
+    def test_then_else(self):
+        _, loc, outcome = interpret('if (true) then {_x = 2} else {_x = 3}')
+        self.assertEqual(N(2), outcome)
+        self.assertEqual(N(2), loc.variables_values['_x'])
+
+        _, loc, outcome = interpret('if (false) then {_x = 2} else {_x = 3}')
+        self.assertEqual(N(3), outcome)
+        self.assertEqual(N(3), loc.variables_values['_x'])
+
+    def test_exceptions(self):
+        with self.assertRaises(IfThenSyntaxError):
+            interpret('if (false) then (_x = 2) else {_x = 3}')
+
+        with self.assertRaises(WrongTypes):
+            interpret('if (1) then {_x = 2} else {_x = 3}')

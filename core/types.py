@@ -123,7 +123,7 @@ class Variable(Type):
         return 'V<%s>' % self
 
 
-class _Statement(Type):
+class _Statement:
     def __init__(self, tokens, parenthesis=None, ending=False):
         assert (isinstance(tokens, list))
         for s in tokens:
@@ -171,14 +171,26 @@ class _Statement(Type):
     def __repr__(self):
         return 'S<%s>' % self._as_str(repr)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Statement(_Statement):
     pass
 
 
-class Code(_Statement):
+class Code(_Statement, Type):
     def __init__(self, tokens):
         super().__init__(tokens, parenthesis='{}')
+
+    def __repr__(self):
+        return '%s' % self._as_str(repr)
 
 
 class ReservedToken:
