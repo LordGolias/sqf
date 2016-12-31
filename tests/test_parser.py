@@ -1,10 +1,10 @@
 from unittest import TestCase
 
-from core.parse_exp import parse_exp, partition
-from core.exceptions import SyntaxError, UnbalancedParenthesisSyntaxError
-from core.types import String, Statement, Code, Array, Nil, Comma, IfToken, ThenToken, Boolean, Variable as V, Number as N
-from core.operators import OPERATORS as OP
-from core.parser import parse, parse_strings, tokenize
+from arma3.parse_exp import parse_exp, partition
+from arma3.exceptions import SyntaxError, UnbalancedParenthesisSyntaxError
+from arma3.types import String, Statement, Code, Array, Nil, Comma, IfToken, ThenToken, Boolean, Variable as V, Number as N
+from arma3.operators import OPERATORS as OP
+from arma3.parser import parse, parse_strings, tokenize
 
 
 class TestExpParser(TestCase):

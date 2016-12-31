@@ -1,4 +1,4 @@
-from core.types import Type, Array
+from arma3.types import Type, Array
 
 
 class Object(Type):

@@ -1,5 +1,5 @@
-from core.exceptions import SyntaxError
-from core.operators import Operator
+from arma3.exceptions import SyntaxError
+from arma3.operators import Operator
 
 
 class Type:

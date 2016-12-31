@@ -1,11 +1,11 @@
-from core.base_tokenizer import tokenize
+from arma3.base_tokenizer import tokenize
 
-from core.exceptions import UnbalancedParenthesisSyntaxError, SyntaxError
-from core.types import Statement, Code, Number, Boolean, Variable, Array, String, RESERVED_MAPPING, \
+from arma3.exceptions import UnbalancedParenthesisSyntaxError, SyntaxError
+from arma3.types import Statement, Code, Number, Boolean, Variable, Array, String, RESERVED_MAPPING, \
     RParenthesisOpen, RParenthesisClose, ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, \
     Comma
-from core.operators import OPERATORS, ORDERED_OPERATORS
-from core.parse_exp import parse_exp
+from arma3.operators import OPERATORS, ORDERED_OPERATORS
+from arma3.parse_exp import parse_exp
 
 
 def identify_token(token):

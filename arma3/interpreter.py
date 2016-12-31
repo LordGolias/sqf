@@ -1,9 +1,9 @@
-from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
+from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
     IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken
-from core.object import Marker
-from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON, OP_LOGICAL
-from core.parser import parse
-from core.exceptions import WrongTypes, IfThenSyntaxError, ExecutionError
+from arma3.object import Marker
+from arma3.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON, OP_LOGICAL
+from arma3.parser import parse
+from arma3.exceptions import WrongTypes, IfThenSyntaxError, ExecutionError
 
 
 class Scope:

@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from core.exceptions import WrongTypes, IfThenSyntaxError
-from core.types import String, Number, Array, Boolean, Nothing, Number as N
-from core.interpreter import interpret
+from arma3.exceptions import WrongTypes, IfThenSyntaxError
+from arma3.types import String, Number, Array, Boolean, Nothing, Number as N
+from arma3.interpreter import interpret
 
 
 class TestInterpreter(TestCase):

@@ -1,4 +1,4 @@
-from core.tokenizer_source.tokenize import tokenize as raw_tokenize
+from arma3.tokenizer_source.tokenize import tokenize as raw_tokenize
 
 
 def tokenize(statement):
