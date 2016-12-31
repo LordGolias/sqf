@@ -24,3 +24,7 @@ class VariableNotDefined(InterpreterError):
 
 class WrongTypes(InterpreterError):
     pass
+
+
+class ExecutionError(InterpreterError):
+    pass

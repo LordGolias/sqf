@@ -77,6 +77,8 @@ OPERATORS = {
     'units': UnaryOperator,
     'count': BinaryOperator,
     'alive': UnaryOperator,
+
+    'createMarker': UnaryOperator,
     'getmarkerpos': UnaryOperator,
 }
 

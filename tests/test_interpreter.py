@@ -301,3 +301,11 @@ class Scopes(TestCase):
         scope, outcome = interpret('_max = {(_this select 0) max (_this select 1)};'
                                    '_maxValue = [3,5] call _max;')
         self.assertEqual(N(5), scope['_maxValue'])
+
+
+class Markers(TestCase):
+    def test_create(self):
+        local_scope, outcome = interpret('_marker = createMarker ["m1", [1, 1, 1]];')
+
+        self.assertEqual(String('m1'), local_scope['_marker'])
+        self.assertTrue('m1' in local_scope.markers)

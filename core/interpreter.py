@@ -1,8 +1,9 @@
 from core.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
     IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken
+from core.object import Marker
 from core.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON, OP_LOGICAL
 from core.parser import parse
-from core.exceptions import WrongTypes, IfThenSyntaxError
+from core.exceptions import WrongTypes, IfThenSyntaxError, ExecutionError
 
 
 class Scope:
@@ -30,6 +31,26 @@ class Interpreter:
     def __init__(self, all_vars=None):
         # the stack of scopes. The outermost also contains global variables
         self._stack = [Scope(all_vars)]
+
+        self._markers = {}
+
+    @property
+    def current_scope(self):
+        return self._stack[-1]
+
+    @property
+    def values(self):
+        return self.current_scope.values
+
+    def __getitem__(self, name):
+        return self.current_scope[name]
+
+    def __contains__(self, other):
+        return other in self.values
+
+    @property
+    def markers(self):
+        return self._markers
 
     def value(self, token):
         if isinstance(token, Variable):
@@ -70,10 +91,6 @@ class Interpreter:
     def del_scope(self):
         del self._stack[-1]
 
-    @property
-    def current_scope(self):
-        return self._stack[-1]
-
     def add_privates(self, private_names):
         for name in private_names:
             if name.startswith('_'):
@@ -112,6 +129,7 @@ class Interpreter:
                 outcome = self.execute(tokens[1])
             else:
                 raise SyntaxError()
+        # binary operators
         elif len(tokens) == 3 and isinstance(tokens[1], Operator):
             # it is a binary statement: token, operation, token
             lhs = tokens[0]
@@ -222,6 +240,7 @@ class Interpreter:
                 outcome = self.execute_code(rhs_v, params=lhs_v)
             else:
                 raise NotImplementedError([lhs, op, rhs])
+        # unary operators
         elif len(tokens) == 2 and isinstance(tokens[0], Operator):
             op = tokens[0]
             rhs = tokens[1]
@@ -242,13 +261,26 @@ class Interpreter:
                 else:
                     raise WrongTypes()
             elif op == OPERATORS['call']:
-                if not isinstance(tokens[1], Code):
+                if not isinstance(rhs, Code):
                     raise WrongTypes()
-                outcome = self.execute_code(tokens[1])
+                outcome = self.execute_code(rhs)
+            elif op == OPERATORS['createMarker']:
+                if not rhs_t == Array:
+                    raise WrongTypes()
+                name = rhs_v.value[0].value
+                if name in self._markers:
+                    raise ExecutionError('Marker "%s" already exists' % name)
+                pos = rhs_v.value[1]
+                if not isinstance(pos, Array):
+                    raise WrongTypes('Second argument of "createMarker" must be a position')
+                self._markers[name] = Marker(pos)
+                outcome = rhs_v.value[0]
             else:
                 raise NotImplementedError
+        # statement
         elif len(tokens) == 1 and isinstance(tokens[0], Statement):
             outcome = self.execute(tokens[0])
+        # code, variables and values
         elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Variable)):
             outcome = self.execute_token(tokens[0])[1]
         # if then else
@@ -342,4 +374,4 @@ def interpret(script):
     for statement in statements:
         outcome = interpreter.execute(statement)
 
-    return interpreter.current_scope, outcome
+    return interpreter, outcome
