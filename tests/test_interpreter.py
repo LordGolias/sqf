@@ -302,6 +302,29 @@ class Scopes(TestCase):
                                    '_maxValue = [3,5] call _max;')
         self.assertEqual(N(5), scope['_maxValue'])
 
+    def test_global(self):
+        interpreter, _ = interpret('x = 1; if (true) then {x = 2;}')
+        self.assertEqual(N(2), interpreter['x'])
+
+
+class Namespaces(TestCase):
+
+    def test_setvariable(self):
+        interpreter, outcome = interpret('missionNamespace setVariable ["_x", 2];')
+
+        self.assertEqual(N(2), interpreter.namespaces['missionNamespace'].current_scope['_x'])
+
+        interpreter, outcome = interpret('uiNamespace setVariable ["_x", 2];')
+        self.assertEqual(N(2), interpreter.namespaces['uiNamespace'].current_scope['_x'])
+        self.assertEqual(Nothing, interpreter.namespaces['missionNamespace'].current_scope['_x'])
+        self.assertEqual(Nothing, interpreter.values['_x'])
+
+    def test_getvariable(self):
+        interpreter, outcome = interpret('uiNamespace setVariable ["_x", 2]; uiNamespace getVariable "_x"')
+        self.assertEqual(N(2), outcome)
+
+        interpreter, outcome = interpret('uiNamespace getVariable ["_x", 2]')
+        self.assertEqual(N(2), outcome)
 
 class Markers(TestCase):
     def test_create(self):

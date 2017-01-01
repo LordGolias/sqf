@@ -202,6 +202,19 @@ class ReservedToken:
     def __init__(self, token):
         self._token = token
 
+    @property
+    def value(self):
+        return self._token
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._token == other._token
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __str__(self):
         return self._token
 
@@ -229,8 +242,13 @@ Comma = ReservedToken(',')
 EndOfStatement = ReservedToken(';')
 Nil = ReservedToken('nil')
 
+
+NAMESPACES = [ReservedToken('missionNamespace'), ReservedToken('profileNamespace'), ReservedToken('uiNamespace'),
+              ReservedToken('parsingNamespace')]
+
 RESERVED = [IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
-            BracketOpen, BracketClose, Nil, WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken, Comma, EndOfStatement]
+            BracketOpen, BracketClose, Nil, WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken, Comma, EndOfStatement,
+            ] + NAMESPACES
 
 
 RESERVED_MAPPING = dict()

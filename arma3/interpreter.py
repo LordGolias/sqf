@@ -1,46 +1,40 @@
 from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken
+    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken, ReservedToken, \
+    NAMESPACES
 from arma3.object import Marker
 from arma3.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON, OP_LOGICAL
 from arma3.parser import parse
 from arma3.exceptions import WrongTypes, IfThenSyntaxError, ExecutionError
-
-
-class Scope:
-
-    def __init__(self, values=None):
-        if values is None:
-            values = {}
-        self.values = values
-
-    def __contains__(self, other):
-        return other in self.values
-
-    def __getitem__(self, name):
-        if name in self.values:
-            return self.values[name]
-        else:
-            return Nothing
-
-    def __setitem__(self, item, value):
-        self.values[item] = value
+from arma3.namespace import Namespace
 
 
 class Interpreter:
 
     def __init__(self, all_vars=None):
         # the stack of scopes. The outermost also contains global variables
-        self._stack = [Scope(all_vars)]
+        self._namespaces = {
+            'uiNamespace': Namespace(),
+            'parsingNamespace': Namespace(),
+            'missionNamespace': Namespace(all_vars),
+            'profileNamespace': Namespace()
+        }
+
+        self._current_namespace = self._namespaces['missionNamespace']
+        # self._stack = [Scope(all_vars)]
 
         self._markers = {}
 
     @property
+    def namespaces(self):
+        return self._namespaces
+
+    @property
     def current_scope(self):
-        return self._stack[-1]
+        return self._current_namespace.current_scope
 
     @property
     def values(self):
-        return self.current_scope.values
+        return self.current_scope
 
     def __getitem__(self, name):
         return self.current_scope[name]
@@ -52,11 +46,11 @@ class Interpreter:
     def markers(self):
         return self._markers
 
-    def value(self, token):
+    def value(self, token, namespace_name=None):
         if isinstance(token, Variable):
-            scope = self.get_scope(token.name)
+            scope = self.get_scope(token.name, namespace_name)
             return scope[token.name]
-        elif isinstance(token, (ConstantValue, Array, Code)):
+        elif isinstance(token, (ConstantValue, Array, Code, ReservedToken)):
             return token
         else:
             raise NotImplementedError(token)
@@ -73,23 +67,18 @@ class Interpreter:
 
         return result, self.value(result)
 
-    def get_scope(self, name):
-        if name.startswith('_'):
-            for i in reversed(range(1, len(self._stack))):
-                scope = self._stack[i]
-                if name in scope:
-                    return scope
-            return self._stack[0]
+    def get_scope(self, name, namespace_name=None):
+        if namespace_name is None:
+            namespace = self._current_namespace
         else:
-            return self._stack[0]
+            namespace = self._namespaces[namespace_name]
+        return namespace.get_scope(name)
 
     def add_scope(self, vars=None):
-        if vars is None:
-            vars = {}
-        self._stack.append(Scope(vars))
+        self._current_namespace.add_scope(vars)
 
     def del_scope(self):
-        del self._stack[-1]
+        self._current_namespace.del_scope()
 
     def add_privates(self, private_names):
         for name in private_names:
@@ -145,8 +134,6 @@ class Interpreter:
             if op == OPERATORS['=']:
                 if not isinstance(lhs, Variable):
                     raise WrongTypes()
-
-                rhs, rhs_v = self.execute_token(rhs)
 
                 variable_scope = self.get_scope(lhs.name)
                 variable_scope[lhs.name] = rhs_v
@@ -238,6 +225,37 @@ class Interpreter:
                 if not isinstance(lhs_v, Array) or not isinstance(rhs_v, Code):
                     raise WrongTypes()
                 outcome = self.execute_code(rhs_v, params=lhs_v)
+            elif op == OPERATORS['setVariable'] and lhs_v in NAMESPACES:
+                if rhs_t == Array and len(rhs_v.value) == 2:
+                    namespace_name = lhs_v.value
+
+                    # get the variable name
+                    variable_name = rhs_v.value[0].value
+                    # get the value
+                    rhs_assignment = self.execute_token(rhs_v.value[1])[1]
+
+                    variable_scope = self.get_scope(variable_name, namespace_name)
+                    variable_scope[variable_name] = rhs_assignment
+                    outcome = Nothing
+                else:
+                    raise WrongTypes()
+            elif op == OPERATORS['getVariable'] and lhs_v in NAMESPACES:
+                if rhs_t == String:
+                    namespace_name = lhs_v.value
+
+                    variable_name = rhs_v.value
+                    outcome = self.value(Variable(variable_name), namespace_name)
+                elif rhs_t == Array:
+                    namespace_name = lhs_v.value
+
+                    # get the variable name
+                    variable_name = rhs_v.value[0].value
+                    outcome = self.value(Variable(variable_name), namespace_name)
+                    if outcome == Nothing:
+                        # get the default value
+                        outcome = rhs_v.value[1]
+                else:
+                    raise SyntaxError()
             else:
                 raise NotImplementedError([lhs, op, rhs])
         # unary operators

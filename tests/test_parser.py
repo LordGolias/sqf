@@ -107,18 +107,18 @@ class ParseCode(TestCase):
         self.assertEqual(expected, result)
 
     def test_two(self):
-        result = parse('_x setvariable 2; _y setvariable 3;')
-        expected = Statement([Statement([V('_x'), OP['setvariable'], N(2)], ending=True),
-                         Statement([V('_y'), OP['setvariable'], N(3)], ending=True)])
+        result = parse('_x setVariable 2; _y setVariable 3;')
+        expected = Statement([Statement([V('_x'), OP['setVariable'], N(2)], ending=True),
+                         Statement([V('_y'), OP['setVariable'], N(3)], ending=True)])
 
         self.assertEqual(expected, result)
 
     def test_two_bracketed(self):
-        result = parse('{_x setvariable 2; _y setvariable 3;};')
+        result = parse('{_x setVariable 2; _y setVariable 3;};')
 
         expected = Statement([Statement([Code([
-            Statement([V('_x'), OP['setvariable'], N(2)], ending=True),
-            Statement([V('_y'), OP['setvariable'], N(3)], ending=True)])], ending=True)])
+            Statement([V('_x'), OP['setVariable'], N(2)], ending=True),
+            Statement([V('_y'), OP['setVariable'], N(3)], ending=True)])], ending=True)])
 
         self.assertEqual(expected, result)
 
@@ -158,10 +158,10 @@ class ParseCode(TestCase):
         self.assertEqual(expected, result)
 
     def test_analyse_expression2(self):
-        test = 'isNil{_x getvariable "AirS"}'
+        test = 'isNil{_x getVariable "AirS"}'
         result = parse(test)
         expected = Statement([Statement([OP['isNil'],
-                                         Code([Statement([V('_x'), OP['getvariable'], String('AirS')])])
+                                         Code([Statement([V('_x'), OP['getVariable'], String('AirS')])])
                                          ])
                               ])
         self.assertEqual(expected, result)

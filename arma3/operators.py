@@ -40,8 +40,8 @@ OPERATORS = {
 
     'floor': UnaryOperator,
 
-    'setvariable': BinaryOperator,
-    'getvariable': BinaryOperator,
+    'setVariable': BinaryOperator,
+    'getVariable': BinaryOperator,
 
     'set': BinaryOperator,
     'in': BinaryOperator,
@@ -87,7 +87,7 @@ for s in OPERATORS:
     OPERATORS[s] = OPERATORS[s](s)
 
 # operators by precedence
-ORDERED_OPERATORS = [OPERATORS[s] for s in ('private', '=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getvariable')]
+ORDERED_OPERATORS = [OPERATORS[s] for s in ('private', '=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getVariable')]
 
 OP_ARITHMETIC = {OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')}
 
