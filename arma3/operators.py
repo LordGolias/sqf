@@ -80,6 +80,11 @@ OPERATORS = {
 
     'createMarker': UnaryOperator,
     'getmarkerpos': UnaryOperator,
+
+    'publicVariable': UnaryOperator,
+    'publicVariableServer': UnaryOperator,
+    'publicVariableClient': BinaryOperator,
+    'addPublicVariableEventHandler': BinaryOperator,
 }
 
 

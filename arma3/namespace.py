@@ -29,6 +29,10 @@ class Namespace:
     def current_scope(self):
         return self._stack[-1]
 
+    @property
+    def base_scope(self):
+        return self._stack[0]
+
     def get_scope(self, name):
         if name.startswith('_'):
             for i in reversed(range(1, len(self._stack))):
@@ -39,10 +43,8 @@ class Namespace:
         else:
             return self._stack[0]
 
-    def add_scope(self, vars=None):
-        if vars is None:
-            vars = {}
-        self._stack.append(Scope(vars))
+    def add_scope(self, values=None):
+        self._stack.append(Scope(values))
 
     def del_scope(self):
         del self._stack[-1]

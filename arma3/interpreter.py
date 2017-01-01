@@ -1,6 +1,6 @@
 from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
     IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken, ReservedToken, \
-    NAMESPACES
+    NAMESPACES, Type
 from arma3.object import Marker
 from arma3.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON, OP_LOGICAL
 from arma3.parser import parse
@@ -23,6 +23,13 @@ class Interpreter:
         # self._stack = [Scope(all_vars)]
 
         self._markers = {}
+
+        self.simulation = None
+        self.client = None
+
+    def set_global_variable(self, var_name, value):
+        assert(isinstance(value, Type))
+        self._namespaces['missionNamespace'].base_scope[var_name] = value
 
     @property
     def namespaces(self):
@@ -107,7 +114,27 @@ class Interpreter:
         outcome = Nothing
         tokens = statement.tokens
 
-        if len(tokens) == 2 and tokens[0] == OPERATORS['private']:
+        if len(tokens) == 2 and tokens[0] == OPERATORS['publicVariable']:
+            if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
+                var_name = tokens[1].value
+                scope = self.get_scope(var_name, 'missionNamespace')
+                if self.simulation:
+                    self.simulation.broadcast(var_name, scope[var_name])
+                else:
+                    raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
+            else:
+                raise WrongTypes()
+        elif len(tokens) == 2 and tokens[0] == OPERATORS['publicVariableServer']:
+            if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
+                var_name = tokens[1].value
+                scope = self.get_scope(var_name, 'missionNamespace')
+                if self.simulation:
+                    self.simulation.broadcast(var_name, scope[var_name], -1)  # -1 => to server
+                else:
+                    raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
+            else:
+                raise WrongTypes()
+        elif len(tokens) == 2 and tokens[0] == OPERATORS['private']:
             if isinstance(tokens[1], String):
                 self.add_privates([tokens[1].value])
             elif isinstance(tokens[1], Array):
@@ -256,6 +283,25 @@ class Interpreter:
                         outcome = rhs_v.value[1]
                 else:
                     raise SyntaxError()
+            elif op == OPERATORS['publicVariableClient']:
+                if isinstance(tokens[0], Number) and not tokens[2].value.startswith('_'):
+                    var_name = tokens[2].value
+                    client_id = tokens[0].value
+                    scope = self.get_scope(var_name, 'missionNamespace')
+                    if self.simulation:
+                        self.simulation.broadcast(var_name, scope[var_name], client_id)
+                    else:
+                        raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
+                else:
+                    raise WrongTypes()
+            elif op == OPERATORS['addPublicVariableEventHandler']:
+                if lhs_t == String and rhs_t == Code:
+                    if self.simulation:
+                        self.client.add_listening(lhs_v.value, rhs_v)
+                    else:
+                        raise ExecutionError('"addPublicVariableEventHandler" called without a client')
+                else:
+                    raise WrongTypes()
             else:
                 raise NotImplementedError([lhs, op, rhs])
         # unary operators
@@ -383,10 +429,12 @@ class Interpreter:
         return outcome
 
 
-def interpret(script):
-    statements = parse(script)
+def interpret(script, interpreter=None):
+    if interpreter is None:
+        interpreter = Interpreter()
+    assert(isinstance(interpreter, Interpreter))
 
-    interpreter = Interpreter()
+    statements = parse(script)
 
     outcome = Nothing
     for statement in statements:
