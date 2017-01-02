@@ -140,6 +140,9 @@ class TestInterpretArray(TestCase):
         _, outcome = interpret('[1, 2] find 2')
         self.assertEqual(N(1), outcome)
 
+        _, outcome = interpret('[1, 2] find 3')
+        self.assertEqual(N(-1), outcome)
+
     def test_pushBack(self):
         interpreter, outcome = interpret('_x = [1]; _x pushBack 2')
         self.assertEqual(Array([N(1), N(2)]), interpreter['_x'])
@@ -329,6 +332,7 @@ class Namespaces(TestCase):
 
         interpreter, outcome = interpret('uiNamespace getVariable ["_x", 2]')
         self.assertEqual(N(2), outcome)
+
 
 class Markers(TestCase):
     def test_create(self):

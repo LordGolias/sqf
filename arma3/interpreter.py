@@ -201,7 +201,7 @@ class Interpreter:
         # if then else
         elif len(tokens) >= 4 and tokens[0] == IfToken and (isinstance(tokens[1], Statement) and
                 tokens[1].parenthesis or isinstance(tokens[1], Boolean)) and tokens[2] == ThenToken:
-            condition_outcome = self.execute_token(tokens[1])[1]
+            condition_outcome = values[1]
             if isinstance(condition_outcome, Boolean):
                 if condition_outcome.value is True:
                     _then = True
