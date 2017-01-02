@@ -252,6 +252,9 @@ BracketClose = ReservedToken('}')
 Comma = ReservedToken(',')
 EndOfStatement = ReservedToken(';')
 Nil = ReservedToken('nil')
+isServer = ReservedToken('isServer')
+isLocal = ReservedToken('isLocal')
+isDedicated = ReservedToken('isDedicated')
 
 
 class Namespace(ReservedToken):

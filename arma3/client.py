@@ -1,15 +1,18 @@
+from arma3.exceptions import ExecutionError
 from arma3.interpreter import Interpreter, interpret
 from arma3.types import Code, Array, String
 
 
 class Client:
-    def __init__(self):
+    def __init__(self, simulation):
+        self._simulation = simulation
         self._interpreter = Interpreter()
         self._interpreter.client = self
         self._listening_variables = {}  # var_name: code
 
-    def set_sim(self, sim):
-        self._interpreter.simulation = sim
+    @property
+    def simulation(self):
+        return self._simulation
 
     def add_listening(self, var_name, code):
         assert(isinstance(var_name, str) and isinstance(code, Code))
@@ -26,23 +29,41 @@ class Client:
                 self._interpreter.execute_code(self._listening_variables[var_name],
                                                params=Array([String(var_name), value]))
 
+    @property
+    def is_server(self):
+        return self._simulation.server == self
+
+    @property
+    def is_client(self):
+        return self in self._simulation.clients
+
+    @property
+    def is_dedicated(self):
+        return self._simulation.is_dedicated
+
 
 class Simulation:
 
-    def __init__(self):
-        self.server = Client()
-        self.server.set_sim(self)
+    def __init__(self, is_dedicated=True):
+        self._is_dedicated = is_dedicated
+        self.server = Client(self)
         self._clients = []
 
         self._broadcasted = {}
+
+    @property
+    def is_dedicated(self):
+        return self._is_dedicated
 
     @property
     def clients(self):
         return self._clients
 
     def add_client(self, client):
+        if not self._is_dedicated:
+            raise ExecutionError('Cannot add a client to non-dedicated server')
+
         self._clients.append(client)
-        client.set_sim(self)
 
         for var_name in self._broadcasted:
             client.set_variable(var_name, self._broadcasted[var_name], broadcast=False)

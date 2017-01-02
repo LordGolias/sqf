@@ -24,8 +24,29 @@ class Interpreter:
 
         self._markers = {}
 
-        self.simulation = None
-        self.client = None
+        self._simulation = None
+        self._client = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            raise ExecutionError('Trying to access client without a client')
+        return self._client
+
+    @client.setter
+    def client(self, client):
+        self._client = client
+        self._simulation = client.simulation
+
+    @property
+    def simulation(self):
+        if self._simulation is None:
+            raise ExecutionError('Trying to access client without a client')
+        return self._simulation
+
+    @simulation.setter
+    def simulation(self, simulation):
+        self._simulation = simulation
 
     def set_global_variable(self, var_name, value):
         assert(isinstance(value, Type))
@@ -69,6 +90,12 @@ class Interpreter:
         # interpret the statement recursively
         if isinstance(token, Statement):
             result = self.execute(statement=token)
+        elif token == OPERATORS['isServer']:
+            result = Boolean(self.client.is_server)
+        elif token == OPERATORS['isClient']:
+            result = Boolean(self.client.is_client)
+        elif token == OPERATORS['isDedicated']:
+            result = Boolean(self.client.is_dedicated)
         else:
             result = token
 
@@ -178,6 +205,8 @@ class Interpreter:
             if op == OPERATORS['=']:
                 if not isinstance(lhs, Variable):
                     raise WrongTypes(repr(lhs))
+                if not isinstance(rhs_v, Type):
+                    raise WrongTypes(repr(rhs))
 
                 variable_scope = self.get_scope(lhs.name)
                 variable_scope[lhs.name] = rhs_v

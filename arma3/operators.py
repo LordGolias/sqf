@@ -26,6 +26,7 @@ class Operator:
     #     return not self.__eq__(other)
     #
 
+
 class UnaryOperator(Operator):
     pass
 
@@ -94,6 +95,10 @@ OPERATORS = {
     'publicVariableServer': UnaryOperator,
     'publicVariableClient': BinaryOperator,
     'addPublicVariableEventHandler': BinaryOperator,
+
+    'isServer': Operator,
+    'isClient': Operator,
+    'isDedicated': Operator
 }
 
 
