@@ -41,12 +41,8 @@ class Interpreter:
     @property
     def simulation(self):
         if self._simulation is None:
-            raise ExecutionError('Trying to access client without a client')
+            raise ExecutionError('Trying to access simulation without a simulation assigned')
         return self._simulation
-
-    @simulation.setter
-    def simulation(self, simulation):
-        self._simulation = simulation
 
     def set_global_variable(self, var_name, value):
         assert(isinstance(value, Type))
@@ -163,10 +159,7 @@ class Interpreter:
             if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
                 var_name = tokens[1].value
                 scope = self.get_scope(var_name, 'missionNamespace')
-                if self.simulation:
-                    self.simulation.broadcast(var_name, scope[var_name])
-                else:
-                    raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
+                self.simulation.broadcast(var_name, scope[var_name])
             else:
                 raise WrongTypes()
         elif len(tokens) == 2 and tokens[0] == OPERATORS['publicVariableServer']:
