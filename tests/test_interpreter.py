@@ -218,7 +218,7 @@ class IfThen(TestCase):
         self.assertEqual(N(3), interpreter['_x'])
 
     def test_exceptions(self):
-        with self.assertRaises(IfThenSyntaxError):
+        with self.assertRaises(NotImplementedError):
             interpret('if (false) then (_x = 2) else {_x = 3}')
 
         with self.assertRaises(NotImplementedError):
@@ -247,6 +247,7 @@ class Loops(TestCase):
         interpreter, outcome = interpret(test)
         self.assertEqual(Array([N(i) for i in range(1, 11)]), interpreter['y'])
 
+    def test_for_var_step(self):
         test = 'y = []; for "_i" from 1 to 10 step 2 do {y pushBack _i;};'
         interpreter, outcome = interpret(test)
         self.assertEqual(Array([N(1), N(3), N(5), N(7), N(9)]), interpreter['y'])

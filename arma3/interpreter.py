@@ -1,9 +1,9 @@
 from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken, ReservedToken, Type
+    ReservedToken, Type
 from arma3.object import Marker
 from arma3.operators import Operator, OPERATORS
 from arma3.parser import parse
-from arma3.exceptions import WrongTypes, IfThenSyntaxError, ExecutionError
+from arma3.exceptions import WrongTypes, ExecutionError
 from arma3.expressions import EXPRESSIONS
 from arma3.namespace import Namespace
 
@@ -220,80 +220,6 @@ class Interpreter:
         # code, variables and values
         elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Variable)):
             outcome = values[0]
-        # if then else
-        elif len(tokens) >= 4 and tokens[0] == IfToken and (isinstance(tokens[1], Statement) and
-                tokens[1].parenthesis or isinstance(tokens[1], Boolean)) and tokens[2] == ThenToken:
-            condition_outcome = values[1]
-            if isinstance(condition_outcome, Boolean):
-                if condition_outcome.value is True:
-                    _then = True
-                else:
-                    _then = False
-            else:
-                raise WrongTypes('If condition must be a Boolean')
-
-            if len(tokens) == 4 and isinstance(tokens[3], Code):
-                if _then:
-                    outcome = self.execute_code(tokens[3])
-            elif len(tokens) == 4 and isinstance(tokens[3], Array) and \
-                    len(tokens[3].value) == 2 and isinstance(tokens[3].value[0], Code) and isinstance(tokens[3].value[1], Code):
-                if _then:
-                    outcome = self.execute_code(tokens[3].value[0])
-                else:
-                    outcome = self.execute_code(tokens[3].value[1])
-            elif len(tokens) == 6 and isinstance(tokens[3], Code) and tokens[4] == ElseToken and isinstance(tokens[5], Code):
-                if _then:
-                    outcome = self.execute_code(tokens[3])
-                else:
-                    outcome = self.execute_code(tokens[5])
-            else:
-                raise IfThenSyntaxError()
-        # While loop
-        elif len(tokens) == 4 and tokens[0] == WhileToken and isinstance(tokens[1], Code) and \
-                tokens[2] == DoToken and isinstance(tokens[3], Code):
-            while True:
-                condition_outcome = self.execute_code(tokens[1])
-                if condition_outcome.value is False:
-                    break
-                outcome = self.execute_code(tokens[3])
-        # forspecs loop
-        elif len(tokens) == 4 and tokens[0] == ForToken and isinstance(tokens[1], Array) and \
-                tokens[2] == DoToken and isinstance(tokens[3], Code):
-            start = tokens[1].value[0]
-            stop = tokens[1].value[1]
-            do = tokens[3]
-            increment = tokens[1].value[2]
-
-            self.execute_code(start)
-            while True:
-                condition_outcome = self.execute_code(stop)
-                if condition_outcome.value is False:
-                    break
-
-                outcome = self.execute_code(do)
-                self.execute_code(increment)
-        # forvar loop
-        elif len(tokens) >= 8 and \
-                tokens[0] == ForToken and \
-                isinstance(tokens[1], String) and \
-                tokens[2] == FromToken and \
-                isinstance(tokens[3], Number) and \
-                tokens[4] == ToToken and \
-                isinstance(tokens[5], Number) and \
-                tokens[-2] == DoToken and isinstance(tokens[-1], Code):
-            if len(tokens) == 8:
-                step = 1
-            elif len(tokens) == 10 and tokens[6] == StepToken and isinstance(tokens[7], Number):
-                step = tokens[7].value
-            else:
-                raise SyntaxError()
-
-            start = tokens[3].value
-            stop = tokens[5].value
-            code = tokens[-1]
-
-            for i in range(start, stop + 1, step):
-                outcome = self.execute_code(code, extra_scope={tokens[1].value: Number(i)})
         else:
             raise NotImplementedError('Interpretation of "%s" not implemented' % tokens)
 

@@ -1,4 +1,5 @@
-from arma3.types import Number, Array, Code, Type, Boolean, String, Nothing, Namespace, Variable
+from arma3.types import Number, Array, Code, Type, Boolean, String, Nothing, Namespace, Variable, \
+    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken
 from arma3.operators import OPERATORS, OP_COMPARISON, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_LOGICAL
 from arma3.exceptions import ExecutionError
 import math
@@ -6,9 +7,13 @@ import math
 
 class Expression:
 
-    def __init__(self, length, action, tests):
+    def __init__(self, length, action=None, tests=None):
         self.length = length
+        if tests is None:
+            tests = []
         self.tests = tests
+        if action is None:
+            action = lambda t, v, i: True
         self.action = action
 
     def is_match(self, values):
@@ -22,7 +27,7 @@ class Expression:
             return True
 
     def execute(self, tokens, values, interpreter):
-        raise NotImplementedError
+        return self.action(tokens, values, interpreter)
 
 
 class UnaryExpression(Expression):
@@ -111,6 +116,18 @@ class LogicalExpression(BinaryExpression):
         return Boolean(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
 
 
+class IfThenExpression(Expression):
+
+    def __init__(self, length, tests, action):
+        base_test = lambda values: values[0] == IfToken and \
+                                   isinstance(values[1], Boolean) and values[2] == ThenToken
+
+        super().__init__(length, action, [base_test] + tests)
+
+    def execute(self, tokens, values, interpreter):
+        return self.action(values, interpreter)
+
+
 def _select_array(lhs_v, rhs_v, _):
     start = rhs_v.value[0].value
     count = rhs_v.value[1].value
@@ -169,6 +186,47 @@ def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
         raise ExecutionError('"addPublicVariableEventHandler" called without a client')
 
 
+def _if_then_else(interpreter, condition, then, else_=None):
+    if condition.value is True:
+        return interpreter.execute_code(then)
+    else:
+        if else_:
+            return interpreter.execute_code(else_)
+        else:
+            return Nothing
+
+
+def _while_loop(interpreter, condition_code, do_code):
+    outcome = Nothing
+    while True:
+        condition_outcome = interpreter.execute_code(condition_code)
+        if condition_outcome.value is False:
+            break
+        outcome = interpreter.execute_code(do_code)
+    return outcome
+
+
+def _forvar_loop(interpreter, token_name, start, stop, step, code):
+    outcome = Nothing
+    for i in range(start, stop + 1, step):
+        outcome = interpreter.execute_code(code, extra_scope={token_name: Number(i)})
+    return outcome
+
+
+def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
+    outcome = Nothing
+
+    interpreter.execute_code(start_code)
+    while True:
+        condition_outcome = interpreter.execute_code(stop_code)
+        if condition_outcome.value is False:
+            break
+
+        outcome = interpreter.execute_code(do_code)
+        interpreter.execute_code(increment_code)
+    return outcome
+
+
 EXPRESSIONS = [
     # Unary
     UnaryExpression('floor', Number, lambda rhs_v, i: Number(math.floor(rhs_v.value))),
@@ -200,6 +258,52 @@ EXPRESSIONS = [
                      tests=[lambda values: len(values[2].value) == 2]),
 
     BinaryExpression('addPublicVariableEventHandler', String, Code, _addPublicVariableEventHandler),
+
+    IfThenExpression(4, tests=[lambda values: type(values[3]) == Code],
+                     action=lambda v, i: _if_then_else(i, v[1], v[3])),
+    IfThenExpression(4, tests=[lambda values: type(values[3]) == Array],
+                     action=lambda v, i: _if_then_else(i, v[1], v[3].value[0], v[3].value[1])),
+    IfThenExpression(6, tests=[lambda values: type(values[3]) == Code,
+                               lambda values: values[4] == ElseToken,
+                               lambda values: type(values[5]) == Code],
+                     action=lambda v, i: _if_then_else(i, v[1], v[3], v[5])),
+
+    Expression(4, tests=[lambda values: values[0] == WhileToken,
+                         lambda values: type(values[1]) == Code,
+                         lambda values: values[2] == DoToken,
+                         lambda values: type(values[3]) == Code],
+               action=lambda t, v, i: _while_loop(i, v[1], v[3])),
+
+    Expression(4, tests=[lambda values: values[0] == ForToken,
+                         lambda values: type(values[1]) == Array,
+                         lambda values: values[2] == DoToken,
+                         lambda values: type(values[3]) == Code,
+                         ],
+               action=lambda t, v, i: _forspecs_loop(i, v[1].value[0], v[1].value[1], v[1].value[2], v[3])),
+
+    Expression(8, tests=[lambda values: values[0] == ForToken,
+                         lambda values: type(values[1]) == String,
+                         lambda values: values[2] == FromToken,
+                         lambda values: type(values[3]) == Number,
+                         lambda values: values[4] == ToToken,
+                         lambda values: type(values[5]) == Number,
+                         lambda values: values[6] == DoToken,
+                         lambda values: type(values[7]) == Code,
+                         ],
+               action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, 1, v[7])),
+
+    Expression(10, tests=[lambda values: values[0] == ForToken,
+                         lambda values: type(values[1]) == String,
+                         lambda values: values[2] == FromToken,
+                         lambda values: type(values[3]) == Number,
+                         lambda values: values[4] == ToToken,
+                         lambda values: type(values[5]) == Number,
+                         lambda values: values[6] == StepToken,
+                         lambda values: type(values[7]) == Number,
+                         lambda values: values[8] == DoToken,
+                         lambda values: type(values[9]) == Code,
+                         ],
+               action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, v[7].value, v[9])),
 ]
 
 for operator in OP_COMPARISON:
