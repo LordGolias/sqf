@@ -16,6 +16,15 @@ class Operator:
     def __repr__(self):
         return 'O<%s>' % self
 
+    # def __eq__(self, other):
+    #     if isinstance(other, self.__class__):
+    #         return self.__dict__ == other.__dict__
+    #     else:
+    #         return False
+    #
+    # def __ne__(self, other):
+    #     return not self.__eq__(other)
+    #
 
 class UnaryOperator(Operator):
     pass
@@ -94,11 +103,11 @@ for s in OPERATORS:
 # operators by precedence
 ORDERED_OPERATORS = [OPERATORS[s] for s in ('private', '=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getVariable')]
 
-OP_ARITHMETIC = {OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')}
+OP_ARITHMETIC = [OPERATORS[s] for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')]
 
 OP_LOGICAL = {OPERATORS[s] for s in ('&&', 'and', '||', 'or')}
 
-OP_COMPARISON = {OPERATORS[s] for s in ('==', '!=', '<', '>', '<=', '>=')}
+OP_COMPARISON = [OPERATORS[s] for s in ('==', '!=', '<', '>', '<=', '>=')]
 
 OP_OPERATIONS = {
     OPERATORS['+']: lambda x, y: x + y,

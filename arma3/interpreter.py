@@ -1,10 +1,10 @@
 from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken, ReservedToken, \
-    NAMESPACES, Type
+    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken, ReservedToken, Type
 from arma3.object import Marker
-from arma3.operators import Operator, OPERATORS, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_COMPARISON, OP_LOGICAL
+from arma3.operators import Operator, OPERATORS
 from arma3.parser import parse
 from arma3.exceptions import WrongTypes, IfThenSyntaxError, ExecutionError
+from arma3.expressions import EXPRESSIONS
 from arma3.namespace import Namespace
 
 
@@ -57,10 +57,10 @@ class Interpreter:
         if isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
             return scope[token.name]
-        elif isinstance(token, (ConstantValue, Array, Code, ReservedToken)):
+        elif isinstance(token, (ConstantValue, Array, Code, Operator, ReservedToken)):
             return token
         else:
-            raise NotImplementedError(token)
+            raise NotImplementedError(repr(token))
 
     def execute_token(self, token):
         """
@@ -112,9 +112,27 @@ class Interpreter:
         assert(not isinstance(statement, Code))
 
         outcome = Nothing
-        tokens = statement.tokens
 
-        if len(tokens) == 2 and tokens[0] == OPERATORS['publicVariable']:
+        # evalute the types of all tokens
+        values = []
+        tokens = []
+        types = []
+        for token in statement.tokens:
+            t, v = self.execute_token(token)
+            values.append(v)
+            tokens.append(t)
+            types.append(type(v))
+
+        case_found = None
+        for case in EXPRESSIONS:
+            if case.is_match(values):
+                case_found = case
+                break
+
+        if case_found is not None:
+            outcome = case_found.execute(tokens, values, self)
+        # todo: replace all elif below by expressions
+        elif len(tokens) == 2 and tokens[0] == OPERATORS['publicVariable']:
             if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
                 var_name = tokens[1].value
                 scope = self.get_scope(var_name, 'missionNamespace')
@@ -135,158 +153,39 @@ class Interpreter:
             else:
                 raise WrongTypes()
         elif len(tokens) == 2 and tokens[0] == OPERATORS['private']:
-            if isinstance(tokens[1], String):
+            if isinstance(statement.tokens[1], String):
                 self.add_privates([tokens[1].value])
-            elif isinstance(tokens[1], Array):
+            elif isinstance(statement.tokens[1], Array):
                 self.add_privates([s.value for s in tokens[1].value])
-            elif isinstance(tokens[1], Statement) and len(tokens[1]) == 3 and \
-                 isinstance(tokens[1][0], Variable) and tokens[1][1] == OPERATORS['=']:
-                self.add_privates([tokens[1][0].name])
-                outcome = self.execute(tokens[1])
+            elif isinstance(statement.tokens[1], Statement) and len(statement.tokens[1]) == 3 and \
+                 isinstance(statement.tokens[1][0], Variable) and statement.tokens[1][1] == OPERATORS['=']:
+                self.add_privates([statement.tokens[1][0].name])
+                outcome = self.execute(statement.tokens[1])
             else:
                 raise SyntaxError()
         # binary operators
         elif len(tokens) == 3 and isinstance(tokens[1], Operator):
             # it is a binary statement: token, operation, token
             lhs = tokens[0]
+            lhs_v = values[0]
+            lhs_t = types[0]
+
             op = tokens[1]
             rhs = tokens[2]
-
-            # a token has its type (lhs), its return value (lhs_v), and its type (lhs_t)
-            lhs, lhs_v = self.execute_token(lhs)
-            lhs_t = type(lhs_v)
-            rhs, rhs_v = self.execute_token(rhs)
-            rhs_t = type(rhs_v)
+            rhs_v = values[2]
+            rhs_t = types[2]
 
             if op == OPERATORS['=']:
                 if not isinstance(lhs, Variable):
-                    raise WrongTypes()
+                    raise WrongTypes(repr(lhs))
 
                 variable_scope = self.get_scope(lhs.name)
                 variable_scope[lhs.name] = rhs_v
                 outcome = rhs
-            elif op in OP_COMPARISON:
-
-                if lhs_t != rhs_t:
-                    raise WrongTypes('Comparing wrong types with "==" operator')
-                if lhs_t == rhs_t == Boolean:
-                    raise WrongTypes('Can not compare between two booleans. Use logical operators.')
-
-                outcome = Boolean(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
-            elif op in OP_ARITHMETIC:
-                if lhs_t == rhs_t == Array and op in (OPERATORS['+'], OPERATORS['-']):
-                    outcome = Array(OP_ARRAY_OPERATIONS[op](lhs_v.value, rhs_v.value))
-                elif lhs_t == rhs_t == Number or lhs_t == rhs_t == String:
-                    outcome = lhs_t(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
-                else:
-                    raise WrongTypes('Can only use arithmetic operators on numbers')
-            elif op in OP_LOGICAL:
-                if lhs_t == rhs_t == Boolean:
-                    outcome = Boolean(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
-                else:
-                    raise WrongTypes('Logical operators require booleans')
-            elif op == OPERATORS['set']:
-                # https://community.bistudio.com/wiki/set
-                if lhs_t == rhs_t == Array:
-                    index = rhs_v.value[0].value
-                    value = rhs_v.value[1]
-
-                    variable_scope = self.get_scope(lhs.name)
-                    if index >= len(lhs_v.value):
-                        variable_scope[lhs.name].extend(index)
-                    variable_scope[lhs.name].set(index, value)
-                    outcome = Nothing
-                else:
-                    raise WrongTypes('"set" requires two arrays')
-            elif op == OPERATORS['in']:
-                # https://community.bistudio.com/wiki/in
-                if rhs_t == Array:
-                    outcome = Boolean(lhs_v in rhs_v.value)
-                else:
-                    raise NotImplementedError
-            elif op == OPERATORS['select']:
-                # https://community.bistudio.com/wiki/select
-                if lhs_t == Array and rhs_t in (Number, Boolean):
-                    index = int(round(rhs_v.value))  # x for value<=x.5 and x+1 for > x.5
-                    outcome = lhs_v.value[index]
-                elif lhs_t == Array and rhs_t == Array:
-                    start = rhs_v.value[0].value
-                    count = rhs_v.value[1].value
-                    outcome = Array(lhs_v.value[start:start+count])
-                # todo: missing the syntax using expressions. This requires delaying the evaluation of the rhs
-                else:
-                    raise WrongTypes()
-            elif op == OPERATORS['find']:
-                if lhs_t == Array:
-                    try:
-                        index = next(i for i,v in enumerate(lhs_v.value) if v == rhs_v)
-                    except StopIteration:
-                        index = -1
-                    outcome = Number(index)
-                elif lhs_t == rhs_t == String:
-                    outcome = Number(lhs_v.value.find(rhs_v.value))
-                else:
-                    raise WrongTypes()
-            elif op == OPERATORS['pushBack']:
-                if lhs_t == Array:
-                    lhs_v.value.append(rhs_v)
-                    outcome = Number(len(lhs_v.value) - 1)
-                else:
-                    raise WrongTypes()
-            elif op == OPERATORS['pushBackUnique']:
-                if lhs_t == Array:
-                    if rhs_v in lhs_v.value:
-                        outcome = Number(-1)
-                    else:
-                        lhs_v.value.append(rhs_v)
-                        outcome = Number(len(lhs_v.value) - 1)
-                else:
-                    raise WrongTypes()
-            elif op == OPERATORS['append']:
-                if lhs_t == rhs_t == Array:
-                    lhs_v.add(rhs_v.value)
-                    outcome = Nothing
-                else:
-                    raise WrongTypes()
-            elif op == OPERATORS['call']:
-                if not isinstance(lhs_v, Array) or not isinstance(rhs_v, Code):
-                    raise WrongTypes()
-                outcome = self.execute_code(rhs_v, params=lhs_v)
-            elif op == OPERATORS['setVariable'] and lhs_v in NAMESPACES:
-                if rhs_t == Array and len(rhs_v.value) == 2:
-                    namespace_name = lhs_v.value
-
-                    # get the variable name
-                    variable_name = rhs_v.value[0].value
-                    # get the value
-                    rhs_assignment = self.execute_token(rhs_v.value[1])[1]
-
-                    variable_scope = self.get_scope(variable_name, namespace_name)
-                    variable_scope[variable_name] = rhs_assignment
-                    outcome = Nothing
-                else:
-                    raise WrongTypes()
-            elif op == OPERATORS['getVariable'] and lhs_v in NAMESPACES:
-                if rhs_t == String:
-                    namespace_name = lhs_v.value
-
-                    variable_name = rhs_v.value
-                    outcome = self.value(Variable(variable_name), namespace_name)
-                elif rhs_t == Array:
-                    namespace_name = lhs_v.value
-
-                    # get the variable name
-                    variable_name = rhs_v.value[0].value
-                    outcome = self.value(Variable(variable_name), namespace_name)
-                    if outcome == Nothing:
-                        # get the default value
-                        outcome = rhs_v.value[1]
-                else:
-                    raise SyntaxError()
             elif op == OPERATORS['publicVariableClient']:
-                if isinstance(tokens[0], Number) and not tokens[2].value.startswith('_'):
-                    var_name = tokens[2].value
-                    client_id = tokens[0].value
+                if lhs_t == Number and not rhs.value.startswith('_'):
+                    client_id = lhs.value
+                    var_name = rhs.value
                     scope = self.get_scope(var_name, 'missionNamespace')
                     if self.simulation:
                         self.simulation.broadcast(var_name, scope[var_name], client_id)
@@ -294,59 +193,11 @@ class Interpreter:
                         raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
                 else:
                     raise WrongTypes()
-            elif op == OPERATORS['addPublicVariableEventHandler']:
-                if lhs_t == String and rhs_t == Code:
-                    if self.simulation:
-                        self.client.add_listening(lhs_v.value, rhs_v)
-                    else:
-                        raise ExecutionError('"addPublicVariableEventHandler" called without a client')
-                else:
-                    raise WrongTypes()
             else:
                 raise NotImplementedError([lhs, op, rhs])
-        # unary operators
-        elif len(tokens) == 2 and isinstance(tokens[0], Operator):
-            op = tokens[0]
-            rhs = tokens[1]
-
-            # a token has its type (lhs), its return value (lhs_v), and its type (lhs_t)
-            rhs, rhs_v = self.execute_token(rhs)
-            rhs_t = type(rhs_v)
-
-            if op == OPERATORS['floor']:
-                if rhs_t != Number:
-                    raise WrongTypes()
-                outcome = Number(OP_OPERATIONS[op](rhs_v.value))
-            elif op == OPERATORS['reverse']:
-                # https://community.bistudio.com/wiki/reverse
-                if rhs_t == Array:
-                    rhs_v.reverse()
-                    outcome = Nothing
-                else:
-                    raise WrongTypes()
-            elif op == OPERATORS['call']:
-                if not isinstance(rhs, Code):
-                    raise WrongTypes()
-                outcome = self.execute_code(rhs)
-            elif op == OPERATORS['createMarker']:
-                if not rhs_t == Array:
-                    raise WrongTypes()
-                name = rhs_v.value[0].value
-                if name in self._markers:
-                    raise ExecutionError('Marker "%s" already exists' % name)
-                pos = rhs_v.value[1]
-                if not isinstance(pos, Array):
-                    raise WrongTypes('Second argument of "createMarker" must be a position')
-                self._markers[name] = Marker(pos)
-                outcome = rhs_v.value[0]
-            else:
-                raise NotImplementedError
-        # statement
-        elif len(tokens) == 1 and isinstance(tokens[0], Statement):
-            outcome = self.execute(tokens[0])
         # code, variables and values
         elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Variable)):
-            outcome = self.execute_token(tokens[0])[1]
+            outcome = values[0]
         # if then else
         elif len(tokens) >= 4 and tokens[0] == IfToken and (isinstance(tokens[1], Statement) and
                 tokens[1].parenthesis or isinstance(tokens[1], Boolean)) and tokens[2] == ThenToken:
@@ -357,7 +208,7 @@ class Interpreter:
                 else:
                     _then = False
             else:
-                raise WrongTypes('If condition must return a Boolean')
+                raise WrongTypes('If condition must be a Boolean')
 
             if len(tokens) == 4 and isinstance(tokens[3], Code):
                 if _then:
@@ -427,6 +278,16 @@ class Interpreter:
         if statement.ending:
             outcome = Nothing
         return outcome
+
+    def create_marker(self, rhs_v):
+        name = rhs_v.value[0].value
+        if name in self._markers:
+            raise ExecutionError('Marker "%s" already exists' % name)
+        pos = rhs_v.value[1]
+        if not isinstance(pos, Array):
+            raise WrongTypes('Second argument of "createMarker" must be a position')
+        self._markers[name] = Marker(pos)
+        return rhs_v.value[0]
 
 
 def interpret(script, interpreter=None):

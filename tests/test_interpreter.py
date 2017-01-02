@@ -14,7 +14,7 @@ class TestInterpreter(TestCase):
         self.assertEqual(Nothing, outcome)
 
     def test_var_not_defined(self):
-        with self.assertRaises(WrongTypes):
+        with self.assertRaises(NotImplementedError):
             interpret('_y == 3;')
 
     def test_one_statement2(self):
@@ -23,12 +23,12 @@ class TestInterpreter(TestCase):
         self.assertEqual(Boolean(False), outcome)
 
     def test_cant_compare_booleans(self):
-        with self.assertRaises(WrongTypes):
+        with self.assertRaises(NotImplementedError):
             interpret('true == false;')
 
     def test_wrong_type_arithmetic(self):
         interpret('_x = true;')
-        with self.assertRaises(WrongTypes):
+        with self.assertRaises(NotImplementedError):
             interpret('_x = true; _x + 2;')
 
     def test_code_dont_execute(self):
@@ -51,6 +51,10 @@ class TestInterpreter(TestCase):
 
         _, outcome = interpret('floor -5.25')
         self.assertEqual(Number(-6), outcome)
+
+    def test_leq(self):
+        _, outcome = interpret('_x = 10; _x <= 10')
+        self.assertEqual(Boolean(True), outcome)
 
     def test_private(self):
         interpreter, outcome = interpret('private _x = 2')
@@ -214,7 +218,7 @@ class IfThen(TestCase):
         with self.assertRaises(IfThenSyntaxError):
             interpret('if (false) then (_x = 2) else {_x = 3}')
 
-        with self.assertRaises(WrongTypes):
+        with self.assertRaises(NotImplementedError):
             interpret('if (1) then {_x = 2} else {_x = 3}')
 
 

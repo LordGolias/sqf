@@ -95,17 +95,28 @@ class Array(Type):
     def value(self):
         return self._items
 
-    def set(self, index, value):
-        self._items[index] = value
-
     def extend(self, index):
         self._items += [Nothing] * (index - len(self._items) + 1)
+        return Nothing
 
     def reverse(self):
         self._items.reverse()
+        return Nothing
 
     def add(self, other):
         self._items += other
+        return Nothing
+
+    def set(self, rhs_v):
+        # https://community.bistudio.com/wiki/set
+        assert(isinstance(rhs_v, Array))
+        index = rhs_v.value[0].value
+        value = rhs_v.value[1]
+
+        if index >= len(self._items):
+            self.extend(index)
+        self._items[index] = value
+        return Nothing
 
 
 class Variable(Type):
@@ -243,8 +254,12 @@ EndOfStatement = ReservedToken(';')
 Nil = ReservedToken('nil')
 
 
-NAMESPACES = [ReservedToken('missionNamespace'), ReservedToken('profileNamespace'), ReservedToken('uiNamespace'),
-              ReservedToken('parsingNamespace')]
+class Namespace(ReservedToken):
+    pass
+
+
+NAMESPACES = [Namespace('missionNamespace'), Namespace('profileNamespace'), Namespace('uiNamespace'),
+              Namespace('parsingNamespace')]
 
 RESERVED = [IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
             BracketOpen, BracketClose, Nil, WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken, Comma, EndOfStatement,
