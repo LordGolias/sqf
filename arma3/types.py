@@ -1,5 +1,6 @@
 from arma3.exceptions import SyntaxError
 from arma3.operators import Operator
+from arma3.parser_types import ParserType
 
 
 class Type:
@@ -80,16 +81,15 @@ class Array(Type):
         self._items = []
         # asserts below check that it is a list of the form `A,B,C`
         # where A B and C are instances of a Type.
-        i = 0
         if Comma in items:
             raise SyntaxError('Array syntax is `[item1, item2, ...]`')
         self._items = items
 
     def __str__(self):
-        return '[%s]' % ', '.join(str(item) for item in self._items)
+        return '[%s]' % ','.join(str(item) for item in self._items)
 
     def __repr__(self):
-        return 'A%s' % self
+        return '[%s]' % ','.join(repr(item) for item in self._items)
 
     @property
     def value(self):
@@ -138,15 +138,26 @@ class _Statement:
     def __init__(self, tokens, parenthesis=None, ending=False):
         assert (isinstance(tokens, list))
         for s in tokens:
-            if not isinstance(s, (Type, Operator, ReservedToken, Statement)):
-                raise SyntaxError('"%s" is not a type or op or keyword' % repr(s))
+            if not isinstance(s, (Type, Operator, ReservedToken, Statement, ParserType)):
+                raise SyntaxError('"%s" is not a type or op or keyword' % type(s))
         self._tokens = tokens
         self._parenthesis = parenthesis
         self._ending = ending
 
+        # ignore tokens that are not relevant for the interpreter
+        self._base_tokens = []
+        for token in self.tokens:
+            if isinstance(token, ParserType):
+                continue
+            self._base_tokens.append(token)
+
     @property
     def tokens(self):
         return self._tokens
+
+    @property
+    def base_tokens(self):
+        return self._base_tokens
 
     @property
     def ending(self):
@@ -161,10 +172,7 @@ class _Statement:
     def _as_str(self, func):
         as_str = ''
         for i, s in enumerate(self._tokens):
-            if i == 0:
-                as_str += '%s' % func(s)
-            else:
-                as_str += ' %s' % func(s)
+            as_str += '%s' % func(s)
 
         if self._parenthesis is not None:
             as_str = '%s%s%s' % (self._parenthesis[0], as_str, self._parenthesis[1])

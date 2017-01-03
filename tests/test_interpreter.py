@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from arma3.exceptions import WrongTypes, IfThenSyntaxError
+from arma3.exceptions import WrongTypes
 from arma3.types import String, Number, Array, Boolean, Nothing, Number as N
 from arma3.interpreter import interpret
 
@@ -56,17 +56,25 @@ class TestInterpreter(TestCase):
         _, outcome = interpret('_x = 10; _x <= 10')
         self.assertEqual(Boolean(True), outcome)
 
-    def test_private(self):
+    def test_private_eq(self):
         interpreter, outcome = interpret('private _x = 2')
         self.assertEqual(Number(2), interpreter['_x'])
         self.assertEqual(Number(2), outcome)
 
+    def test_private_single(self):
         interpreter, outcome = interpret('private "_x";')
         self.assertEqual(Nothing, interpreter['_x'])
 
+    def test_private_many(self):
         interpreter, outcome = interpret('private ["_x", "_y"];')
         self.assertTrue('_x' in interpreter)
         self.assertTrue('_y' in interpreter)
+
+    def test_ignore_comment(self):
+        interpreter, outcome = interpret('_x = 2; // the two\n_y = 3;')
+
+        self.assertEqual(N(2), interpreter['_x'])
+        self.assertEqual(N(3), interpreter['_y'])
 
 
 class TestInterpretArray(TestCase):
@@ -238,6 +246,16 @@ class Loops(TestCase):
 
     def test_forspec_exit_with_bool(self):
         test = 'a = 0; b = true; for [{_i = 0},{_i < 10 && b},{_i = _i + 1}] do {a = a + 1; if (a >= 7) then {b = false}}'
+
+        test = '''
+        a = 0;
+        b = true;
+        for [{_i = 0}, {_i < 10 && b}, {_i = _i + 1}] do {
+            a = a + 1;
+            if (a >= 7) then {b = false}
+        }
+                 '''
+
         interpreter, outcome = interpret(test)
         self.assertEqual(Boolean(False), outcome)
         self.assertEqual(N(7), interpreter['a'])

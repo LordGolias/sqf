@@ -79,13 +79,24 @@ class Interpreter:
         else:
             raise NotImplementedError(repr(token))
 
+    def get_variable(self, token):
+        if isinstance(token, Statement):
+            return token.base_tokens[0]
+        else:
+            if not isinstance(token, Variable):
+                raise SyntaxError('This operator requires a variable')
+            return token
+
     def execute_token(self, token):
         """
         Given a single token, recursively evaluate it and return its value.
         """
         # interpret the statement recursively
         if isinstance(token, Statement):
-            result = self.execute(statement=token)
+            result = self._execute(statement=token)
+        elif isinstance(token, Array):
+            # empty statements are ignored
+            result = Array([self.execute_token(s)[1] for s in token.value if s])
         elif token == OPERATORS['isServer']:
             result = Boolean(self.client.is_server)
         elif token == OPERATORS['isClient']:
@@ -126,21 +137,23 @@ class Interpreter:
         extra_scope['_this'] = params
         self.add_scope(extra_scope)
         outcome = Nothing
-        for statement in code.tokens:
-            outcome = self.execute(statement)
+        for statement in code.base_tokens:
+            outcome = self._execute(statement)
         self.del_scope()
         return outcome
 
-    def execute(self, statement):
+    def _execute(self, statement):
         assert(not isinstance(statement, Code))
 
         outcome = Nothing
 
-        # evalute the types of all tokens
+        # evaluate the types of all tokens
+        base_tokens = statement.base_tokens
         values = []
         tokens = []
         types = []
-        for token in statement.tokens:
+
+        for token in statement.base_tokens:
             t, v = self.execute_token(token)
             values.append(v)
             tokens.append(t)
@@ -173,14 +186,17 @@ class Interpreter:
             else:
                 raise WrongTypes()
         elif len(tokens) == 2 and tokens[0] == OPERATORS['private']:
-            if isinstance(statement.tokens[1], String):
-                self.add_privates([tokens[1].value])
-            elif isinstance(statement.tokens[1], Array):
-                self.add_privates([s.value for s in tokens[1].value])
-            elif isinstance(statement.tokens[1], Statement) and len(statement.tokens[1]) == 3 and \
-                 isinstance(statement.tokens[1][0], Variable) and statement.tokens[1][1] == OPERATORS['=']:
-                self.add_privates([statement.tokens[1][0].name])
-                outcome = self.execute(statement.tokens[1])
+
+            if isinstance(values[1], String):
+                self.add_privates([values[1].value])
+            elif isinstance(values[1], Array):
+                self.add_privates([s.value for s in values[1].value])
+            elif isinstance(base_tokens[1], Statement) and len(base_tokens[1]) == 3 and \
+                base_tokens[1][1] == OPERATORS['=']:
+                variable = self.get_variable(base_tokens[1][0])
+
+                self.add_privates([variable.name])
+                outcome = self._execute(base_tokens[1])
             else:
                 raise SyntaxError()
         # binary operators
@@ -196,6 +212,8 @@ class Interpreter:
             rhs_t = types[2]
 
             if op == OPERATORS['=']:
+                lhs = self.get_variable(base_tokens[0])
+
                 if not isinstance(lhs, Variable):
                     raise WrongTypes(repr(lhs))
                 if not isinstance(rhs_v, Type):
@@ -218,13 +236,19 @@ class Interpreter:
             else:
                 raise NotImplementedError([lhs, op, rhs])
         # code, variables and values
-        elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Variable)):
+        elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, ReservedToken, Variable, Array)):
             outcome = values[0]
         else:
             raise NotImplementedError('Interpretation of "%s" not implemented' % tokens)
 
         if statement.ending:
             outcome = Nothing
+        return outcome
+
+    def execute(self, statements):
+        outcome = Nothing
+        for statement in statements:
+            outcome = self._execute(statement)
         return outcome
 
     def create_marker(self, rhs_v):
@@ -245,8 +269,6 @@ def interpret(script, interpreter=None):
 
     statements = parse(script)
 
-    outcome = Nothing
-    for statement in statements:
-        outcome = interpreter.execute(statement)
+    outcome = interpreter.execute(statements)
 
     return interpreter, outcome

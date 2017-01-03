@@ -16,7 +16,7 @@ class TestTypesToString(TestCase):
         self.assertEqual('1.10', str(N(1.1)))
 
     def test_array(self):
-        self.assertEqual('[1, 1]', str(Array([1, 1])))
+        self.assertEqual('[1,1]', str(Array([1, 1])))
 
     def test_reservedtoken(self):
         self.assertEqual('foreach', str(ForEach))
@@ -25,4 +25,4 @@ class TestTypesToString(TestCase):
         self.assertEqual('Nothing', str(Nothing))
 
     def test_code(self):
-        self.assertEqual('{_x = 2;}', str(Code([Statement([V('_x'), OP['='], N(2)], ending=True)])))
+        self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), OP['='], N(2)], ending=True)])))

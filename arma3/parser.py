@@ -4,12 +4,19 @@ from arma3.exceptions import UnbalancedParenthesisSyntaxError, SyntaxError
 from arma3.types import Statement, Code, Number, Boolean, Variable, Array, String, RESERVED_MAPPING, \
     RParenthesisOpen, RParenthesisClose, ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, \
     Comma
+from arma3.parser_types import Comment, Space, EndOfLine
 from arma3.operators import OPERATORS, ORDERED_OPERATORS
 from arma3.parse_exp import parse_exp
 
 
 def identify_token(token):
-    if token in OPERATORS:
+    if isinstance(token, Comment):
+        return token
+    elif token == ' ':
+        return Space()
+    elif token == '\n':
+        return EndOfLine()
+    elif token in OPERATORS:
         return OPERATORS[token]
     elif token in RESERVED_MAPPING:
         return RESERVED_MAPPING[token]
@@ -29,7 +36,7 @@ def parse_strings(all_tokens):
     tokens = []
     string_mode = False
     string = ''
-    for i, token in enumerate(all_tokens):
+    for token in all_tokens:
         if token == '"':
             if string_mode:
                 tokens.append(String(string))
@@ -41,29 +48,65 @@ def parse_strings(all_tokens):
             if string_mode:
                 string += token
             else:
-                if token != ' ':
-                    # remove space tokens since they do not contribute to syntax
-                    # identify the token
-                    tokens.append(identify_token(token))
+                tokens.append(identify_token(token))
     return tokens
 
 
-def _parse_array(tokens):
-    i = 0
-    result = []
-    for token in tokens:
-        i += 1
-        if i % 2 == 0:
-            if token != Comma:
-                raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+def parse_comments(all_tokens):
+    tokens = []
+    bulk_comment_mode = False
+    line_comment_mode = False
+    comment = ''
+    for token in all_tokens:
+        if token == '/*' and not line_comment_mode:
+            bulk_comment_mode = True
+        elif token == '//' and not bulk_comment_mode:
+            line_comment_mode = True
+
+        if token == '*/' and bulk_comment_mode:
+            bulk_comment_mode = False
+            tokens.append(Comment(comment + token))
+            comment = ''
+        elif token == '\n' and line_comment_mode:
+            line_comment_mode = False
+            tokens.append(Comment(comment + token))
+            comment = ''
+        elif bulk_comment_mode or line_comment_mode:
+            comment += token
         else:
-            result.append(token)
+            tokens.append(token)
+
+    if bulk_comment_mode or line_comment_mode:
+        tokens.append(Comment(comment))
+
+    return tokens
+
+
+def analyse_array_tokens(tokens):
+    result = []
+    part = []
+    first_comma_found = False
+    for token in tokens:
+        if token == Comma:
+            first_comma_found = True
+            if not part:
+                raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+            result.append(analise_tokens(part))
+            part = []
+        else:
+            part.append(token)
+
+    # an empty array is a valid array
+    if part == [] and first_comma_found:
+        raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+    result.append(analise_tokens(part))
+
     return result
 
 
 def analise_tokens(tokens):
     ending = False
-    if tokens[-1] == EndOfStatement:
+    if tokens and tokens[-1] == EndOfStatement:
         del tokens[-1]
         ending = True
 
@@ -114,7 +157,7 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
 
             if statements:
                 raise SyntaxError('Statement cannot be in an array')
-            return Array(_parse_array(tokens)), i - start
+            return Array(analyse_array_tokens(tokens)), i - start
         elif token == ParenthesisClose:
             if parenthesis_lvl == 0:
                 raise UnbalancedParenthesisSyntaxError('Trying to close parenthesis without opened parenthesis.')
@@ -149,5 +192,5 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
 
 
 def parse(script):
-    tokens = parse_strings(tokenize(script))
+    tokens = parse_strings(parse_comments(tokenize(script)))
     return _parse_block(tokens)[0]

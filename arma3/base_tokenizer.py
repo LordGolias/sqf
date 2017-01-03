@@ -2,8 +2,7 @@ from arma3.tokenizer_source.tokenize import tokenize as raw_tokenize
 
 
 def tokenize(statement):
-    statement = statement.replace('\n', ' ').strip()
-
-    tokens = raw_tokenize(statement, ('"', ' ', '<=', '>=', '=', '==', '{', '}', 'if', 'then', 'else', '(', ')', '[', ']', ';', ',', '!', '!='))
+    tokens = raw_tokenize(statement, ('"', ' ', '<=', '>=', '=', '==', '{', '}',
+                                      '(', ')', '[', ']', ';', ',', '!', '!=', '/*', '*/', '//', '\n'))
 
     return [token for token in tokens if token]
