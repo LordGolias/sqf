@@ -138,8 +138,7 @@ class _Statement:
     def __init__(self, tokens, parenthesis=None, ending=False):
         assert (isinstance(tokens, list))
         for s in tokens:
-            if not isinstance(s, (Type, Keyword, Statement, ParserType)):
-                raise SyntaxError('"%s" is not a statment, type or keyword' % type(s))
+            assert(isinstance(s, (Type, Keyword, Statement, ParserType)))
         self._tokens = tokens
         self._parenthesis = parenthesis
         self._ending = ending
@@ -203,10 +202,6 @@ class Statement(_Statement):
         else:
             parenthesis = None
         super().__init__(tokens, parenthesis, ending)
-
-    @property
-    def parenthesis(self):
-        return self._parenthesis == '()'
 
 
 class Code(_Statement, Type):

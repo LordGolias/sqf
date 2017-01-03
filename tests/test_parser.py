@@ -10,7 +10,6 @@ from arma3.parser import parse, parse_strings
 from arma3.base_tokenizer import tokenize
 
 
-
 class TestExpParser(TestCase):
 
     def test_partition(self):
@@ -56,7 +55,14 @@ class TestExpParser(TestCase):
                          parse_exp(test, [Keyword('='), Keyword('+'), Keyword('*')], Statement))
 
 
-class ParseCode(TestCase):
+class ParserTestCase(TestCase):
+    
+    def assertEqualStatement(self, expected, result, code):
+        self.assertEqual(expected, result)
+        self.assertEqual(code, str(result))
+
+
+class ParseCode(ParserTestCase):
 
     def test_parse_string(self):
         test = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
@@ -68,72 +74,84 @@ class ParseCode(TestCase):
         self.assertEqual(str(parse('_n = "This is bla";')), '_n = "This is bla";')
 
     def test_one(self):
-        result = parse('_x=2;')
+        code = '_x=2;'
+        result = parse(code)
         expected = Statement([Statement([V('_x'), Keyword('='), N(2)], ending=True)])
 
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_one_bracketed(self):
-        result = parse('{_x="AirS";}')
+        code = '{_x="AirS";}'
+        result = parse(code)
         expected = Statement([Statement([Code([Statement([V('_x'), Keyword('='), String('AirS')], ending=True)])])])
-        self.assertEqual(expected, result)
+        
+        self.assertEqualStatement(expected, result, code)
 
     def test_not_delayed(self):
-        result = parse('(_x="AirS";)')
+        code = '(_x="AirS";)'
+        result = parse(code)
         expected = Statement([Statement([
             Statement([V('_x'), Keyword('='), String('AirS')], ending=True)], parenthesis=True)])
-        self.assertEqual(expected, result)
+        
+        self.assertEqualStatement(expected, result, code)
 
-        result = parse('(_x="AirS";);')
+        code = '(_x="AirS";);'
+        result = parse(code)
         expected = Statement([Statement([Statement([V('_x'), Keyword('='), String('AirS')], ending=True)],
                                         parenthesis=True, ending=True)
                               ])
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_assign(self):
-        result = parse('_x=(_x=="AirS");')
+        code = '_x=(_x=="AirS");'
+        result = parse(code)
         expected = Statement([Statement([V('_x'), Keyword('='),
                               Statement([Statement([V('_x'), Keyword('=='), String('AirS')])], parenthesis=True)], ending=True)])
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_two_statements(self):
-        result = parse('_x=true;_x=false')
+        code = '_x=true;_x=false'
+        result = parse(code)
         expected = Statement([Statement([V('_x'), Keyword('='), Boolean(True)], ending=True),
                               Statement([V('_x'), Keyword('='), Boolean(False)])])
-        self.assertEqual(expected, result)
+
+        self.assertEqualStatement(expected, result, code)
 
     def test_parse_bracketed_4(self):
-        result = parse('_x=true;{_x=false}')
+        code = '_x=true;{_x=false}'
+        result = parse(code)
         expected = Statement([
             Statement([V('_x'), Keyword('='), Boolean(True)], ending=True),
             Statement([Code([Statement([V('_x'), Keyword('='), Boolean(False)])])])
         ])
-        self.assertEqual(expected, result)
+
+        self.assertEqualStatement(expected, result, code)
 
     def test_two(self):
-        result = parse('_x=2;_y=3;')
+        code = '_x=2;_y=3;'
+        result = parse(code)
         expected = Statement([Statement([V('_x'), Keyword('='), N(2)], ending=True),
                          Statement([V('_y'), Keyword('='), N(3)], ending=True)])
 
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_two_bracketed(self):
-        result = parse('{_x=2;_y=3;};')
-
+        code = '{_x=2;_y=3;};'
+        result = parse(code)
         expected = Statement([Statement([Code([
             Statement([V('_x'), Keyword('='), N(2)], ending=True),
             Statement([V('_y'), Keyword('='), N(3)], ending=True)])], ending=True)])
 
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_assign_with_parenthesis(self):
-        test = "_x=(_y==2);"
-        result = parse(test)
+        code = "_x=(_y==2);"
+        result = parse(code)
 
         s1 = Statement([V('_y'), Keyword('=='), N(2)])
         expected = Statement([Statement([V('_x'), Keyword('='), Statement([s1], parenthesis=True)], ending=True)])
 
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_no_open_parenthesis(self):
         with self.assertRaises(UnbalancedParenthesisSyntaxError):
@@ -154,8 +172,8 @@ class ParseCode(TestCase):
             parse('_a = (x + 2')
 
     def test_analyse_expression(self):
-        test = '_h = _civs spawn _fPscareC;'
-        result = parse(test)
+        code = '_h = _civs spawn _fPscareC;'
+        result = parse(code)
         expected = Statement([Statement([
             Statement([V('_h'), Space()]),
             Keyword('='),
@@ -165,11 +183,11 @@ class ParseCode(TestCase):
                 Statement([Space(), V('_fPscareC')])
             ])], ending=True)])
 
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_analyse_expression2(self):
-        test = 'isNil{_x getVariable "AirS"}'
-        result = parse(test)
+        code = 'isNil{_x getVariable "AirS"}'
+        result = parse(code)
         expected = Statement([Statement([
             Keyword('isNil'),
             Code([Statement([
@@ -177,25 +195,30 @@ class ParseCode(TestCase):
                 Keyword('getVariable'),
                 Statement([Space(), String('AirS')])])])
             ])])
-        self.assertEqual(expected, result)
+        
+        self.assertEqualStatement(expected, result, code)
 
     def test_code(self):
-        result = parse('_is1={_x==1};')
+        code = '_is1={_x==1};'
+        result = parse(code)
         expected = Statement([Statement([V('_is1'), Keyword('='),
                                          Code([Statement([V('_x'), Keyword('=='), N(1)])])], ending=True)])
-        self.assertEqual(expected, result)
+        
+        self.assertEqualStatement(expected, result, code)
 
     def test_if_then(self):
-        result = parse('if(true)then{private"_x";_x}')
+        code = 'if(true)then{private"_x";_x}'
+        result = parse(code)
         expected = Statement([Statement([IfToken, Statement([Statement([Boolean(True)])], parenthesis=True),
                                          ThenToken, Code([
                 Statement([Keyword('private'), String('_x')], ending=True),
                 Statement([V('_x')])])
         ])])
-        self.assertEqual(expected, result)
+        
+        self.assertEqualStatement(expected, result, code)
 
 
-class ParseArray(TestCase):
+class ParseArray(ParserTestCase):
 
     def test_basic(self):
         test = '["AirS", nil];'
@@ -222,33 +245,38 @@ class ParseArray(TestCase):
             parse('[nil,,nil];')
 
     def test_empty(self):
-        result = parse('[];')
+        code = '[];'
+        result = parse(code)
         expected = Statement([Statement([Array([Statement([])])], ending=True)])
-        self.assertEqual(expected, result)
+
+        self.assertEqualStatement(expected, result, code)
 
     def test_parse_3(self):
-        result = parse('[1, 2, 3]')
+        code = '[1, 2, 3]'
+        result = parse(code)
         expected = Statement([Statement([
             Array([Statement([N(1)]), Statement([Space(), N(2)]), Statement([Space(), N(3)])])
         ])])
-        self.assertEqual(expected, result)
+
+        self.assertEqual(expected, result, code)
 
 
-class ParseLineComments(TestCase):
+class ParseLineComments(ParserTestCase):
 
     def test_inline(self):
-        result = parse('_x = 2 // the two')
+        code = '_x = 2 // the two'
+        result = parse(code)
         expected = Statement([Statement([
             Statement([V('_x'), Space()]),
             Keyword('='),
             Statement([Space(), N(2), Space(), Comment('// the two')])])
         ])
 
-        self.assertEqual(expected, result)
-        self.assertEqual(str(expected), str(result))
+        self.assertEqualStatement(expected, result, code)
 
     def test_inline_no_eof(self):
-        result = parse('_x = 2; // the two')
+        code = '_x = 2; // the two'
+        result = parse(code)
         expected = Statement([Statement([
             Statement([V('_x'), Space()]),
             Keyword('='),
@@ -256,32 +284,33 @@ class ParseLineComments(TestCase):
             Statement([Space(), Comment('// the two')])
         ])
 
-        self.assertEqual(expected, result)
+        self.assertEqualStatement(expected, result, code)
 
     def test_inline_with_eol(self):
-        result = parse('_x=2;// the two\n_x=3;')
+        code = '_x=2;// the two\n_x=3;'
+        result = parse(code)
         expected = Statement([
             Statement([V('_x'), Keyword('='), N(2)], ending=True),
             Statement([Statement([Comment('// the two\n'), V('_x')]), Keyword('='), N(3)], ending=True)])
 
-        self.assertEqual(expected, result)
-        self.assertEqual(str(expected), str(result))
+        self.assertEqualStatement(expected, result, code)
 
 
-class ParseBlockComments(TestCase):
+class ParseBlockComments(ParserTestCase):
 
     def test_inline(self):
-        result = parse('_x=2/* the two */')
+        code = '_x=2/* the two */'
+        result = parse(code)
         expected = Statement([Statement([
             V('_x'),
             Keyword('='),
             Statement([N(2), Comment('/* the two */')])])])
 
-        self.assertEqual(expected, result)
-        self.assertEqual(str(expected), str(result))
+        self.assertEqualStatement(expected, result, code)
 
     def test_with_lines(self):
-        result = parse('_x=2;/* the two \n the three\n the four\n */\n_x=3')
+        code = '_x=2;/* the two \n the three\n the four\n */\n_x=3'
+        result = parse(code)
         expected = Statement([Statement([
             V('_x'),
             Keyword('='),
@@ -290,11 +319,11 @@ class ParseBlockComments(TestCase):
                                   EndOfLine(), V('_x')]), Keyword('='), N(3)])
         ])
 
-        self.assertEqual(expected, result)
-        self.assertEqual(str(expected), str(result))
+        self.assertEqualStatement(expected, result, code)
 
     def test_with_other_comment(self):
-        result = parse('_x=2;/* // two four\n */\n_x=3')
+        code = '_x=2;/* // two four\n */\n_x=3'
+        result = parse(code)
         expected = Statement([Statement([
             V('_x'),
             Keyword('='),
@@ -303,5 +332,4 @@ class ParseBlockComments(TestCase):
                 [Statement([Comment('/* // two four\n */'), EndOfLine(), V('_x')]), Keyword('='), N(3)])
         ])
 
-        self.assertEqual(expected, result)
-        self.assertEqual(str(expected), str(result))
+        self.assertEqualStatement(expected, result, code)
