@@ -1,6 +1,6 @@
 from arma3.exceptions import SyntaxError
-from arma3.operators import Operator
 from arma3.parser_types import ParserType
+from arma3.keywords import Keyword, Comma
 
 
 class Type:
@@ -138,8 +138,8 @@ class _Statement:
     def __init__(self, tokens, parenthesis=None, ending=False):
         assert (isinstance(tokens, list))
         for s in tokens:
-            if not isinstance(s, (Type, Operator, ReservedToken, Statement, ParserType)):
-                raise SyntaxError('"%s" is not a type or op or keyword' % type(s))
+            if not isinstance(s, (Type, Keyword, Statement, ParserType)):
+                raise SyntaxError('"%s" is not a statment, type or keyword' % type(s))
         self._tokens = tokens
         self._parenthesis = parenthesis
         self._ending = ending
@@ -215,68 +215,3 @@ class Code(_Statement, Type):
 
     def __repr__(self):
         return '%s' % self._as_str(repr)
-
-
-class ReservedToken:
-    def __init__(self, token):
-        self._token = token
-
-    @property
-    def value(self):
-        return self._token
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self._token == other._token
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __str__(self):
-        return self._token
-
-    def __repr__(self):
-        return 'R<%s>' % self._token
-
-
-IfToken = ReservedToken('if')
-WhileToken = ReservedToken('while')
-ForToken = ReservedToken('for')
-DoToken = ReservedToken('do')
-ThenToken = ReservedToken('then')
-ToToken = ReservedToken('to')
-FromToken = ReservedToken('from')
-StepToken = ReservedToken('step')
-ElseToken = ReservedToken('else')
-ForEach = ReservedToken('foreach')
-ParenthesisOpen = ReservedToken('(')
-ParenthesisClose = ReservedToken(')')
-RParenthesisOpen = ReservedToken('[')
-RParenthesisClose = ReservedToken(']')
-BracketOpen = ReservedToken('{')
-BracketClose = ReservedToken('}')
-Comma = ReservedToken(',')
-EndOfStatement = ReservedToken(';')
-Nil = ReservedToken('nil')
-isServer = ReservedToken('isServer')
-isLocal = ReservedToken('isLocal')
-isDedicated = ReservedToken('isDedicated')
-
-
-class Namespace(ReservedToken):
-    pass
-
-
-NAMESPACES = [Namespace('missionNamespace'), Namespace('profileNamespace'), Namespace('uiNamespace'),
-              Namespace('parsingNamespace')]
-
-RESERVED = [IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
-            BracketOpen, BracketClose, Nil, WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken, Comma, EndOfStatement,
-            ] + NAMESPACES
-
-
-RESERVED_MAPPING = dict()
-for word in RESERVED:
-    RESERVED_MAPPING[word._token] = word

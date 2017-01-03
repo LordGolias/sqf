@@ -1,11 +1,10 @@
 from arma3.base_tokenizer import tokenize
 
 from arma3.exceptions import UnbalancedParenthesisSyntaxError, SyntaxError
-from arma3.types import Statement, Code, Number, Boolean, Variable, Array, String, RESERVED_MAPPING, \
-    RParenthesisOpen, RParenthesisClose, ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, \
-    Comma
+from arma3.types import Statement, Code, Number, Boolean, Variable, Array, String
+from arma3.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, RParenthesisOpen, RParenthesisClose, \
+    ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, Comma
 from arma3.parser_types import Comment, Space, EndOfLine
-from arma3.operators import OPERATORS, ORDERED_OPERATORS
 from arma3.parse_exp import parse_exp
 
 
@@ -16,10 +15,8 @@ def identify_token(token):
         return Space()
     elif token == '\n':
         return EndOfLine()
-    elif token in OPERATORS:
-        return OPERATORS[token]
-    elif token in RESERVED_MAPPING:
-        return RESERVED_MAPPING[token]
+    elif token in KEYWORDS_MAPPING:
+        return KEYWORDS_MAPPING[token]
     elif token in ('true', 'false'):
         return Boolean(token == 'true')
     else:

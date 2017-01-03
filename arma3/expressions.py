@@ -1,6 +1,6 @@
-from arma3.types import Number, Array, Code, Type, Boolean, String, Nothing, Namespace, Variable, \
-    IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, FromToken, ToToken, StepToken
-from arma3.operators import OPERATORS, OP_COMPARISON, OP_OPERATIONS, OP_ARITHMETIC, OP_ARRAY_OPERATIONS, OP_LOGICAL
+from arma3.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
+from arma3.keywords import Keyword, IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, \
+    FromToken, ToToken, StepToken, Namespace
 from arma3.exceptions import ExecutionError
 import math
 
@@ -37,7 +37,7 @@ class UnaryExpression(Expression):
         if tests is None:
             tests = []
         super().__init__(2, action, [
-            lambda values: values[0] == OPERATORS[op_name],
+            lambda values: values[0] == Keyword(op_name),
             lambda values: isinstance(values[1], rhs_type),
             ] + tests)
 
@@ -53,7 +53,7 @@ class BinaryExpression(Expression):
         if action is None:
             action = lambda lhs_v, rhs_v, i: True
         super().__init__(3, action, [
-            lambda values: values[1] == OPERATORS[op_name],
+            lambda values: values[1] == Keyword(op_name),
             lambda values: isinstance(values[0], lhs_type),
             lambda values: isinstance(values[2], rhs_type),
             ] + tests)
@@ -67,7 +67,7 @@ class BinaryExpression(Expression):
 class ComparisonExpression(BinaryExpression):
 
     def __init__(self, op_name):
-        assert(OPERATORS[op_name] in OP_COMPARISON)
+        assert(Keyword(op_name) in OP_COMPARISON)
         tests = [lambda values: type(values[0]) == type(values[2]),
                  lambda values: not (type(values[0]) == Boolean == type(values[2]))]
         super().__init__(op_name, Type, Type, tests=tests)
@@ -82,14 +82,14 @@ class ComparisonExpression(BinaryExpression):
 class ArithmeticExpression(BinaryExpression):
 
     def __init__(self, op_name):
-        op = OPERATORS[op_name]
+        op = Keyword(op_name)
         assert (op in OP_ARITHMETIC)
         tests = [lambda values: type(values[0]) == type(values[2]) == Array and
-                                op in (OPERATORS['+'], OPERATORS['-']) or
+                                op in OP_ARRAY_OPERATIONS or
                                 type(values[0]) == type(values[2]) == String and
-                                op == OPERATORS['+'] or
+                                op == Keyword('+') or
                                 type(values[0]) == type(values[2]) == Number]
-        super().__init__(op.op, Type, Type, tests=tests)
+        super().__init__(op.value, Type, Type, tests=tests)
 
     def execute(self, tokens, values, _):
         lhs_v = values[0]
@@ -104,7 +104,7 @@ class ArithmeticExpression(BinaryExpression):
 
 class LogicalExpression(BinaryExpression):
     def __init__(self, op_name):
-        assert (OPERATORS[op_name] in OP_LOGICAL)
+        assert (Keyword(op_name) in OP_LOGICAL)
 
         tests = [lambda values: type(values[0]) == type(values[2]) == Boolean]
         super().__init__(op_name, Type, Type, tests=tests)
@@ -306,9 +306,53 @@ EXPRESSIONS = [
                action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, v[7].value, v[9])),
 ]
 
+
+OP_ARITHMETIC = [Keyword(s) for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')]
+
+OP_LOGICAL = [Keyword(s) for s in ('&&', 'and', '||', 'or')]
+
+OP_COMPARISON = [Keyword(s) for s in ('==', '!=', '<', '>', '<=', '>=')]
+
+OP_OPERATIONS = {
+    Keyword('+'): lambda x, y: x + y,
+    Keyword('-'): lambda x, y: x - y,
+    Keyword('*'): lambda x, y: x * y,
+    Keyword('/'): lambda x, y: x / y,
+    Keyword('%'): lambda x, y: x % y,
+    Keyword('mod'): lambda x, y: x % y,
+    Keyword('^'): lambda x, y: x ** y,
+
+    Keyword('=='): lambda x, y: x == y,
+    Keyword('!='): lambda x, y: x != y,
+    Keyword('<'): lambda x, y: x < y,
+    Keyword('>'): lambda x, y: x < y,
+    Keyword('<='): lambda x, y: x <= y,
+    Keyword('>='): lambda x, y: x >= y,
+
+    Keyword('&&'): lambda x, y: x and y,
+    Keyword('and'): lambda x, y: x and y,
+    Keyword('||'): lambda x, y: x or y,
+    Keyword('or'): lambda x, y: x or y,
+
+    Keyword('max'): lambda x, y: max(x, y),
+    Keyword('floor'): lambda x: math.floor(x),
+}
+
+
+def _subtract_lists(x, y):
+    yset = set([y_i.value for y_i in y])
+    return [x_i for x_i in x if x_i.value not in yset]
+
+
+OP_ARRAY_OPERATIONS = {
+    Keyword('+'): lambda x, y: x + y,
+    Keyword('-'): lambda x, y: _subtract_lists(x, y),
+}
+
+
 for operator in OP_COMPARISON:
-    EXPRESSIONS.append(ComparisonExpression(operator.op))
+    EXPRESSIONS.append(ComparisonExpression(operator.value))
 for operator in OP_ARITHMETIC:
-    EXPRESSIONS.append(ArithmeticExpression(operator.op))
+    EXPRESSIONS.append(ArithmeticExpression(operator.value))
 for operator in OP_LOGICAL:
-    EXPRESSIONS.append(LogicalExpression(operator.op))
+    EXPRESSIONS.append(LogicalExpression(operator.value))

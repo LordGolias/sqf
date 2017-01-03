@@ -1,7 +1,6 @@
-from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, \
-    ReservedToken, Type
+from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
+from arma3.keywords import Keyword
 from arma3.object import Marker
-from arma3.operators import Operator, OPERATORS
 from arma3.parser import parse
 from arma3.exceptions import WrongTypes, ExecutionError
 from arma3.expressions import EXPRESSIONS
@@ -74,7 +73,7 @@ class Interpreter:
         if isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
             return scope[token.name]
-        elif isinstance(token, (ConstantValue, Array, Code, Operator, ReservedToken)):
+        elif isinstance(token, (ConstantValue, Array, Code, Keyword)):
             return token
         else:
             raise NotImplementedError(repr(token))
@@ -97,11 +96,11 @@ class Interpreter:
         elif isinstance(token, Array):
             # empty statements are ignored
             result = Array([self.execute_token(s)[1] for s in token.value if s])
-        elif token == OPERATORS['isServer']:
+        elif token == Keyword('isServer'):
             result = Boolean(self.client.is_server)
-        elif token == OPERATORS['isClient']:
+        elif token == Keyword('isClient'):
             result = Boolean(self.client.is_client)
-        elif token == OPERATORS['isDedicated']:
+        elif token == Keyword('isDedicated'):
             result = Boolean(self.client.is_dedicated)
         else:
             result = token
@@ -168,14 +167,14 @@ class Interpreter:
         if case_found is not None:
             outcome = case_found.execute(tokens, values, self)
         # todo: replace all elif below by expressions
-        elif len(tokens) == 2 and tokens[0] == OPERATORS['publicVariable']:
+        elif len(tokens) == 2 and tokens[0] == Keyword('publicVariable'):
             if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
                 var_name = tokens[1].value
                 scope = self.get_scope(var_name, 'missionNamespace')
                 self.simulation.broadcast(var_name, scope[var_name])
             else:
                 raise WrongTypes()
-        elif len(tokens) == 2 and tokens[0] == OPERATORS['publicVariableServer']:
+        elif len(tokens) == 2 and tokens[0] == Keyword('publicVariableServer'):
             if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
                 var_name = tokens[1].value
                 scope = self.get_scope(var_name, 'missionNamespace')
@@ -185,14 +184,14 @@ class Interpreter:
                     raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
             else:
                 raise WrongTypes()
-        elif len(tokens) == 2 and tokens[0] == OPERATORS['private']:
+        elif len(tokens) == 2 and tokens[0] == Keyword('private'):
 
             if isinstance(values[1], String):
                 self.add_privates([values[1].value])
             elif isinstance(values[1], Array):
                 self.add_privates([s.value for s in values[1].value])
             elif isinstance(base_tokens[1], Statement) and len(base_tokens[1]) == 3 and \
-                base_tokens[1][1] == OPERATORS['=']:
+                base_tokens[1][1] == Keyword('='):
                 variable = self.get_variable(base_tokens[1][0])
 
                 self.add_privates([variable.name])
@@ -200,7 +199,7 @@ class Interpreter:
             else:
                 raise SyntaxError()
         # binary operators
-        elif len(tokens) == 3 and isinstance(tokens[1], Operator):
+        elif len(tokens) == 3 and isinstance(tokens[1], Keyword):
             # it is a binary statement: token, operation, token
             lhs = tokens[0]
             lhs_v = values[0]
@@ -211,7 +210,7 @@ class Interpreter:
             rhs_v = values[2]
             rhs_t = types[2]
 
-            if op == OPERATORS['=']:
+            if op == Keyword('='):
                 lhs = self.get_variable(base_tokens[0])
 
                 if not isinstance(lhs, Variable):
@@ -222,7 +221,7 @@ class Interpreter:
                 variable_scope = self.get_scope(lhs.name)
                 variable_scope[lhs.name] = rhs_v
                 outcome = rhs
-            elif op == OPERATORS['publicVariableClient']:
+            elif op == Keyword('publicVariableClient'):
                 if lhs_t == Number and not rhs.value.startswith('_'):
                     client_id = lhs.value
                     var_name = rhs.value
@@ -236,7 +235,7 @@ class Interpreter:
             else:
                 raise NotImplementedError([lhs, op, rhs])
         # code, variables and values
-        elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, ReservedToken, Variable, Array)):
+        elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Keyword, Variable, Array)):
             outcome = values[0]
         else:
             raise NotImplementedError('Interpretation of "%s" not implemented' % tokens)

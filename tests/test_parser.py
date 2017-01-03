@@ -2,11 +2,11 @@ from unittest import TestCase
 
 from arma3.parse_exp import parse_exp, partition
 from arma3.exceptions import SyntaxError, UnbalancedParenthesisSyntaxError
-from arma3.types import String, Statement, Code, Array, Nil, Comma, IfToken, ThenToken, Boolean, Variable as V, \
+from arma3.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
+from arma3.keywords import Keyword, Nil, Comma, IfToken, ThenToken
 from arma3.parser_types import Comment, Space, EndOfLine
-from arma3.operators import OPERATORS as OP
-from arma3.parser import parse, parse_strings, tokenize
+from arma3.parser import parse, parse_strings
 from arma3.base_tokenizer import tokenize
 
 
@@ -14,53 +14,49 @@ from arma3.base_tokenizer import tokenize
 class TestExpParser(TestCase):
 
     def test_partition(self):
-        res = partition([V('_x'), OP['='], V('2')], OP['='])
-        self.assertEqual([[V('_x')], OP['='], [V('2')]], res)
+        res = partition([V('_x'), Keyword('='), V('2')], Keyword('='))
+        self.assertEqual([[V('_x')], Keyword('='), [V('2')]], res)
 
     def test_binary(self):
         # a=b
-        test = [V('a'), OP['='], V('b')]
-        self.assertEqual([V('a'), OP['='], V('b')], parse_exp(test, [OP['=']]))
+        test = [V('a'), Keyword('='), V('b')]
+        self.assertEqual([V('a'), Keyword('='), V('b')], parse_exp(test, [Keyword('=')]))
 
         # a=b+c*d
-        test = [V('a'), OP['='], V('b'), OP['+'], V('c'), OP['*'], V('d')]
-        self.assertEqual([V('a'), OP['='], [V('b'), OP['+'], [V('c'), OP['*'], V('d')]]],
-                         parse_exp(test, [OP['='], OP['+'], OP['*']]))
+        test = [V('a'), Keyword('='), V('b'), Keyword('+'), V('c'), Keyword('*'), V('d')]
+        self.assertEqual([V('a'), Keyword('='), [V('b'), Keyword('+'), [V('c'), Keyword('*'), V('d')]]],
+                         parse_exp(test, [Keyword('='), Keyword('+'), Keyword('*')]))
 
     def test_binary_two_same_operators(self):
         # a=b=e+c*d
-        test = [V('a'), OP['='], V('b'), OP['='], V('e'), OP['+'], V('c'), OP['*'], V('d')]
-        self.assertEqual([V('a'), OP['='], [V('b'), OP['='], [V('e'), OP['+'], [V('c'), OP['*'], V('d')]]]],
-                         parse_exp(test, [OP['='], OP['+'], OP['*']]))
+        test = [V('a'), Keyword('='), V('b'), Keyword('='), V('e'), Keyword('+'), V('c'), Keyword('*'), V('d')]
+        self.assertEqual([V('a'), Keyword('='), [V('b'), Keyword('='), [V('e'), Keyword('+'), [V('c'), Keyword('*'), V('d')]]]],
+                         parse_exp(test, [Keyword('='), Keyword('+'), Keyword('*')]))
 
         # a+b+c
-        test = [V('a'), OP['+'], V('b'), OP['+'], V('c')]
-        self.assertEqual([V('a'), OP['+'], [V('b'), OP['+'], V('c')]],
-                         parse_exp(test, [OP['='], OP['+'], OP['*']]))
+        test = [V('a'), Keyword('+'), V('b'), Keyword('+'), V('c')]
+        self.assertEqual([V('a'), Keyword('+'), [V('b'), Keyword('+'), V('c')]],
+                         parse_exp(test, [Keyword('='), Keyword('+'), Keyword('*')]))
 
     def test_binary_order_matters(self):
         # a+b=c
-        test = [V('a'), OP['+'], V('b'), OP['='], V('c')]
-        self.assertEqual([[V('a'), OP['+'], V('b')], OP['='], V('c')],
-                         parse_exp(test, [OP['='], OP['+'], OP['*']]))
+        test = [V('a'), Keyword('+'), V('b'), Keyword('='), V('c')]
+        self.assertEqual([[V('a'), Keyword('+'), V('b')], Keyword('='), V('c')],
+                         parse_exp(test, [Keyword('='), Keyword('+'), Keyword('*')]))
 
     def test_unary(self):
         # a=!b||c
-        test = [V('a'), OP['='], OP['!'], V('b'), OP['||'], V('c')]
-        self.assertEqual([V('a'), OP['='], [[OP['!'], V('b')], OP['||'], V('c')]],
-                         parse_exp(test, [OP['='], OP['||'], OP['!']]))
+        test = [V('a'), Keyword('='), Keyword('!'), V('b'), Keyword('||'), V('c')]
+        self.assertEqual([V('a'), Keyword('='), [[Keyword('!'), V('b')], Keyword('||'), V('c')]],
+                         parse_exp(test, [Keyword('='), Keyword('||'), Keyword('!')]))
 
     def test_with_statement(self):
-        test = [V('a'), OP['+'], V('b'), OP['='], V('c')]
-        self.assertEqual(Statement([Statement([V('a'), OP['+'], V('b')]), OP['='], V('c')]),
-                         parse_exp(test, [OP['='], OP['+'], OP['*']], Statement))
+        test = [V('a'), Keyword('+'), V('b'), Keyword('='), V('c')]
+        self.assertEqual(Statement([Statement([V('a'), Keyword('+'), V('b')]), Keyword('='), V('c')]),
+                         parse_exp(test, [Keyword('='), Keyword('+'), Keyword('*')], Statement))
 
 
 class ParseCode(TestCase):
-
-    def test_tokenize(self):
-        x = tokenize('/*_x = (1 + 2);*/')
-        print(x)
 
     def test_parse_string(self):
         test = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
@@ -73,51 +69,51 @@ class ParseCode(TestCase):
 
     def test_one(self):
         result = parse('_x=2;')
-        expected = Statement([Statement([V('_x'), OP['='], N(2)], ending=True)])
+        expected = Statement([Statement([V('_x'), Keyword('='), N(2)], ending=True)])
 
         self.assertEqual(expected, result)
 
     def test_one_bracketed(self):
         result = parse('{_x="AirS";}')
-        expected = Statement([Statement([Code([Statement([V('_x'), OP['='], String('AirS')], ending=True)])])])
+        expected = Statement([Statement([Code([Statement([V('_x'), Keyword('='), String('AirS')], ending=True)])])])
         self.assertEqual(expected, result)
 
     def test_not_delayed(self):
         result = parse('(_x="AirS";)')
         expected = Statement([Statement([
-            Statement([V('_x'), OP['='], String('AirS')], ending=True)], parenthesis=True)])
+            Statement([V('_x'), Keyword('='), String('AirS')], ending=True)], parenthesis=True)])
         self.assertEqual(expected, result)
 
         result = parse('(_x="AirS";);')
-        expected = Statement([Statement([Statement([V('_x'), OP['='], String('AirS')], ending=True)],
+        expected = Statement([Statement([Statement([V('_x'), Keyword('='), String('AirS')], ending=True)],
                                         parenthesis=True, ending=True)
                               ])
         self.assertEqual(expected, result)
 
     def test_assign(self):
         result = parse('_x=(_x=="AirS");')
-        expected = Statement([Statement([V('_x'), OP['='],
-                              Statement([Statement([V('_x'), OP['=='], String('AirS')])], parenthesis=True)], ending=True)])
+        expected = Statement([Statement([V('_x'), Keyword('='),
+                              Statement([Statement([V('_x'), Keyword('=='), String('AirS')])], parenthesis=True)], ending=True)])
         self.assertEqual(expected, result)
 
     def test_two_statements(self):
         result = parse('_x=true;_x=false')
-        expected = Statement([Statement([V('_x'), OP['='], Boolean(True)], ending=True),
-                              Statement([V('_x'), OP['='], Boolean(False)])])
+        expected = Statement([Statement([V('_x'), Keyword('='), Boolean(True)], ending=True),
+                              Statement([V('_x'), Keyword('='), Boolean(False)])])
         self.assertEqual(expected, result)
 
     def test_parse_bracketed_4(self):
         result = parse('_x=true;{_x=false}')
         expected = Statement([
-            Statement([V('_x'), OP['='], Boolean(True)], ending=True),
-            Statement([Code([Statement([V('_x'), OP['='], Boolean(False)])])])
+            Statement([V('_x'), Keyword('='), Boolean(True)], ending=True),
+            Statement([Code([Statement([V('_x'), Keyword('='), Boolean(False)])])])
         ])
         self.assertEqual(expected, result)
 
     def test_two(self):
         result = parse('_x=2;_y=3;')
-        expected = Statement([Statement([V('_x'), OP['='], N(2)], ending=True),
-                         Statement([V('_y'), OP['='], N(3)], ending=True)])
+        expected = Statement([Statement([V('_x'), Keyword('='), N(2)], ending=True),
+                         Statement([V('_y'), Keyword('='), N(3)], ending=True)])
 
         self.assertEqual(expected, result)
 
@@ -125,8 +121,8 @@ class ParseCode(TestCase):
         result = parse('{_x=2;_y=3;};')
 
         expected = Statement([Statement([Code([
-            Statement([V('_x'), OP['='], N(2)], ending=True),
-            Statement([V('_y'), OP['='], N(3)], ending=True)])], ending=True)])
+            Statement([V('_x'), Keyword('='), N(2)], ending=True),
+            Statement([V('_y'), Keyword('='), N(3)], ending=True)])], ending=True)])
 
         self.assertEqual(expected, result)
 
@@ -134,8 +130,8 @@ class ParseCode(TestCase):
         test = "_x=(_y==2);"
         result = parse(test)
 
-        s1 = Statement([V('_y'), OP['=='], N(2)])
-        expected = Statement([Statement([V('_x'), OP['='], Statement([s1], parenthesis=True)], ending=True)])
+        s1 = Statement([V('_y'), Keyword('=='), N(2)])
+        expected = Statement([Statement([V('_x'), Keyword('='), Statement([s1], parenthesis=True)], ending=True)])
 
         self.assertEqual(expected, result)
 
@@ -162,10 +158,10 @@ class ParseCode(TestCase):
         result = parse(test)
         expected = Statement([Statement([
             Statement([V('_h'), Space()]),
-            OP['='],
+            Keyword('='),
             Statement([
                 Statement([Space(), V('_civs'), Space()]),
-                OP['spawn'],
+                Keyword('spawn'),
                 Statement([Space(), V('_fPscareC')])
             ])], ending=True)])
 
@@ -175,25 +171,25 @@ class ParseCode(TestCase):
         test = 'isNil{_x getVariable "AirS"}'
         result = parse(test)
         expected = Statement([Statement([
-            OP['isNil'],
+            Keyword('isNil'),
             Code([Statement([
                 Statement([V('_x'), Space()]),
-                OP['getVariable'],
+                Keyword('getVariable'),
                 Statement([Space(), String('AirS')])])])
             ])])
         self.assertEqual(expected, result)
 
     def test_code(self):
         result = parse('_is1={_x==1};')
-        expected = Statement([Statement([V('_is1'), OP['='],
-                                         Code([Statement([V('_x'), OP['=='], N(1)])])], ending=True)])
+        expected = Statement([Statement([V('_is1'), Keyword('='),
+                                         Code([Statement([V('_x'), Keyword('=='), N(1)])])], ending=True)])
         self.assertEqual(expected, result)
 
     def test_if_then(self):
         result = parse('if(true)then{private"_x";_x}')
         expected = Statement([Statement([IfToken, Statement([Statement([Boolean(True)])], parenthesis=True),
                                          ThenToken, Code([
-                Statement([OP['private'], String('_x')], ending=True),
+                Statement([Keyword('private'), String('_x')], ending=True),
                 Statement([V('_x')])])
         ])])
         self.assertEqual(expected, result)
@@ -244,7 +240,7 @@ class ParseLineComments(TestCase):
         result = parse('_x = 2 // the two')
         expected = Statement([Statement([
             Statement([V('_x'), Space()]),
-            OP['='],
+            Keyword('='),
             Statement([Space(), N(2), Space(), Comment('// the two')])])
         ])
 
@@ -255,7 +251,7 @@ class ParseLineComments(TestCase):
         result = parse('_x = 2; // the two')
         expected = Statement([Statement([
             Statement([V('_x'), Space()]),
-            OP['='],
+            Keyword('='),
             Statement([Space(), N(2)])], ending=True),
             Statement([Space(), Comment('// the two')])
         ])
@@ -265,8 +261,8 @@ class ParseLineComments(TestCase):
     def test_inline_with_eol(self):
         result = parse('_x=2;// the two\n_x=3;')
         expected = Statement([
-            Statement([V('_x'), OP['='], N(2)], ending=True),
-            Statement([Statement([Comment('// the two\n'), V('_x')]), OP['='], N(3)], ending=True)])
+            Statement([V('_x'), Keyword('='), N(2)], ending=True),
+            Statement([Statement([Comment('// the two\n'), V('_x')]), Keyword('='), N(3)], ending=True)])
 
         self.assertEqual(expected, result)
         self.assertEqual(str(expected), str(result))
@@ -278,7 +274,7 @@ class ParseBlockComments(TestCase):
         result = parse('_x=2/* the two */')
         expected = Statement([Statement([
             V('_x'),
-            OP['='],
+            Keyword('='),
             Statement([N(2), Comment('/* the two */')])])])
 
         self.assertEqual(expected, result)
@@ -288,10 +284,10 @@ class ParseBlockComments(TestCase):
         result = parse('_x=2;/* the two \n the three\n the four\n */\n_x=3')
         expected = Statement([Statement([
             V('_x'),
-            OP['='],
+            Keyword('='),
             N(2)], ending=True),
             Statement([Statement([Comment('/* the two \n the three\n the four\n */'),
-                                  EndOfLine(), V('_x')]), OP['='], N(3)])
+                                  EndOfLine(), V('_x')]), Keyword('='), N(3)])
         ])
 
         self.assertEqual(expected, result)
@@ -301,10 +297,10 @@ class ParseBlockComments(TestCase):
         result = parse('_x=2;/* // two four\n */\n_x=3')
         expected = Statement([Statement([
             V('_x'),
-            OP['='],
+            Keyword('='),
             N(2)], ending=True),
             Statement(
-                [Statement([Comment('/* // two four\n */'), EndOfLine(), V('_x')]), OP['='], N(3)])
+                [Statement([Comment('/* // two four\n */'), EndOfLine(), V('_x')]), Keyword('='), N(3)])
         ])
 
         self.assertEqual(expected, result)

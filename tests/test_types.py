@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from arma3.types import Statement, String, ForEach, Array, Nil, Comma, Boolean, Code, Nothing, \
+from arma3.types import Statement, Array, Boolean, Code, Nothing, \
     Variable as V, Number as N
-from arma3.operators import OPERATORS as OP
+from arma3.keywords import ForEach, Keyword
 
 
 class TestTypesToString(TestCase):
@@ -25,4 +25,4 @@ class TestTypesToString(TestCase):
         self.assertEqual('Nothing', str(Nothing))
 
     def test_code(self):
-        self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), OP['='], N(2)], ending=True)])))
+        self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), Keyword('='), N(2)], ending=True)])))
