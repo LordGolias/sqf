@@ -1,13 +1,13 @@
 from unittest import TestCase
 
-from arma3.parse_exp import parse_exp, partition
-from arma3.exceptions import SQFSyntaxError, UnbalancedParenthesisSQFSyntaxError
-from arma3.types import String, Statement, Code, Array, Boolean, Variable as V, \
+from sqf.parse_exp import parse_exp, partition
+from sqf.exceptions import SQFSyntaxError, UnbalancedParenthesisSQFSyntaxError
+from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
-from arma3.keywords import Keyword, Nil, Comma, IfToken, ThenToken
-from arma3.parser_types import Comment, Space, EndOfLine
-from arma3.parser import parse, parse_strings
-from arma3.base_tokenizer import tokenize
+from sqf.keywords import Keyword, Nil, Comma, IfToken, ThenToken
+from sqf.parser_types import Comment, Space, EndOfLine
+from sqf.parser import parse, parse_strings
+from sqf.base_tokenizer import tokenize
 
 
 class TestExpParser(TestCase):

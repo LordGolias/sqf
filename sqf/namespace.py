@@ -1,4 +1,4 @@
-from arma3.types import Nothing
+from sqf.types import Nothing
 
 
 class Scope:

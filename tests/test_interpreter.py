@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from arma3.exceptions import WrongTypes
-from arma3.types import String, Number, Array, Boolean, Nothing, Number as N
-from arma3.interpreter import interpret
+from sqf.exceptions import WrongTypes
+from sqf.types import String, Number, Array, Boolean, Nothing, Number as N
+from sqf.interpreter import interpret
 
 
 class TestInterpreter(TestCase):

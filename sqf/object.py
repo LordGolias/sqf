@@ -1,4 +1,4 @@
-from arma3.types import Type, Array
+from sqf.types import Type, Array
 
 
 class Object(Type):

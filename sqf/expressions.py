@@ -1,7 +1,7 @@
-from arma3.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
-from arma3.keywords import Keyword, IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, \
+from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
+from sqf.keywords import Keyword, IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, \
     FromToken, ToToken, StepToken, Namespace
-from arma3.exceptions import ExecutionError
+from sqf.exceptions import ExecutionError
 import math
 
 

@@ -1,6 +1,6 @@
-from arma3.exceptions import SQFSyntaxError
-from arma3.parser_types import ParserType
-from arma3.keywords import Keyword, Comma
+from sqf.exceptions import SQFSyntaxError
+from sqf.parser_types import ParserType
+from sqf.keywords import Keyword, Comma
 
 
 class Type:

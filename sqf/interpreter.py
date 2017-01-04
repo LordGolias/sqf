@@ -1,10 +1,10 @@
-from arma3.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
-from arma3.keywords import Keyword
-from arma3.object import Marker
-from arma3.parser import parse
-from arma3.exceptions import WrongTypes, ExecutionError
-from arma3.expressions import EXPRESSIONS
-from arma3.namespace import Namespace
+from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
+from sqf.keywords import Keyword
+from sqf.object import Marker
+from sqf.parser import parse
+from sqf.exceptions import WrongTypes, ExecutionError
+from sqf.expressions import EXPRESSIONS
+from sqf.namespace import Namespace
 
 
 class Interpreter:

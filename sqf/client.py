@@ -1,6 +1,6 @@
-from arma3.exceptions import ExecutionError
-from arma3.interpreter import Interpreter, interpret
-from arma3.types import Code, Array, String
+from sqf.exceptions import ExecutionError
+from sqf.interpreter import Interpreter, interpret
+from sqf.types import Code, Array, String
 
 
 class Client:

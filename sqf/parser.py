@@ -1,11 +1,11 @@
-from arma3.base_tokenizer import tokenize
+from sqf.base_tokenizer import tokenize
 
-from arma3.exceptions import UnbalancedParenthesisSQFSyntaxError, SQFSyntaxError
-from arma3.types import Statement, Code, Number, Boolean, Variable, Array, String
-from arma3.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, RParenthesisOpen, RParenthesisClose, \
+from sqf.exceptions import UnbalancedParenthesisSQFSyntaxError, SQFSyntaxError
+from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String
+from sqf.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, RParenthesisOpen, RParenthesisClose, \
     ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, Comma
-from arma3.parser_types import Comment, Space, EndOfLine
-from arma3.parse_exp import parse_exp
+from sqf.parser_types import Comment, Space, EndOfLine
+from sqf.parse_exp import parse_exp
 
 
 def identify_token(token):

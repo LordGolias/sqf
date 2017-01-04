@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from arma3.types import Statement, Array, Boolean, Code, Nothing, \
+from sqf.types import Statement, Array, Boolean, Code, Nothing, \
     Variable as V, Number as N
-from arma3.keywords import ForEach, Keyword
+from sqf.keywords import ForEach, Keyword
 
 
 class TestTypesToString(TestCase):

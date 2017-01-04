@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from arma3.types import Number as N, Nothing, Boolean
-from arma3.client import Simulation, Client
+from sqf.types import Number as N, Nothing, Boolean
+from sqf.client import Simulation, Client
 
 
 class Sim(TestCase):
