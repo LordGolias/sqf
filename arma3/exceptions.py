@@ -2,7 +2,7 @@ class NotATypeError(Exception):
     pass
 
 
-class SyntaxError(Exception):
+class SQFSyntaxError(Exception):
     pass
 
 
@@ -10,11 +10,11 @@ class InterpreterError(Exception):
     pass
 
 
-class IfThenSyntaxError(SyntaxError):
+class IfThenSQFSyntaxError(SQFSyntaxError):
     pass
 
 
-class UnbalancedParenthesisSyntaxError(SyntaxError):
+class UnbalancedParenthesisSQFSyntaxError(SQFSyntaxError):
     pass
 
 

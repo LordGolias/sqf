@@ -1,4 +1,4 @@
-from arma3.exceptions import SyntaxError
+from arma3.exceptions import SQFSyntaxError
 from arma3.parser_types import ParserType
 from arma3.keywords import Keyword, Comma
 
@@ -82,7 +82,7 @@ class Array(Type):
         # asserts below check that it is a list of the form `A,B,C`
         # where A B and C are instances of a Type.
         if Comma in items:
-            raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+            raise SQFSyntaxError('Array syntax is `[item1, item2, ...]`')
         self._items = items
 
     def __str__(self):

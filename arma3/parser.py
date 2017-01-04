@@ -1,6 +1,6 @@
 from arma3.base_tokenizer import tokenize
 
-from arma3.exceptions import UnbalancedParenthesisSyntaxError, SyntaxError
+from arma3.exceptions import UnbalancedParenthesisSQFSyntaxError, SQFSyntaxError
 from arma3.types import Statement, Code, Number, Boolean, Variable, Array, String
 from arma3.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, RParenthesisOpen, RParenthesisClose, \
     ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, Comma
@@ -87,7 +87,7 @@ def analyse_array_tokens(tokens):
         if token == Comma:
             first_comma_found = True
             if not part:
-                raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+                raise SQFSyntaxError('Array syntax is `[item1, item2, ...]`')
             result.append(analise_tokens(part))
             part = []
         else:
@@ -95,7 +95,7 @@ def analyse_array_tokens(tokens):
 
     # an empty array is a valid array
     if part == [] and first_comma_found:
-        raise SyntaxError('Array syntax is `[item1, item2, ...]`')
+        raise SQFSyntaxError('Array syntax is `[item1, item2, ...]`')
     result.append(analise_tokens(part))
 
     return result
@@ -150,14 +150,14 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
 
         elif token == RParenthesisClose:
             if rparenthesis_lvl == 0:
-                raise UnbalancedParenthesisSyntaxError('Trying to close right parenthesis without them opened.')
+                raise UnbalancedParenthesisSQFSyntaxError('Trying to close right parenthesis without them opened.')
 
             if statements:
-                raise SyntaxError('Statement cannot be in an array')
+                raise SQFSyntaxError('Statement cannot be in an array')
             return Array(analyse_array_tokens(tokens)), i - start
         elif token == ParenthesisClose:
             if parenthesis_lvl == 0:
-                raise UnbalancedParenthesisSyntaxError('Trying to close parenthesis without opened parenthesis.')
+                raise UnbalancedParenthesisSQFSyntaxError('Trying to close parenthesis without opened parenthesis.')
 
             if tokens:
                 statements.append(analise_tokens(tokens))
@@ -165,7 +165,7 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
             return Statement(statements, parenthesis=True), i - start
         elif token == BracketClose:
             if block_lvl == 0:
-                raise UnbalancedParenthesisSyntaxError('Trying to close brackets without opened brackets.')
+                raise UnbalancedParenthesisSQFSyntaxError('Trying to close brackets without opened brackets.')
 
             if tokens:
                 statements.append(analise_tokens(tokens))
@@ -180,7 +180,7 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
         i += 1
 
     if block_lvl != 0 or rparenthesis_lvl != 0 or parenthesis_lvl != 0:
-        raise UnbalancedParenthesisSyntaxError('Brackets not closed')
+        raise UnbalancedParenthesisSQFSyntaxError('Brackets not closed')
 
     if tokens:
         statements.append(analise_tokens(tokens))
