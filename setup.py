@@ -7,5 +7,5 @@ setup(name='tokenizer',
       license='MIT',
       ext_package='tokenizer',
       ext_modules=[Extension("_tokenizer",
-                             ["core/tokenizer_source/tokenizer.cpp"])]
+                             ["sqf/tokenizer_source/tokenizer.cpp"])]
 )

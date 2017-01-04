@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from sqf.types import Statement, Array, Boolean, Code, Nothing, \
     Variable as V, Number as N
+from sqf.parser_types import Space, Comment, EndOfLine
 from sqf.keywords import Keyword
 
 
@@ -26,3 +27,33 @@ class TestTypesToString(TestCase):
 
     def test_code(self):
         self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), Keyword('='), N(2)], ending=True)])))
+
+
+class TestGetPosition(TestCase):
+
+    def test_keyword(self):
+        s = Statement([Space(), Keyword('for')])
+        self.assertEqual((1, 1), s[1].position)
+
+    def test_with_comments(self):
+        # _x=2;/* the two
+        #  the three
+        #  the four
+        #  */
+        # _x=3'
+        s = Statement([
+                Statement([
+                    V('_x'),
+                    Keyword('='),
+                    N(2)], ending=True),
+                Statement([
+                    Statement([Comment('/* the two \n the three\n the four\n */'),
+                               EndOfLine(),
+                               V('_x')]),
+                    Keyword('='),
+                    N(3)
+                ])
+        ])
+
+        self.assertEqual(Keyword('='), s[1][1])
+        self.assertEqual((5, 2), s[1][1].position)

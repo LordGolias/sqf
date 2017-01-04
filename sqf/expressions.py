@@ -2,7 +2,7 @@ import math
 
 from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
 from sqf.keywords import Keyword, Namespace
-from sqf.exceptions import ExecutionError
+from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 
 class Expression:
@@ -239,7 +239,7 @@ def _switch(interpreter, result, code):
             pass
         elif statement.base_tokens[0] == Keyword('default'):
             if default is not None:
-                raise SyntaxError('Switch statement contains more than 1 `default`')
+                raise SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`')
             default = statement.base_tokens[1]
         elif statement.base_tokens[0] == Keyword('case') and (
                     len(statement.base_tokens) == 2 or
@@ -262,7 +262,7 @@ def _switch(interpreter, result, code):
                 else:
                     run_next = True
         else:
-            raise SyntaxError('Statement "%s" in `switch` is syntactically wrong' % str(statement))
+            raise SQFSyntaxError(statement.position, 'Switch statement "%s" is syntactically wrong' % statement)
 
     if outcome is None:
         if default is not None:

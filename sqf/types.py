@@ -1,22 +1,16 @@
-from sqf.exceptions import SQFSyntaxError
+from sqf.exceptions import SQFError
 from sqf.parser_types import ParserType
 from sqf.keywords import Keyword
+from sqf.base_type import BaseType
 
 
-class Type:
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__dict__ == other.__dict__
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+class Type(BaseType):
+    pass
 
 
 class ConstantValue(Type):
     def __init__(self, value=None):
+        super().__init__()
         self._value = value
 
     @property
@@ -78,11 +72,12 @@ class Number(ConstantValue):
 
 class Array(Type):
     def __init__(self, items):
+        super().__init__()
         self._items = []
         # asserts below check that it is a list of the form `A,B,C`
         # where A B and C are instances of a Type.
         if Keyword(',') in items:
-            raise SQFSyntaxError('Array syntax is `[item1, item2, ...]`')
+            raise SQFError('Keyword "," cannot be an item of an Array')
         self._items = items
 
     def __str__(self):
@@ -121,6 +116,7 @@ class Array(Type):
 
 class Variable(Type):
     def __init__(self, name):
+        super().__init__()
         self._name = name
 
     @property
@@ -136,9 +132,12 @@ class Variable(Type):
 
 class _Statement:
     def __init__(self, tokens, parenthesis=None, ending=False):
+        super().__init__()
         assert (isinstance(tokens, list))
-        for s in tokens:
+        for i, s in enumerate(tokens):
             assert(isinstance(s, (Type, Keyword, Statement, ParserType)))
+            assert(isinstance(s, BaseType))
+            s.set_parent(self, i)
         self._tokens = tokens
         self._parenthesis = parenthesis
         self._ending = ending
@@ -168,9 +167,11 @@ class _Statement:
     def __getitem__(self, other):
         return self._tokens[other]
 
-    def _as_str(self, func):
+    def _as_str(self, func=str, up_to=-1):
         as_str = ''
         for i, s in enumerate(self._tokens):
+            if i == up_to:
+                break
             as_str += '%s' % func(s)
 
         if self._parenthesis is not None:
@@ -180,22 +181,16 @@ class _Statement:
         return as_str
 
     def __str__(self):
-        return self._as_str(str)
+        return self._as_str()
 
     def __repr__(self):
         return 'S<%s>' % self._as_str(repr)
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__dict__ == other.__dict__
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    def string_up_to(self, index):
+        return self._as_str(up_to=index)
 
 
-class Statement(_Statement):
+class Statement(_Statement, BaseType):
     def __init__(self, tokens, parenthesis=False, ending=False):
         if parenthesis:
             parenthesis = '()'

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from sqf.exceptions import WrongTypes
+from sqf.exceptions import SQFSyntaxError
 from sqf.types import String, Number, Array, Boolean, Nothing, Number as N
 from sqf.interpreter import interpret
 
@@ -42,7 +42,7 @@ class TestInterpreter(TestCase):
         self.assertEqual(Boolean(False), outcome)
 
     def test_assign_to_statement(self):
-        with self.assertRaises(WrongTypes):
+        with self.assertRaises(SQFSyntaxError):
             interpret('(_y) = 2;')
 
     def test_floor(self):
@@ -226,10 +226,10 @@ class IfThen(TestCase):
         self.assertEqual(N(3), interpreter['_x'])
 
     def test_exceptions(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('if (false) then (_x = 2) else {_x = 3}')
 
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('if (1) then {_x = 2} else {_x = 3}')
 
 
@@ -320,10 +320,10 @@ class Switch(TestCase):
         self.assertEquals(String("3"), interpret(code % '"3"')[1])
 
     def test_syntax_error(self):
-        with self.assertRaises(SyntaxError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
 
-        with self.assertRaises(SyntaxError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('switch (0) do {case (1), {"one"};}')
 
 
@@ -355,7 +355,7 @@ class Scopes(TestCase):
         self.assertEqual(N(2), interpreter['_x'])
 
     def test_private_global_error(self):
-        with self.assertRaises(SyntaxError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('private "x"')
 
     def test_function(self):

@@ -2,7 +2,7 @@ from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, 
 from sqf.keywords import Keyword
 from sqf.object import Marker
 from sqf.parser import parse
-from sqf.exceptions import WrongTypes, ExecutionError
+from sqf.exceptions import ExecutionError, SQFSyntaxError, SQFError
 from sqf.expressions import EXPRESSIONS
 from sqf.namespace import Namespace
 
@@ -78,12 +78,13 @@ class Interpreter:
         else:
             raise NotImplementedError(repr(token))
 
-    def get_variable(self, token):
+    @staticmethod
+    def get_variable(token):
         if isinstance(token, Statement):
             return token.base_tokens[0]
         else:
             if not isinstance(token, Variable):
-                raise SyntaxError('This operator requires a variable')
+                raise SQFSyntaxError(token.position, 'This must be a variable')
             return token
 
     def execute_token(self, token):
@@ -120,12 +121,17 @@ class Interpreter:
     def del_scope(self):
         self._current_namespace.del_scope()
 
-    def add_privates(self, private_names):
-        for name in private_names:
-            if name.startswith('_'):
-                self.current_scope[name] = Nothing
+    def add_privates(self, variables):
+        for variable in variables:
+            if isinstance(variable, Variable):
+                name = variable.name
             else:
-                raise SyntaxError('Cannot set variables without "_" as `private`')
+                assert(isinstance(variable, String))
+                name = variable.value
+
+            if not name.startswith('_'):
+                raise SQFSyntaxError(variable.position, 'Cannot use global variable "%s" in `private`' % name)
+            self.current_scope[name] = Nothing
 
     def execute_code(self, code, params=None, extra_scope=None):
         assert (isinstance(code, Code))
@@ -168,36 +174,35 @@ class Interpreter:
             outcome = case_found.execute(tokens, values, self)
         # todo: replace all elif below by expressions
         elif len(tokens) == 2 and tokens[0] == Keyword('publicVariable'):
-            if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
-                var_name = tokens[1].value
-                scope = self.get_scope(var_name, 'missionNamespace')
-                self.simulation.broadcast(var_name, scope[var_name])
-            else:
-                raise WrongTypes()
+            if not isinstance(tokens[1], String) or tokens[1].value.startswith('_'):
+                raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
+
+            var_name = tokens[1].value
+            scope = self.get_scope(var_name, 'missionNamespace')
+            self.simulation.broadcast(var_name, scope[var_name])
+
         elif len(tokens) == 2 and tokens[0] == Keyword('publicVariableServer'):
-            if isinstance(tokens[1], String) and not tokens[1].value.startswith('_'):
-                var_name = tokens[1].value
-                scope = self.get_scope(var_name, 'missionNamespace')
-                if self.simulation:
-                    self.simulation.broadcast(var_name, scope[var_name], -1)  # -1 => to server
-                else:
-                    raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
-            else:
-                raise WrongTypes()
+            if not isinstance(tokens[1], String) or tokens[1].value.startswith('_'):
+                raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
+
+            var_name = tokens[1].value
+            scope = self.get_scope(var_name, 'missionNamespace')
+            self.simulation.broadcast(var_name, scope[var_name], -1)  # -1 => to server
+
         elif len(tokens) == 2 and tokens[0] == Keyword('private'):
 
             if isinstance(values[1], String):
-                self.add_privates([values[1].value])
+                self.add_privates([values[1]])
             elif isinstance(values[1], Array):
-                self.add_privates([s.value for s in values[1].value])
+                self.add_privates(values[1].value)
             elif isinstance(base_tokens[1], Statement) and len(base_tokens[1]) == 3 and \
                 base_tokens[1][1] == Keyword('='):
                 variable = self.get_variable(base_tokens[1][0])
 
-                self.add_privates([variable.name])
+                self.add_privates([variable])
                 outcome = self.execute_single(base_tokens[1])
             else:
-                raise SyntaxError()
+                raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
         # binary operators
         elif len(tokens) == 3 and isinstance(tokens[1], Keyword):
             # it is a binary statement: token, operation, token
@@ -213,32 +218,26 @@ class Interpreter:
             if op == Keyword('='):
                 lhs = self.get_variable(base_tokens[0])
 
-                if not isinstance(lhs, Variable):
-                    raise WrongTypes(repr(lhs))
-                if not isinstance(rhs_v, Type):
-                    raise WrongTypes(repr(rhs))
+                if not isinstance(lhs, Variable) or not isinstance(rhs_v, Type):
+                    raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
 
                 variable_scope = self.get_scope(lhs.name)
                 variable_scope[lhs.name] = rhs_v
                 outcome = rhs
             elif op == Keyword('publicVariableClient'):
-                if lhs_t == Number and not rhs.value.startswith('_'):
-                    client_id = lhs.value
-                    var_name = rhs.value
-                    scope = self.get_scope(var_name, 'missionNamespace')
-                    if self.simulation:
-                        self.simulation.broadcast(var_name, scope[var_name], client_id)
-                    else:
-                        raise ExecutionError('Interpreter called "publicVariable" without a simulation.')
-                else:
-                    raise WrongTypes()
+                if not lhs_t == Number or rhs.value.startswith('_'):
+                    raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
+                client_id = lhs.value
+                var_name = rhs.value
+                scope = self.get_scope(var_name, 'missionNamespace')
+                self.simulation.broadcast(var_name, scope[var_name], client_id)
             else:
                 raise NotImplementedError([lhs, op, rhs])
         # code, variables and values
         elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Keyword, Variable, Array)):
             outcome = values[0]
         else:
-            raise NotImplementedError('Interpretation of "%s" not implemented' % tokens)
+            raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
 
         if statement.ending:
             outcome = Nothing
@@ -256,7 +255,7 @@ class Interpreter:
             raise ExecutionError('Marker "%s" already exists' % name)
         pos = rhs_v.value[1]
         if not isinstance(pos, Array):
-            raise WrongTypes('Second argument of "createMarker" must be a position')
+            raise SQFError('Second argument of "createMarker" must be a position')
         self._markers[name] = Marker(pos)
         return rhs_v.value[0]
 

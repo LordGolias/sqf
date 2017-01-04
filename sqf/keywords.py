@@ -1,19 +1,14 @@
-class Keyword:
+from sqf.base_type import BaseType
+
+
+class Keyword(BaseType):
     def __init__(self, token):
+        super().__init__()
         self._token = token
 
     @property
     def value(self):
         return self._token
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self._token == other._token
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
 
     def __str__(self):
         return self._token

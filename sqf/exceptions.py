@@ -1,30 +1,20 @@
-class NotATypeError(Exception):
+class SQFError(Exception):
     pass
 
 
-class SQFSyntaxError(Exception):
+class SQFParserError(SQFError):
     pass
 
 
-class InterpreterError(Exception):
+class SQFParenthesisError(SQFParserError):
     pass
 
 
-class IfThenSQFSyntaxError(SQFSyntaxError):
-    pass
+class SQFSyntaxError(SQFError):
+    def __init__(self, position, message):
+        self.position = position
+        super().__init__('%s: %s' % (position, message))
 
 
-class UnbalancedParenthesisSQFSyntaxError(SQFSyntaxError):
-    pass
-
-
-class VariableNotDefined(InterpreterError):
-    pass
-
-
-class WrongTypes(InterpreterError):
-    pass
-
-
-class ExecutionError(InterpreterError):
+class ExecutionError(SQFError):
     pass

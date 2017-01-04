@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from sqf.parse_exp import parse_exp, partition
-from sqf.exceptions import SQFSyntaxError, UnbalancedParenthesisSQFSyntaxError
+from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
 from sqf.keywords import Keyword
@@ -154,11 +154,11 @@ class ParseCode(ParserTestCase):
         self.assertEqualStatement(expected, result, code)
 
     def test_no_open_parenthesis(self):
-        with self.assertRaises(UnbalancedParenthesisSQFSyntaxError):
+        with self.assertRaises(SQFParenthesisError):
             parse('_a = x + 2)')
-        with self.assertRaises(UnbalancedParenthesisSQFSyntaxError):
+        with self.assertRaises(SQFParenthesisError):
             parse('_a = x + 2}')
-        with self.assertRaises(UnbalancedParenthesisSQFSyntaxError):
+        with self.assertRaises(SQFParenthesisError):
             parse('_a = x + 2]')
 
     def test_wrong_parenthesis(self):
@@ -168,7 +168,7 @@ class ParseCode(ParserTestCase):
             parse('({_a = 2);};')
 
     def test_no_close_parenthesis(self):
-        with self.assertRaises(UnbalancedParenthesisSQFSyntaxError):
+        with self.assertRaises(SQFParenthesisError):
             parse('_a = (x + 2')
 
     def test_analyse_expression(self):
@@ -229,19 +229,19 @@ class ParseArray(ParserTestCase):
         self.assertEqual(expected, result)
 
     def test_exceptions(self):
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFError):
             Array([String('AirS'), Keyword(','), Keyword('nil')])
 
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             parse('["AirS"; nil];')
 
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             parse('[,];')
 
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             parse('["AirS",];')
 
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             parse('[nil,,nil];')
 
     def test_empty(self):

@@ -71,6 +71,8 @@ class Simulation:
         return len(self._clients) - 1
 
     def broadcast(self, var_name, value, client_id=None):
+        # client_id=None => to all
+        # client_id=-1 => to the server
         if client_id is None:
             self._broadcasted[var_name] = value
             for client in self._clients + [self.server]:
