@@ -1,6 +1,3 @@
-import math
-
-
 class Keyword:
     def __init__(self, token):
         self._token = token
@@ -61,7 +58,7 @@ KEYWORDS = {
     '&&', 'and', '||', 'or',
     'isEqualTo', '==', '!=', '>', '<', '>=', '<=', '!', 'not',
     'isNull', 'isNil',
-    'units', 'count', 'alive',
+    'units', 'count',
     'createMarker', 'getmarkerpos',
     'publicVariable', 'publicVariableServer', 'publicVariableClient',
     'addPublicVariableEventHandler', 'isServer', 'isClient', 'isDedicated',
@@ -76,8 +73,11 @@ NAMESPACES = [Namespace('missionNamespace'), Namespace('profileNamespace'), Name
               Namespace('parsingNamespace')]
 
 KEYWORDS = set(Keyword(s) for s in KEYWORDS)
-KEYWORDS = KEYWORDS.union({IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose, RParenthesisOpen, RParenthesisClose,
-    BracketOpen, BracketClose, Nil, WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken, Comma, EndOfStatement})
+KEYWORDS = KEYWORDS.union({
+    IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose,
+    RParenthesisOpen, RParenthesisClose, BracketOpen, BracketClose, Nil,
+    WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken,
+    Comma, EndOfStatement})
 KEYWORDS = KEYWORDS.union(NAMESPACES)
 
 KEYWORDS_MAPPING = dict()
@@ -85,4 +85,5 @@ for keyword in KEYWORDS:
     KEYWORDS_MAPPING[keyword.value] = keyword
 
 # operators by precedence
-ORDERED_OPERATORS = [Keyword(s) for s in ('private', '=', 'count', '>', 'units', 'SPAWN', 'spawn', 'alive', '&&', '!', 'getVariable')]
+ORDERED_OPERATORS = [Keyword(s) for s in ('private', '=', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!',
+                                          'getVariable')]
