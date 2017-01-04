@@ -2,8 +2,7 @@ from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import UnbalancedParenthesisSQFSyntaxError, SQFSyntaxError
 from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String
-from sqf.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, RParenthesisOpen, RParenthesisClose, \
-    ParenthesisOpen, ParenthesisClose, BracketOpen, BracketClose, EndOfStatement, Comma
+from sqf.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, Keyword
 from sqf.parser_types import Comment, Space, EndOfLine
 from sqf.parse_exp import parse_exp
 
@@ -84,7 +83,7 @@ def analyse_array_tokens(tokens):
     part = []
     first_comma_found = False
     for token in tokens:
-        if token == Comma:
+        if token == Keyword(','):
             first_comma_found = True
             if not part:
                 raise SQFSyntaxError('Array syntax is `[item1, item2, ...]`')
@@ -103,7 +102,7 @@ def analyse_array_tokens(tokens):
 
 def analise_tokens(tokens):
     ending = False
-    if tokens and tokens[-1] == EndOfStatement:
+    if tokens and tokens[-1] == Keyword(';'):
         del tokens[-1]
         ending = True
 
@@ -126,21 +125,21 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
         token = all_tokens[i]
 
         # print(i, '%d%d%d' % (block_lvl, parenthesis_lvl, rparenthesis_lvl), token)
-        if token == RParenthesisOpen:
+        if token == Keyword('['):
             expression, size = _parse_block(all_tokens, i + 1,
                                             block_lvl=block_lvl,
                                             parenthesis_lvl=parenthesis_lvl,
                                             rparenthesis_lvl=rparenthesis_lvl+1)
             tokens.append(expression)
             i += size + 1
-        elif token == ParenthesisOpen:
+        elif token == Keyword('('):
             expression, size = _parse_block(all_tokens, i + 1,
                                             block_lvl=block_lvl,
                                             parenthesis_lvl=parenthesis_lvl + 1,
                                             rparenthesis_lvl=rparenthesis_lvl)
             tokens.append(expression)
             i += size + 1
-        elif token == BracketOpen:
+        elif token == Keyword('{'):
             expression, size = _parse_block(all_tokens, i + 1,
                                             block_lvl=block_lvl + 1,
                                             parenthesis_lvl=parenthesis_lvl,
@@ -148,14 +147,14 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
             tokens.append(expression)
             i += size + 1
 
-        elif token == RParenthesisClose:
+        elif token == Keyword(']'):
             if rparenthesis_lvl == 0:
                 raise UnbalancedParenthesisSQFSyntaxError('Trying to close right parenthesis without them opened.')
 
             if statements:
                 raise SQFSyntaxError('Statement cannot be in an array')
             return Array(analyse_array_tokens(tokens)), i - start
-        elif token == ParenthesisClose:
+        elif token == Keyword(')'):
             if parenthesis_lvl == 0:
                 raise UnbalancedParenthesisSQFSyntaxError('Trying to close parenthesis without opened parenthesis.')
 
@@ -163,7 +162,7 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
                 statements.append(analise_tokens(tokens))
 
             return Statement(statements, parenthesis=True), i - start
-        elif token == BracketClose:
+        elif token == Keyword('}'):
             if block_lvl == 0:
                 raise UnbalancedParenthesisSQFSyntaxError('Trying to close brackets without opened brackets.')
 
@@ -171,8 +170,8 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
                 statements.append(analise_tokens(tokens))
 
             return Code(statements), i - start
-        elif token == EndOfStatement:
-            tokens.append(EndOfStatement)
+        elif token == Keyword(';'):
+            tokens.append(Keyword(';'))
             statements.append(analise_tokens(tokens))
             tokens = []
         else:

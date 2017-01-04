@@ -4,7 +4,7 @@ from sqf.parse_exp import parse_exp, partition
 from sqf.exceptions import SQFSyntaxError, UnbalancedParenthesisSQFSyntaxError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
-from sqf.keywords import Keyword, Nil, Comma, IfToken, ThenToken
+from sqf.keywords import Keyword
 from sqf.parser_types import Comment, Space, EndOfLine
 from sqf.parser import parse, parse_strings
 from sqf.base_tokenizer import tokenize
@@ -209,8 +209,8 @@ class ParseCode(ParserTestCase):
     def test_if_then(self):
         code = 'if(true)then{private"_x";_x}'
         result = parse(code)
-        expected = Statement([Statement([IfToken, Statement([Statement([Boolean(True)])], parenthesis=True),
-                                         ThenToken, Code([
+        expected = Statement([Statement([Keyword('if'), Statement([Statement([Boolean(True)])], parenthesis=True),
+                                         Keyword('then'), Code([
                 Statement([Keyword('private'), String('_x')], ending=True),
                 Statement([V('_x')])])
         ])])
@@ -224,13 +224,13 @@ class ParseArray(ParserTestCase):
         test = '["AirS", nil];'
         result = parse(test)
         expected = Statement([Statement([
-            Array([Statement([String('AirS')]), Statement([Space(), Nil])])], ending=True)])
+            Array([Statement([String('AirS')]), Statement([Space(), Keyword('nil')])])], ending=True)])
 
         self.assertEqual(expected, result)
 
     def test_exceptions(self):
         with self.assertRaises(SQFSyntaxError):
-            Array([String('AirS'), Comma, Nil])
+            Array([String('AirS'), Keyword(','), Keyword('nil')])
 
         with self.assertRaises(SQFSyntaxError):
             parse('["AirS"; nil];')

@@ -1,6 +1,6 @@
 from sqf.exceptions import SQFSyntaxError
 from sqf.parser_types import ParserType
-from sqf.keywords import Keyword, Comma
+from sqf.keywords import Keyword
 
 
 class Type:
@@ -81,7 +81,7 @@ class Array(Type):
         self._items = []
         # asserts below check that it is a list of the form `A,B,C`
         # where A B and C are instances of a Type.
-        if Comma in items:
+        if Keyword(',') in items:
             raise SQFSyntaxError('Array syntax is `[item1, item2, ...]`')
         self._items = items
 

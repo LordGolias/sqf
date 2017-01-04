@@ -25,33 +25,10 @@ class Keyword:
         return hash(self._token)
 
 
-CaseToken = Keyword('case')
-IfToken = Keyword('if')
-WhileToken = Keyword('while')
-ForToken = Keyword('for')
-DoToken = Keyword('do')
-ThenToken = Keyword('then')
-ToToken = Keyword('to')
-FromToken = Keyword('from')
-StepToken = Keyword('step')
-ElseToken = Keyword('else')
-ForEach = Keyword('foreach')
-ParenthesisOpen = Keyword('(')
-ParenthesisClose = Keyword(')')
-RParenthesisOpen = Keyword('[')
-RParenthesisClose = Keyword(']')
-BracketOpen = Keyword('{')
-BracketClose = Keyword('}')
-Comma = Keyword(',')
-TwoDots = Keyword(':')
-EndOfStatement = Keyword(';')
-Nil = Keyword('nil')
-isServer = Keyword('isServer')
-isLocal = Keyword('isLocal')
-isDedicated = Keyword('isDedicated')
-
-
 KEYWORDS = {
+    'if', 'then', 'else', 'do', 'while', 'for', 'to', 'from', 'step', 'foreach',
+    '(', ')', '[', ']', '{', '}',
+    ',', ':', ';', 'nil',
     'case', 'switch', 'default',
     'private',
     '=', '+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor',
@@ -76,11 +53,6 @@ NAMESPACES = [Namespace('missionNamespace'), Namespace('profileNamespace'), Name
               Namespace('parsingNamespace')]
 
 KEYWORDS = set(Keyword(s) for s in KEYWORDS)
-KEYWORDS = KEYWORDS.union({
-    IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose,
-    RParenthesisOpen, RParenthesisClose, BracketOpen, BracketClose, Nil,
-    WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken,
-    Comma, EndOfStatement, TwoDots})
 KEYWORDS = KEYWORDS.union(NAMESPACES)
 
 KEYWORDS_MAPPING = dict()

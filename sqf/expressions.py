@@ -1,8 +1,8 @@
-from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
-from sqf.keywords import Keyword, IfToken, ThenToken, ElseToken, WhileToken, DoToken, ForToken, \
-    FromToken, ToToken, StepToken, Namespace
-from sqf.exceptions import ExecutionError
 import math
+
+from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
+from sqf.keywords import Keyword, Namespace
+from sqf.exceptions import ExecutionError
 
 
 class Expression:
@@ -119,8 +119,8 @@ class LogicalExpression(BinaryExpression):
 class IfThenExpression(Expression):
 
     def __init__(self, length, tests, action):
-        base_test = lambda values: values[0] == IfToken and \
-                                   isinstance(values[1], Boolean) and values[2] == ThenToken
+        base_test = lambda values: values[0] == Keyword('if') and \
+                                   isinstance(values[1], Boolean) and values[2] == Keyword('then')
 
         super().__init__(length, action, [base_test] + tests)
 
@@ -310,43 +310,43 @@ EXPRESSIONS = [
     IfThenExpression(4, tests=[lambda values: type(values[3]) == Array],
                      action=lambda v, i: _if_then_else(i, v[1], v[3].value[0], v[3].value[1])),
     IfThenExpression(6, tests=[lambda values: type(values[3]) == Code,
-                               lambda values: values[4] == ElseToken,
+                               lambda values: values[4] == Keyword('else'),
                                lambda values: type(values[5]) == Code],
                      action=lambda v, i: _if_then_else(i, v[1], v[3], v[5])),
 
-    Expression(4, tests=[lambda values: values[0] == WhileToken,
+    Expression(4, tests=[lambda values: values[0] == Keyword('while'),
                          lambda values: type(values[1]) == Code,
-                         lambda values: values[2] == DoToken,
+                         lambda values: values[2] == Keyword('do'),
                          lambda values: type(values[3]) == Code],
                action=lambda t, v, i: _while_loop(i, v[1], v[3])),
 
-    Expression(4, tests=[lambda values: values[0] == ForToken,
+    Expression(4, tests=[lambda values: values[0] == Keyword('for'),
                          lambda values: type(values[1]) == Array,
-                         lambda values: values[2] == DoToken,
+                         lambda values: values[2] == Keyword('do'),
                          lambda values: type(values[3]) == Code,
                          ],
                action=lambda t, v, i: _forspecs_loop(i, v[1].value[0], v[1].value[1], v[1].value[2], v[3])),
 
-    Expression(8, tests=[lambda values: values[0] == ForToken,
+    Expression(8, tests=[lambda values: values[0] == Keyword('for'),
                          lambda values: type(values[1]) == String,
-                         lambda values: values[2] == FromToken,
+                         lambda values: values[2] == Keyword('from'),
                          lambda values: type(values[3]) == Number,
-                         lambda values: values[4] == ToToken,
+                         lambda values: values[4] == Keyword('to'),
                          lambda values: type(values[5]) == Number,
-                         lambda values: values[6] == DoToken,
+                         lambda values: values[6] == Keyword('do'),
                          lambda values: type(values[7]) == Code,
                          ],
                action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, 1, v[7])),
 
-    Expression(10, tests=[lambda values: values[0] == ForToken,
+    Expression(10, tests=[lambda values: values[0] == Keyword('for'),
                          lambda values: type(values[1]) == String,
-                         lambda values: values[2] == FromToken,
+                         lambda values: values[2] == Keyword('from'),
                          lambda values: type(values[3]) == Number,
-                         lambda values: values[4] == ToToken,
+                         lambda values: values[4] == Keyword('to'),
                          lambda values: type(values[5]) == Number,
-                         lambda values: values[6] == StepToken,
+                         lambda values: values[6] == Keyword('step'),
                          lambda values: type(values[7]) == Number,
-                         lambda values: values[8] == DoToken,
+                         lambda values: values[8] == Keyword('do'),
                          lambda values: type(values[9]) == Code,
                          ],
                action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, v[7].value, v[9])),

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from sqf.types import Statement, Array, Boolean, Code, Nothing, \
     Variable as V, Number as N
-from sqf.keywords import ForEach, Keyword
+from sqf.keywords import Keyword
 
 
 class TestTypesToString(TestCase):
@@ -19,7 +19,7 @@ class TestTypesToString(TestCase):
         self.assertEqual('[1,1]', str(Array([1, 1])))
 
     def test_reservedtoken(self):
-        self.assertEqual('foreach', str(ForEach))
+        self.assertEqual('for', str(Keyword('for')))
 
     def test_nothing(self):
         self.assertEqual('Nothing', str(Nothing))
