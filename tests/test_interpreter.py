@@ -292,6 +292,41 @@ class Loops(TestCase):
         self.assertEqual(Array([N(0), N(1), N(0), N(0), N(1), N(1)]), interpreter['_array'])
 
 
+class Switch(TestCase):
+
+    def test_basic(self):
+        code = 'switch ("blue") do {case "blue": {true}; case "red": {false}}'
+        interpreter, outcome = interpret(code)
+        self.assertEquals(Boolean(True), outcome)
+
+    def test_return_true(self):
+        code = 'switch (0) do {case (1): {"one"};}'
+        interpreter, outcome = interpret(code)
+        self.assertEquals(Boolean(True), outcome)
+
+    def test_default_and_or(self):
+        code = '''
+        switch %s do {
+            case "0";
+            default {"default"};
+            case "3": {"3"};
+            case "1";
+            case "4";
+            case "2": {"2"};
+        }'''
+        self.assertEquals(String("3"), interpret(code % '"0"')[1])
+        self.assertEquals(String("default"), interpret(code % '"5"')[1])
+        self.assertEquals(String("2"), interpret(code % '"1"')[1])
+        self.assertEquals(String("3"), interpret(code % '"3"')[1])
+
+    def test_syntax_error(self):
+        with self.assertRaises(SyntaxError):
+            interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
+
+        with self.assertRaises(SyntaxError):
+            interpret('switch (0) do {case (1), {"one"};}')
+
+
 class Scopes(TestCase):
 
     def test_assign(self):

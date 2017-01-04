@@ -92,7 +92,7 @@ class Interpreter:
         """
         # interpret the statement recursively
         if isinstance(token, Statement):
-            result = self._execute(statement=token)
+            result = self.execute_single(statement=token)
         elif isinstance(token, Array):
             # empty statements are ignored
             result = Array([self.execute_token(s)[1] for s in token.value if s])
@@ -137,11 +137,11 @@ class Interpreter:
         self.add_scope(extra_scope)
         outcome = Nothing
         for statement in code.base_tokens:
-            outcome = self._execute(statement)
+            outcome = self.execute_single(statement)
         self.del_scope()
         return outcome
 
-    def _execute(self, statement):
+    def execute_single(self, statement):
         assert(not isinstance(statement, Code))
 
         outcome = Nothing
@@ -195,7 +195,7 @@ class Interpreter:
                 variable = self.get_variable(base_tokens[1][0])
 
                 self.add_privates([variable.name])
-                outcome = self._execute(base_tokens[1])
+                outcome = self.execute_single(base_tokens[1])
             else:
                 raise SyntaxError()
         # binary operators
@@ -247,7 +247,7 @@ class Interpreter:
     def execute(self, statements):
         outcome = Nothing
         for statement in statements:
-            outcome = self._execute(statement)
+            outcome = self.execute_single(statement)
         return outcome
 
     def create_marker(self, rhs_v):

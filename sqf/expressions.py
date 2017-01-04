@@ -227,6 +227,52 @@ def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
     return outcome
 
 
+def _switch(interpreter, result, code):
+    default = None
+    outcome = None
+
+    # a flag that is set to True when a case is fulfilled and the next outcome_statement is to be run.
+    run_next = False
+
+    for statement in code.base_tokens:
+        if not statement.base_tokens:
+            pass
+        elif statement.base_tokens[0] == Keyword('default'):
+            if default is not None:
+                raise SyntaxError('Switch statement contains more than 1 `default`')
+            default = statement.base_tokens[1]
+        elif statement.base_tokens[0] == Keyword('case') and (
+                    len(statement.base_tokens) == 2 or
+                    len(statement.base_tokens) == 4 and statement.base_tokens[2] == Keyword(':')):
+            condition_statement = statement.base_tokens[1]
+            if len(statement.base_tokens) == 2:
+                outcome_statement = None
+            else:
+                outcome_statement = statement.base_tokens[3]
+
+            condition_outcome = interpreter.execute_token(condition_statement)[1]
+
+            if outcome_statement and run_next:
+                outcome = interpreter.execute_code(outcome_statement)
+                break
+            elif condition_outcome == result:
+                if outcome_statement:
+                    outcome = interpreter.execute_code(outcome_statement)
+                    break
+                else:
+                    run_next = True
+        else:
+            raise SyntaxError('Statement "%s" in `switch` is syntactically wrong' % str(statement))
+
+    if outcome is None:
+        if default is not None:
+            outcome = interpreter.execute_code(default)
+        else:
+            outcome = Boolean(True)
+
+    return outcome
+
+
 EXPRESSIONS = [
     # Unary
     UnaryExpression('floor', Number, lambda rhs_v, i: Number(math.floor(rhs_v.value))),
@@ -304,6 +350,14 @@ EXPRESSIONS = [
                          lambda values: type(values[9]) == Code,
                          ],
                action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, v[7].value, v[9])),
+
+    # switch
+    Expression(4, tests=[
+        lambda values: values[0] == Keyword('switch'),
+        lambda values: isinstance(values[1], Type),
+        lambda values: values[2] == Keyword('do'),
+        lambda values: isinstance(values[3], Code)
+        ], action=lambda t, v, i: _switch(i, v[1], v[3]))
 ]
 
 

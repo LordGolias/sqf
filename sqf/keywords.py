@@ -25,6 +25,7 @@ class Keyword:
         return hash(self._token)
 
 
+CaseToken = Keyword('case')
 IfToken = Keyword('if')
 WhileToken = Keyword('while')
 ForToken = Keyword('for')
@@ -42,6 +43,7 @@ RParenthesisClose = Keyword(']')
 BracketOpen = Keyword('{')
 BracketClose = Keyword('}')
 Comma = Keyword(',')
+TwoDots = Keyword(':')
 EndOfStatement = Keyword(';')
 Nil = Keyword('nil')
 isServer = Keyword('isServer')
@@ -50,6 +52,7 @@ isDedicated = Keyword('isDedicated')
 
 
 KEYWORDS = {
+    'case', 'switch', 'default',
     'private',
     '=', '+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor',
     'setVariable', 'getVariable',
@@ -77,7 +80,7 @@ KEYWORDS = KEYWORDS.union({
     IfToken, ThenToken, ElseToken, ForEach, ParenthesisOpen, ParenthesisClose,
     RParenthesisOpen, RParenthesisClose, BracketOpen, BracketClose, Nil,
     WhileToken, DoToken, ForToken, ToToken, StepToken, FromToken,
-    Comma, EndOfStatement})
+    Comma, EndOfStatement, TwoDots})
 KEYWORDS = KEYWORDS.union(NAMESPACES)
 
 KEYWORDS_MAPPING = dict()
