@@ -27,6 +27,7 @@ KEYWORDS = {
     'case', 'switch', 'default',
     'private',
     '=', '+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor',
+    'toArray', 'toString',
     'setVariable', 'getVariable',
     'set', 'in', 'select', 'find', 'append', 'pushBack', 'pushBackUnique', 'reverse',
     'call', 'spawn', 'SPAWN',

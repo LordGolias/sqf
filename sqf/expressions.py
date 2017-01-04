@@ -277,7 +277,6 @@ EXPRESSIONS = [
     # Unary
     UnaryExpression('floor', Number, lambda rhs_v, i: Number(math.floor(rhs_v.value))),
     UnaryExpression('reverse', Array, lambda rhs_v, i: rhs_v.reverse()),
-    UnaryExpression('call', Code, lambda rhs_v, i: i.execute_code(rhs_v)),
     UnaryExpression('createMarker', Array, lambda rhs_v, i: i.create_marker(rhs_v)),
     # Binary
     BinaryExpression('set', Array, Array, lambda lhs_v, rhs_v, i: lhs_v.set(rhs_v)),
@@ -295,8 +294,13 @@ EXPRESSIONS = [
     BinaryExpression('pushBackUnique', Array, Type, _pushBackUnique),
     BinaryExpression('append', Array, Array, lambda lhs_v, rhs_v, i: lhs_v.add(rhs_v.value)),
 
+    UnaryExpression('toArray', String, lambda rhs_v, i: Array([Number(ord(s)) for s in rhs_v.value])),
+    UnaryExpression('toString', Array, lambda rhs_v, i: String(''.join(chr(s.value) for s in rhs_v.value))),
+
     # code and namespaces
+    UnaryExpression('call', Code, lambda rhs_v, i: i.execute_code(rhs_v)),
     BinaryExpression('call', Array, Code, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, params=lhs_v)),
+
     BinaryExpression('setVariable', Namespace, Array, _setVariable, tests=[lambda values: len(values[2].value) == 2]),
 
     BinaryExpression('getVariable', Namespace, String, _getVariableString),

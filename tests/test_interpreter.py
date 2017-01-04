@@ -394,3 +394,13 @@ class Markers(TestCase):
 
         self.assertEqual(String('m1'), interpreter['_marker'])
         self.assertTrue('m1' in interpreter.markers)
+
+
+class Operators(TestCase):
+
+    def test_to_array_string(self):
+        outcome = interpret('toArray("AaŒ")')[1]
+        self.assertEquals(Array([N(65), N(97), N(338)]), outcome)
+
+        outcome = interpret('toString([65,97,338])')[1]
+        self.assertEquals(String("AaŒ"), outcome)
