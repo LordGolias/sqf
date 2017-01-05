@@ -94,6 +94,13 @@ class Array(Type):
         self._items += [Nothing] * (index - len(self._items) + 1)
         return Nothing
 
+    def resize(self, count):
+        if count > len(self._items):
+            self.extend(count - 1)
+        else:
+            self._items = self._items[:count]
+        return Nothing
+
     def reverse(self):
         self._items.reverse()
         return Nothing
@@ -147,6 +154,10 @@ class _Statement:
         for token in self.tokens:
             if isinstance(token, ParserType):
                 continue
+            if isinstance(token, Statement):
+                # empty statements are ignored
+                if not token.base_tokens:
+                    continue
             self._base_tokens.append(token)
 
     @property

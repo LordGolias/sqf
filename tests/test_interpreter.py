@@ -404,3 +404,10 @@ class Operators(TestCase):
 
         outcome = interpret('toString([65,97,338])')[1]
         self.assertEquals(String("AaŒ"), outcome)
+
+    def test_resize_array(self):
+        interpreter = interpret('_x = [1,2]; _x resize 4')[0]
+        self.assertEquals(Array([N(1), N(2), Nothing, Nothing]), interpreter['_x'])
+
+        interpreter = interpret('_x = [1,2,3,4]; _x resize 2')[0]
+        self.assertEquals(Array([N(1), N(2)]), interpreter['_x'])

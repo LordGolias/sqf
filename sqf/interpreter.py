@@ -151,6 +151,8 @@ class Interpreter:
         assert(not isinstance(statement, Code))
 
         outcome = Nothing
+        if not statement.base_tokens:
+            return outcome
 
         # evaluate the types of all tokens
         base_tokens = statement.base_tokens

@@ -29,12 +29,12 @@ KEYWORDS = {
     '=', '+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor',
     'toArray', 'toString',
     'setVariable', 'getVariable',
-    'set', 'in', 'select', 'find', 'append', 'pushBack', 'pushBackUnique', 'reverse',
+    'resize', 'count', 'set', 'in', 'select', 'find', 'append', 'pushBack', 'pushBackUnique', 'reverse',
     'call', 'spawn', 'SPAWN',
     '&&', 'and', '||', 'or',
     'isEqualTo', '==', '!=', '>', '<', '>=', '<=', '!', 'not',
     'isNull', 'isNil',
-    'units', 'count',
+    'units',
     'createMarker', 'getmarkerpos',
     'publicVariable', 'publicVariableServer', 'publicVariableClient',
     'addPublicVariableEventHandler', 'isServer', 'isClient', 'isDedicated',
@@ -56,5 +56,5 @@ for keyword in KEYWORDS:
     KEYWORDS_MAPPING[keyword.value] = keyword
 
 # operators by precedence
-ORDERED_OPERATORS = [Keyword(s) for s in ('private', '=', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!',
+ORDERED_OPERATORS = [Keyword(s) for s in ('private', '=', '-', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!',
                                           'getVariable')]

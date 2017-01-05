@@ -282,6 +282,8 @@ EXPRESSIONS = [
     BinaryExpression('set', Array, Array, lambda lhs_v, rhs_v, i: lhs_v.set(rhs_v)),
 
     # Array related
+    BinaryExpression('resize', Array, Number, lambda lhs_v, rhs_v, i: lhs_v.resize(rhs_v.value)),
+    UnaryExpression('count', Array, lambda rhs_v, i: Number(len(rhs_v.value))),
     BinaryExpression('in', Type, Array, lambda lhs_v, rhs_v, i: Boolean(lhs_v in rhs_v.value)),
 
     BinaryExpression('select', Array, (Number, Boolean), lambda lhs_v, rhs_v, i: lhs_v.value[int(round(rhs_v.value))]),
