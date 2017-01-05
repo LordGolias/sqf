@@ -143,7 +143,7 @@ def _find(lhs_v, rhs_v, _):
 
 
 def _pushBack(lhs_v, rhs_v, _):
-    lhs_v.value.append(rhs_v)
+    lhs_v.append(rhs_v)
     return Number(len(lhs_v.value) - 1)
 
 
@@ -151,7 +151,7 @@ def _pushBackUnique(lhs_v, rhs_v, _):
     if rhs_v in lhs_v.value:
         return Number(-1)
     else:
-        lhs_v.value.append(rhs_v)
+        lhs_v.append(rhs_v)
         return Number(len(lhs_v.value) - 1)
 
 

@@ -109,6 +109,15 @@ class ParseCode(ParserTestCase):
                               Statement([Statement([V('_x'), Keyword('=='), String('AirS')])], parenthesis=True)], ending=True)])
         self.assertEqualStatement(expected, result, code)
 
+    def test_assign_array(self):
+        code = '_y = [];'
+        result = parse(code)
+        expected = Statement([Statement([
+            Statement([V('_y'), Space()]),
+            Keyword('='),
+            Statement([Space(), Array([Statement([])])])], ending=True)])
+        self.assertEqualStatement(expected, result, code)
+
     def test_two_statements(self):
         code = '_x=true;_x=false'
         result = parse(code)
@@ -216,6 +225,32 @@ class ParseCode(ParserTestCase):
         ])])
         
         self.assertEqualStatement(expected, result, code)
+
+    def test_switch(self):
+        code = 'switch (0) do'
+        result = parse(code)
+        expected = Statement([Statement([
+            Keyword('switch'),
+            Space(),
+            Statement([Statement([N(0)])], parenthesis=True),
+            Space(),
+            Keyword('do')])])
+        self.assertEqualStatement(expected, result, code)
+
+    def test_position_statement(self):
+        code = 'switch (0) do'
+        result = parse(code)
+        self.assertEqual((1, 9), result[0][2][0].position)
+
+    def test_position_array(self):
+        code = 'switch [1,2] do'
+        result = parse(code)
+        number1 = result[0][2].value[0][0]
+        number2 = result[0][2].value[1][0]
+        assert (number1 == N(1))
+        assert (number2 == N(2))
+        self.assertEqual((1, 8), number1.position)
+        self.assertEqual((1, 10), number2.position)
 
 
 class ParseArray(ParserTestCase):

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from sqf.exceptions import SQFSyntaxError
-from sqf.types import String, Number, Array, Boolean, Nothing, Number as N
+from sqf.types import String, Number, Array, Boolean, Nothing, Number as N, Statement
 from sqf.interpreter import interpret
 
 
@@ -90,7 +90,7 @@ class TestInterpretArray(TestCase):
         self.assertEqual(Array([N(1), N(2), N(3), N(4)]), outcome)
 
     def test_append(self):
-        interpreter, outcome = interpret('_x = [1, 2]; _x append [3, 4]')
+        interpreter, outcome = interpret('_x = [1,2]; _x append [3,4]')
         self.assertEqual(Nothing, outcome)
         self.assertEqual(Array([N(1), N(2), N(3), N(4)]), interpreter['_x'])
 
@@ -320,11 +320,13 @@ class Switch(TestCase):
         self.assertEquals(String("3"), interpret(code % '"3"')[1])
 
     def test_syntax_error(self):
-        with self.assertRaises(SQFSyntaxError):
-            interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
-
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFSyntaxError) as cm:
             interpret('switch (0) do {case (1), {"one"};}')
+        self.assertEqual((1, 16), cm.exception.position)
+
+        with self.assertRaises(SQFSyntaxError) as cm:
+            interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
+        self.assertEqual((1, 14), cm.exception.position)
 
 
 class Scopes(TestCase):
@@ -411,3 +413,7 @@ class Operators(TestCase):
 
         interpreter = interpret('_x = [1,2,3,4]; _x resize 2')[0]
         self.assertEquals(Array([N(1), N(2)]), interpreter['_x'])
+
+    def test_assign_array(self):
+        interpreter = interpret('_y = [];')[0]
+        self.assertEquals(Array([]), interpreter['_y'])

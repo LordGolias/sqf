@@ -17,7 +17,7 @@ class TestTypesToString(TestCase):
         self.assertEqual('1.10', str(N(1.1)))
 
     def test_array(self):
-        self.assertEqual('[1,1]', str(Array([1, 1])))
+        self.assertEqual('[1,1]', str(Array([N(1), N(1)])))
 
     def test_reservedtoken(self):
         self.assertEqual('for', str(Keyword('for')))

@@ -124,7 +124,6 @@ def _parse_block(all_tokens, start=0, block_lvl=0, parenthesis_lvl=0, rparenthes
     while i < len(all_tokens):
         token = all_tokens[i]
 
-        # print(i, '%d%d%d' % (block_lvl, parenthesis_lvl, rparenthesis_lvl), token)
         if token == Keyword('['):
             expression, size = _parse_block(all_tokens, i + 1,
                                             block_lvl=block_lvl,

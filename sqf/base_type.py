@@ -44,5 +44,53 @@ class BaseType:
     @property
     def position(self):
         if self._parent is None:
-            return [0, 0]
+            return 1, 1
         return get_coord(self._parent.string_up_to(self._parent_index))
+
+
+class ParserType(BaseType):
+    # type ignored by the interpreter
+    pass
+
+
+class BaseTypeContainer(BaseType):
+
+    def __init__(self, tokens):
+        super().__init__()
+        for i, s in enumerate(tokens):
+            assert(isinstance(s, BaseType))
+            s.set_parent(self, i)
+        self._tokens = tokens
+
+        self._update_base_tokens()
+
+    def _update_base_tokens(self):
+        self._base_tokens = []
+        for token in self._tokens:
+            if not self._is_base_token(token):
+                continue
+            self._base_tokens.append(token)
+
+    @staticmethod
+    def _is_base_token(token):
+        raise NotImplementedError
+
+    def _as_str(self, func=str, up_to=None):
+        raise NotImplementedError
+
+    @property
+    def tokens(self):
+        return self._tokens
+
+    @property
+    def base_tokens(self):
+        return self._base_tokens
+
+    def string_up_to(self, index):
+        string = ''
+        if self._parent is not None:
+            string += self._parent.string_up_to(self._parent_index)
+        return string + self._as_str(up_to=index)
+
+    def __str__(self):
+        return self._as_str()

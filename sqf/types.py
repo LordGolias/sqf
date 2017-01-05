@@ -1,7 +1,7 @@
 from sqf.exceptions import SQFError
 from sqf.parser_types import ParserType
 from sqf.keywords import Keyword
-from sqf.base_type import BaseType
+from sqf.base_type import BaseType, BaseTypeContainer
 
 
 class Type(BaseType):
@@ -70,43 +70,70 @@ class Number(ConstantValue):
         return 'N%s' % self
 
 
-class Array(Type):
-    def __init__(self, items):
-        super().__init__()
-        self._items = []
-        # asserts below check that it is a list of the form `A,B,C`
-        # where A B and C are instances of a Type.
-        if Keyword(',') in items:
+class Array(Type, BaseTypeContainer):
+    def __init__(self, tokens):
+        Type.__init__(self)
+        assert(all(not isinstance(t, ParserType) for t in tokens))
+        if Keyword(',') in tokens:
             raise SQFError('Keyword "," cannot be an item of an Array')
-        self._items = items
-
-    def __str__(self):
-        return '[%s]' % ','.join(str(item) for item in self._items)
+        BaseTypeContainer.__init__(self, tokens)
 
     def __repr__(self):
-        return '[%s]' % ','.join(repr(item) for item in self._items)
+        return self._as_str(repr)
+
+    @staticmethod
+    def _is_base_token(token):
+        # ignore tokens that are not relevant for the interpreter
+        return True
+
+    def _as_str(self, func=str, up_to=None):
+        if up_to is None:
+            return '[%s]' % ','.join(func(item) for item in self._tokens)
+
+        assert(up_to < len(self._tokens))
+        inside = ''
+        for i, item in enumerate(self._tokens):
+            comma = ''
+            if i != 0:
+                comma = ','
+
+            if i == up_to:
+                if i != 0:
+                    inside += comma
+                break
+            inside += comma + func(item)
+        return '[' + inside
 
     @property
     def value(self):
-        return self._items
+        return self._tokens
 
     def extend(self, index):
-        self._items += [Nothing] * (index - len(self._items) + 1)
+        new_tokens = [Nothing] * (index - len(self._tokens) + 1)
+        self._tokens += new_tokens
+        self._update_base_tokens()
         return Nothing
 
+    def append(self, token):
+        self._tokens.append(token)
+        self._update_base_tokens()
+
     def resize(self, count):
-        if count > len(self._items):
+        if count > len(self._tokens):
             self.extend(count - 1)
         else:
-            self._items = self._items[:count]
+            self._tokens = self._tokens[:count]
+        self._update_base_tokens()
         return Nothing
 
     def reverse(self):
-        self._items.reverse()
+        self._tokens.reverse()
+        self._update_base_tokens()
         return Nothing
 
     def add(self, other):
-        self._items += other
+        self._tokens += other
+        self._update_base_tokens()
         return Nothing
 
     def set(self, rhs_v):
@@ -115,9 +142,10 @@ class Array(Type):
         index = rhs_v.value[0].value
         value = rhs_v.value[1]
 
-        if index >= len(self._items):
+        if index >= len(self._tokens):
             self.extend(index)
-        self._items[index] = value
+        self._tokens[index] = value
+        self._update_base_tokens()
         return Nothing
 
 
@@ -137,36 +165,22 @@ class Variable(Type):
         return 'V<%s>' % self
 
 
-class _Statement:
+class _Statement(BaseTypeContainer):
     def __init__(self, tokens, parenthesis=None, ending=False):
-        super().__init__()
         assert (isinstance(tokens, list))
         for i, s in enumerate(tokens):
             assert(isinstance(s, (Type, Keyword, Statement, ParserType)))
-            assert(isinstance(s, BaseType))
-            s.set_parent(self, i)
-        self._tokens = tokens
+
+        super().__init__(tokens)
+
         self._parenthesis = parenthesis
         self._ending = ending
 
+    @staticmethod
+    def _is_base_token(token):
         # ignore tokens that are not relevant for the interpreter
-        self._base_tokens = []
-        for token in self.tokens:
-            if isinstance(token, ParserType):
-                continue
-            if isinstance(token, Statement):
-                # empty statements are ignored
-                if not token.base_tokens:
-                    continue
-            self._base_tokens.append(token)
-
-    @property
-    def tokens(self):
-        return self._tokens
-
-    @property
-    def base_tokens(self):
-        return self._base_tokens
+        return not (isinstance(token, ParserType) or
+                    isinstance(token, _Statement) and not token._parenthesis and not token.base_tokens)
 
     @property
     def ending(self):
@@ -191,15 +205,6 @@ class _Statement:
             as_str += ';'
         return as_str
 
-    def __str__(self):
-        return self._as_str()
-
-    def __repr__(self):
-        return 'S<%s>' % self._as_str(repr)
-
-    def string_up_to(self, index):
-        return self._as_str(up_to=index)
-
 
 class Statement(_Statement, BaseType):
     def __init__(self, tokens, parenthesis=False, ending=False):
@@ -208,6 +213,9 @@ class Statement(_Statement, BaseType):
         else:
             parenthesis = None
         super().__init__(tokens, parenthesis, ending)
+
+    def __repr__(self):
+        return 'S<%s>' % self._as_str(repr)
 
 
 class Code(_Statement, Type):
