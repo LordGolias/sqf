@@ -6,7 +6,7 @@ from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
 from sqf.keywords import Keyword
 from sqf.parser_types import Comment, Space, EndOfLine
-from sqf.parser import parse, parse_strings
+from sqf.parser import parse, parse_strings, identify_token
 from sqf.base_tokenizer import tokenize
 
 
@@ -67,7 +67,7 @@ class ParseCode(ParserTestCase):
     def test_parse_string(self):
         test = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
                '{"You have no called air support operating currently" SPAWN HINTSAOK;};'
-        result = parse_strings(tokenize(test))
+        result = parse_strings(tokenize(test), identify_token)
         self.assertTrue(isinstance(result[13], String))
         self.assertTrue(isinstance(result[24], String))
 

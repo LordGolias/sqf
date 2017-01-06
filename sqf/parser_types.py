@@ -31,6 +31,14 @@ class Space(ParserType):
         return '\' \''
 
 
+class Tab(ParserType):
+    def __str__(self):
+        return '\t'
+
+    def __repr__(self):
+        return '\\t'
+
+
 class EndOfLine(ParserType):
     def __str__(self):
         return '\n'
