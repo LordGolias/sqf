@@ -43,6 +43,8 @@ def parse_strings(all_tokens, identify_token):
         else:
             if string_mode:
                 string += token
+            elif token == '""':
+                tokens.append(String(''))
             else:
                 tokens.append(identify_token(token))
     return tokens
@@ -115,8 +117,10 @@ def _analyse_array_tokens(tokens):
     return result
 
 
-def parse_block(all_tokens, analyse_tokens, analyse_array,
-                start=0, block_lvl=0, parenthesis_lvl=0, rparenthesis_lvl=0):
+def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls=None):
+    if not initial_lvls:
+        initial_lvls = {'[]': 0, '()': 0, '{}': 0, 'define': 0}
+    lvls = initial_lvls.copy()
 
     statements = []
     tokens = []
@@ -126,36 +130,33 @@ def parse_block(all_tokens, analyse_tokens, analyse_array,
         token = all_tokens[i]
 
         if token == Keyword('['):
-            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1,
-                                           block_lvl=block_lvl,
-                                           parenthesis_lvl=parenthesis_lvl,
-                                           rparenthesis_lvl=rparenthesis_lvl+1)
+            lvls['[]'] += 1
+            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls)
+            lvls['[]'] -= 1
             tokens.append(expression)
             i += size + 1
         elif token == Keyword('('):
-            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1,
-                                           block_lvl=block_lvl,
-                                           parenthesis_lvl=parenthesis_lvl + 1,
-                                           rparenthesis_lvl=rparenthesis_lvl)
+            lvls['()'] += 1
+            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls)
+            lvls['()'] -= 1
             tokens.append(expression)
             i += size + 1
         elif token == Keyword('{'):
-            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1,
-                                           block_lvl=block_lvl + 1,
-                                           parenthesis_lvl=parenthesis_lvl,
-                                           rparenthesis_lvl=rparenthesis_lvl)
+            lvls['{}'] += 1
+            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls)
+            lvls['{}'] -= 1
             tokens.append(expression)
             i += size + 1
 
         elif token == Keyword(']'):
-            if rparenthesis_lvl == 0:
+            if lvls['[]'] == 0:
                 raise SQFParenthesisError('Trying to close right parenthesis without them opened.')
 
             if statements:
                 raise SQFParserError('A statement %s cannot be in an array' % Statement(statements))
             return Array(analyse_array(tokens)), i - start
         elif token == Keyword(')'):
-            if parenthesis_lvl == 0:
+            if lvls['()'] == 0:
                 raise SQFParenthesisError('Trying to close parenthesis without opened parenthesis.')
 
             if tokens:
@@ -163,7 +164,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array,
 
             return Statement(statements, parenthesis=True), i - start
         elif token == Keyword('}'):
-            if block_lvl == 0:
+            if lvls['{}'] == 0:
                 raise SQFParenthesisError('Trying to close brackets without opened brackets.')
 
             if tokens:
@@ -171,15 +172,36 @@ def parse_block(all_tokens, analyse_tokens, analyse_array,
 
             return Code(statements), i - start
         elif token == Keyword(';'):
-            tokens.append(Keyword(';'))
+            tokens.append(token)
             statements.append(analyse_tokens(tokens))
             tokens = []
+
+        elif token == Keyword('#define'):
+            lvls['define'] += 1
+            expression, size = parse_block(all_tokens, lambda x: Statement(x), lambda x: [Statement(x)], i + 1, lvls)
+            lvls['define'] -= 1
+
+            statements.append(expression)
+            tokens = []
+            i += size + 1
+        elif token == EndOfLine() and lvls['define'] >= 1:
+            if lvls['define'] != 1:
+                raise SQFParenthesisError('Two consecutive #define')
+            tokens.append(token)
+
+            tokens.insert(0, Keyword('#define'))
+
+            if statements:
+                raise SQFParserError('#define cannot contain statements')
+
+            return analyse_tokens(tokens), i - start
         else:
             tokens.append(token)
         i += 1
 
-    if block_lvl != 0 or rparenthesis_lvl != 0 or parenthesis_lvl != 0:
-        raise SQFParenthesisError('Brackets or parenthesis not closed')
+    for lvl_type in lvls:
+        if lvls[lvl_type] != 0:
+            raise SQFParenthesisError('Parenthesis "%s" not closed' % lvl_type)
 
     if tokens:
         statements.append(analyse_tokens(tokens))

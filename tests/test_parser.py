@@ -65,13 +65,25 @@ class ParserTestCase(TestCase):
 class ParseCode(ParserTestCase):
 
     def test_parse_string(self):
-        test = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
+        code = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
                '{"You have no called air support operating currently" SPAWN HINTSAOK;};'
-        result = parse_strings(tokenize(test), identify_token)
+        result = parse_strings(tokenize(code), identify_token)
         self.assertTrue(isinstance(result[13], String))
         self.assertTrue(isinstance(result[24], String))
 
         self.assertEqual(str(parse('_n = "This is bla";')), '_n = "This is bla";')
+
+    def test_parse_double_quote(self):
+        code = '_string = "my string ""with"" quotes"'
+        result = parse_strings(tokenize(code), identify_token)
+        self.assertTrue(isinstance(result[4], String))
+        self.assertEqual('my string ""with"" quotes', result[4].value)
+
+    def test_parse_empty_string(self):
+        code = '_string = ""'
+        result = parse_strings(tokenize(code), identify_token)
+        self.assertTrue(isinstance(result[4], String))
+        self.assertEqual('', result[4].value)
 
     def test_one(self):
         code = '_x=2;'

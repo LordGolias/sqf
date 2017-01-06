@@ -33,5 +33,4 @@ def identify_token(token):
 
 def parse(script):
     tokens = parse_strings(parse_comments(tokenize(script)), identify_token)
-    print(tokens[:10])
     return parse_block(tokens, lambda x: Statement(x), lambda x: [Statement(x)])[0]
