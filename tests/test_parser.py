@@ -5,7 +5,7 @@ from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
 from sqf.keywords import Keyword
-from sqf.parser_types import Comment, Space, EndOfLine
+from sqf.parser_types import Comment, Space, Tab, EndOfLine
 from sqf.parser import parse, parse_strings, identify_token
 from sqf.base_tokenizer import tokenize
 
@@ -84,6 +84,20 @@ class ParseCode(ParserTestCase):
         result = parse_strings(tokenize(code), identify_token)
         self.assertTrue(isinstance(result[4], String))
         self.assertEqual('', result[4].value)
+
+    def test_parse_bool(self):
+        code = '_x=true;'
+        result = parse(code)
+        expected = Statement([Statement([V('_x'), Keyword('='), Boolean(True)], ending=True)])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_parse_tab(self):
+        code = '\t_x;'
+        result = parse(code)
+        expected = Statement([Statement([Tab(), V('_x')], ending=True)])
+
+        self.assertEqualStatement(expected, result, code)
 
     def test_one(self):
         code = '_x=2;'

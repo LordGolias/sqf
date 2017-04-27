@@ -40,6 +40,11 @@ KEYWORDS = {
     'addPublicVariableEventHandler', 'isServer', 'isClient', 'isDedicated',
 }
 
+from sqf.keywords_db import DB
+
+KEYWORDS = KEYWORDS.union(DB)
+del DB
+
 
 class Namespace(Keyword):
     pass

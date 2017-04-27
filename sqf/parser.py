@@ -4,7 +4,7 @@ from sqf.base_tokenizer import tokenize
 from sqf.exceptions import SQFParenthesisError, SQFParserError
 from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String
 from sqf.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, Keyword
-from sqf.parser_types import Comment, Space, EndOfLine
+from sqf.parser_types import Comment, Space, Tab, EndOfLine
 from sqf.parse_exp import parse_exp
 
 
@@ -17,12 +17,14 @@ def identify_token(token):
         return token
     elif token == ' ':
         return Space()
+    elif token == '\t':
+        return Tab()
     elif token == '\n':
         return EndOfLine()
-    elif token in KEYWORDS_MAPPING:
-        return KEYWORDS_MAPPING[token]
     elif token in ('true', 'false'):
         return Boolean(token == 'true')
+    elif token in KEYWORDS_MAPPING:
+        return KEYWORDS_MAPPING[token]
     else:
         try:
             return Number(int(token))
