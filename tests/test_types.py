@@ -33,7 +33,7 @@ class TestGetPosition(TestCase):
 
     def test_keyword(self):
         s = Statement([Space(), Keyword('for')])
-        self.assertEqual((1, 1), s[1].position)
+        self.assertEqual((1, 2), s[1].position)
 
     def test_with_comments(self):
         # _x=2;/* the two
@@ -56,4 +56,4 @@ class TestGetPosition(TestCase):
         ])
 
         self.assertEqual(Keyword('='), s[1][1])
-        self.assertEqual((5, 2), s[1][1].position)
+        self.assertEqual((5, 3), s[1][1].position)

@@ -252,7 +252,7 @@ class ParseCode(ParserTestCase):
     def test_position_statement(self):
         code = 'switch (0) do'
         result = parse(code)
-        self.assertEqual((1, 9), result[0][2][0].position)
+        self.assertEqual((1, 10), result[0][2][0].position)
 
     def test_position_array(self):
         code = 'switch [1,2] do'
@@ -261,8 +261,8 @@ class ParseCode(ParserTestCase):
         number2 = result[0][2].value[1][0]
         assert (number1 == N(1))
         assert (number2 == N(2))
-        self.assertEqual((1, 8), number1.position)
-        self.assertEqual((1, 10), number2.position)
+        self.assertEqual((1, 9), number1.position)
+        self.assertEqual((1, 11), number2.position)
 
 
 class ParseArray(ParserTestCase):

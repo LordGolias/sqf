@@ -14,7 +14,7 @@ def equal_dicts(d1, d2, ignore_keys):
 def get_coord(string):
     lines = string.split('\n')
     line = len(lines)
-    column = len(lines[-1])
+    column = len(lines[-1]) + 1
     return line, column
 
 

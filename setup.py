@@ -1,11 +1,21 @@
-from setuptools import setup, find_packages, Extension
+from setuptools import setup
 
-
-setup(name='tokenizer',
-      version='1.0',
-      packages=find_packages(),
-      license='MIT',
-      #ext_package='tokenizer',
-      ext_modules=[Extension("_tokenizer",
-                             ["sqf/tokenizer_source/tokenizer.cpp"])]
+setup(
+    name='sqflint',
+    version='0.1.0',
+    author='Lord Golias',
+    author_email='lord.golias1@gmail.com',
+    description='A SQF (Arma) linter',
+    url='https://github.com/LordGolias/sqf',
+    license='BSD',
+    py_modules=['sqf'],
+    include_package_data=True,
+    entry_points={
+        'console_scripts': [
+            'sqflint = sqflint:_main',
+        ],
+    },
+    classifiers=[
+        'Environment :: Console',
+    ],
 )

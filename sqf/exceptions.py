@@ -3,7 +3,10 @@ class SQFError(Exception):
 
 
 class SQFParserError(SQFError):
-    pass
+    def __init__(self, position, message):
+        assert(isinstance(position, tuple))
+        self.position = position
+        self.message = message
 
 
 class SQFParenthesisError(SQFParserError):

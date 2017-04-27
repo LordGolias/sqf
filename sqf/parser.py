@@ -1,3 +1,4 @@
+import sqf.base_type
 from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import SQFParenthesisError, SQFParserError
@@ -5,6 +6,10 @@ from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String
 from sqf.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, Keyword
 from sqf.parser_types import Comment, Space, EndOfLine
 from sqf.parse_exp import parse_exp
+
+
+def get_coord(tokens):
+    return sqf.base_type.get_coord(''.join([str(x) for x in tokens]))
 
 
 def identify_token(token):
@@ -95,7 +100,7 @@ def _analyse_tokens(tokens):
     return statement
 
 
-def _analyse_array_tokens(tokens):
+def _analyse_array_tokens(tokens, tokens_until):
     result = []
     part = []
     first_comma_found = False
@@ -103,7 +108,7 @@ def _analyse_array_tokens(tokens):
         if token == Keyword(','):
             first_comma_found = True
             if not part:
-                raise SQFParserError('Array syntax is `[item1, item2, ...]`')
+                raise SQFParserError(get_coord(tokens_until), 'Array cannot have an empty element')
             result.append(_analyse_tokens(part))
             part = []
         else:
@@ -111,7 +116,7 @@ def _analyse_array_tokens(tokens):
 
     # an empty array is a valid array
     if part == [] and first_comma_found:
-        raise SQFParserError('Array syntax is `[item1, item2, ...]`')
+        raise SQFParserError(get_coord(tokens_until), 'Array cannot have an empty element')
     result.append(_analyse_tokens(part))
 
     return result
@@ -150,14 +155,14 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
         elif token == Keyword(']'):
             if lvls['[]'] == 0:
-                raise SQFParenthesisError('Trying to close right parenthesis without them opened.')
+                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close right parenthesis without them opened.')
 
             if statements:
-                raise SQFParserError('A statement %s cannot be in an array' % Statement(statements))
-            return Array(analyse_array(tokens)), i - start
+                raise SQFParserError(get_coord(all_tokens[:i]), 'A statement %s cannot be in an array' % Statement(statements))
+            return Array(analyse_array(tokens, all_tokens[:i])), i - start
         elif token == Keyword(')'):
             if lvls['()'] == 0:
-                raise SQFParenthesisError('Trying to close parenthesis without opened parenthesis.')
+                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close parenthesis without opened parenthesis.')
 
             if tokens:
                 statements.append(analyse_tokens(tokens))
@@ -165,7 +170,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
             return Statement(statements, parenthesis=True), i - start
         elif token == Keyword('}'):
             if lvls['{}'] == 0:
-                raise SQFParenthesisError('Trying to close brackets without opened brackets.')
+                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close brackets without opened brackets.')
 
             if tokens:
                 statements.append(analyse_tokens(tokens))
@@ -186,13 +191,13 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
             i += size + 1
         elif token == EndOfLine() and lvls['define'] >= 1:
             if lvls['define'] != 1:
-                raise SQFParenthesisError('Two consecutive #define')
+                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Two consecutive #define')
             tokens.append(token)
 
             tokens.insert(0, Keyword('#define'))
 
             if statements:
-                raise SQFParserError('#define cannot contain statements')
+                raise SQFParserError(get_coord(all_tokens[:i]), '#define cannot contain statements')
 
             return analyse_tokens(tokens), i - start
         else:
@@ -201,7 +206,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
     for lvl_type in lvls:
         if lvls[lvl_type] != 0:
-            raise SQFParenthesisError('Parenthesis "%s" not closed' % lvl_type)
+            raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Parenthesis "%s" not closed' % lvl_type)
 
     if tokens:
         statements.append(analyse_tokens(tokens))
