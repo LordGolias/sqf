@@ -3,7 +3,10 @@ from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import SQFParenthesisError, SQFParserError
 from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String
-from sqf.keywords import KEYWORDS_MAPPING, ORDERED_OPERATORS, Keyword
+from sqf.keywords import ORDERED_OPERATORS, KEYWORDS, Keyword, \
+    KEYWORDS_CONTROLS, KeywordControl, \
+    KEYWORDS_CONSTANTS, KeywordConstant, \
+    NAMESPACES, Namespace
 from sqf.parser_types import Comment, Space, Tab, EndOfLine
 from sqf.parse_exp import parse_exp
 
@@ -23,8 +26,14 @@ def identify_token(token):
         return EndOfLine()
     elif token in ('true', 'false'):
         return Boolean(token == 'true')
-    elif token in KEYWORDS_MAPPING:
-        return KEYWORDS_MAPPING[token]
+    elif token.lower() in NAMESPACES:
+        return Namespace(token)
+    elif token.lower() in KEYWORDS_CONTROLS:
+        return KeywordControl(token)
+    elif token.lower() in KEYWORDS_CONSTANTS:
+        return KeywordConstant(token)
+    elif token.lower() in KEYWORDS:
+        return Keyword(token)
     else:
         try:
             return Number(int(token))

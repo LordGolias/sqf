@@ -32,10 +32,10 @@ without having to run the game.
 ## Example
 
     from sqf.interpreter import interpret
-    interpreter, outcome = interpret('_x = [1, 2]; y_ = _x; reverse _y;')
+    interpreter, outcome = interpret('_x = [1, 2]; _y = _x; reverse _y;')
     # outcome equals to "Nothing"
-    # interpreter['_x'] equals to Array([Number(2), Number(1)])
     # interpreter['_y'] equals to Array([Number(2), Number(1)])
+    # interpreter['_x'] equals to Array([Number(2), Number(1)])  # <= _y is a reference
 
 ## Requirements and installation
 

@@ -61,6 +61,10 @@ class TestInterpreter(TestCase):
         self.assertEqual(Number(2), interpreter['_x'])
         self.assertEqual(Number(2), outcome)
 
+    def test_private_eq1(self):
+        interpreter, outcome = interpret('private _x = 1 < 2;')
+        self.assertEqual(Boolean(True), interpreter['_x'])
+
     def test_private_single(self):
         interpreter, outcome = interpret('private "_x";')
         self.assertEqual(Nothing, interpreter['_x'])

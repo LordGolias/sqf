@@ -4,7 +4,7 @@ from sqf.parse_exp import parse_exp, partition
 from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
-from sqf.keywords import Keyword
+from sqf.keywords import Keyword, KeywordControl
 from sqf.parser_types import Comment, Space, Tab, EndOfLine
 from sqf.parser import parse, parse_strings, identify_token
 from sqf.base_tokenizer import tokenize
@@ -244,8 +244,8 @@ class ParseCode(ParserTestCase):
     def test_if_then(self):
         code = 'if(true)then{private"_x";_x}'
         result = parse(code)
-        expected = Statement([Statement([Keyword('if'), Statement([Statement([Boolean(True)])], parenthesis=True),
-                                         Keyword('then'), Code([
+        expected = Statement([Statement([KeywordControl('if'), Statement([Statement([Boolean(True)])], parenthesis=True),
+                                         KeywordControl('then'), Code([
                 Statement([Keyword('private'), String('"_x"')], ending=True),
                 Statement([V('_x')])])
         ])])
@@ -256,11 +256,11 @@ class ParseCode(ParserTestCase):
         code = 'switch (0) do'
         result = parse(code)
         expected = Statement([Statement([
-            Keyword('switch'),
+            KeywordControl('switch'),
             Space(),
             Statement([Statement([N(0)])], parenthesis=True),
             Space(),
-            Keyword('do')])])
+            KeywordControl('do')])])
         self.assertEqualStatement(expected, result, code)
 
     def test_position_statement(self):

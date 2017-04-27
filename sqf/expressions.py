@@ -1,7 +1,7 @@
 import math
 
 from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
-from sqf.keywords import Keyword, Namespace
+from sqf.keywords import Keyword, KeywordControl, Namespace
 from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 
@@ -122,8 +122,8 @@ class LogicalExpression(BinaryExpression):
 class IfThenExpression(Expression):
 
     def __init__(self, length, tests, action):
-        base_test = lambda values: values[0] == Keyword('if') and \
-                                   isinstance(values[1], Boolean) and values[2] == Keyword('then')
+        base_test = lambda values: values[0] == KeywordControl('if') and \
+                                   isinstance(values[1], Boolean) and values[2] == KeywordControl('then')
 
         super().__init__(length, action, [base_test] + tests)
 
@@ -240,11 +240,11 @@ def _switch(interpreter, result, code):
     for statement in code.base_tokens:
         if not statement.base_tokens:
             pass
-        elif statement.base_tokens[0] == Keyword('default'):
+        elif statement.base_tokens[0] == KeywordControl('default'):
             if default is not None:
                 raise SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`')
             default = statement.base_tokens[1]
-        elif statement.base_tokens[0] == Keyword('case') and (
+        elif statement.base_tokens[0] == KeywordControl('case') and (
                     len(statement.base_tokens) == 2 or
                     len(statement.base_tokens) == 4 and statement.base_tokens[2] == Keyword(':')):
             condition_statement = statement.base_tokens[1]
@@ -319,52 +319,52 @@ EXPRESSIONS = [
     IfThenExpression(4, tests=[lambda values: type(values[3]) == Array],
                      action=lambda v, i: _if_then_else(i, v[1], v[3].value[0], v[3].value[1])),
     IfThenExpression(6, tests=[lambda values: type(values[3]) == Code,
-                               lambda values: values[4] == Keyword('else'),
+                               lambda values: values[4] == KeywordControl('else'),
                                lambda values: type(values[5]) == Code],
                      action=lambda v, i: _if_then_else(i, v[1], v[3], v[5])),
 
-    Expression(4, tests=[lambda values: values[0] == Keyword('while'),
+    Expression(4, tests=[lambda values: values[0] == KeywordControl('while'),
                          lambda values: type(values[1]) == Code,
-                         lambda values: values[2] == Keyword('do'),
+                         lambda values: values[2] == KeywordControl('do'),
                          lambda values: type(values[3]) == Code],
                action=lambda t, v, i: _while_loop(i, v[1], v[3])),
 
-    Expression(4, tests=[lambda values: values[0] == Keyword('for'),
+    Expression(4, tests=[lambda values: values[0] == KeywordControl('for'),
                          lambda values: type(values[1]) == Array,
-                         lambda values: values[2] == Keyword('do'),
+                         lambda values: values[2] == KeywordControl('do'),
                          lambda values: type(values[3]) == Code,
                          ],
                action=lambda t, v, i: _forspecs_loop(i, v[1].value[0], v[1].value[1], v[1].value[2], v[3])),
 
-    Expression(8, tests=[lambda values: values[0] == Keyword('for'),
+    Expression(8, tests=[lambda values: values[0] == KeywordControl('for'),
                          lambda values: type(values[1]) == String,
-                         lambda values: values[2] == Keyword('from'),
+                         lambda values: values[2] == KeywordControl('from'),
                          lambda values: type(values[3]) == Number,
-                         lambda values: values[4] == Keyword('to'),
+                         lambda values: values[4] == KeywordControl('to'),
                          lambda values: type(values[5]) == Number,
-                         lambda values: values[6] == Keyword('do'),
+                         lambda values: values[6] == KeywordControl('do'),
                          lambda values: type(values[7]) == Code,
                          ],
                action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, 1, v[7])),
 
-    Expression(10, tests=[lambda values: values[0] == Keyword('for'),
+    Expression(10, tests=[lambda values: values[0] == KeywordControl('for'),
                          lambda values: type(values[1]) == String,
-                         lambda values: values[2] == Keyword('from'),
+                         lambda values: values[2] == KeywordControl('from'),
                          lambda values: type(values[3]) == Number,
-                         lambda values: values[4] == Keyword('to'),
+                         lambda values: values[4] == KeywordControl('to'),
                          lambda values: type(values[5]) == Number,
-                         lambda values: values[6] == Keyword('step'),
+                         lambda values: values[6] == KeywordControl('step'),
                          lambda values: type(values[7]) == Number,
-                         lambda values: values[8] == Keyword('do'),
+                         lambda values: values[8] == KeywordControl('do'),
                          lambda values: type(values[9]) == Code,
                          ],
                action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, v[7].value, v[9])),
 
     # switch
     Expression(4, tests=[
-        lambda values: values[0] == Keyword('switch'),
+        lambda values: values[0] == KeywordControl('switch'),
         lambda values: isinstance(values[1], Type),
-        lambda values: values[2] == Keyword('do'),
+        lambda values: values[2] == KeywordControl('do'),
         lambda values: isinstance(values[3], Code)
         ], action=lambda t, v, i: _switch(i, v[1], v[3]))
 ]

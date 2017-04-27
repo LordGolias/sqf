@@ -5,6 +5,7 @@ class Keyword(BaseType):
     def __init__(self, token):
         super().__init__()
         self._token = token
+        self._unique_token = token.lower()
 
     @property
     def value(self):
@@ -14,10 +15,20 @@ class Keyword(BaseType):
         return self._token
 
     def __repr__(self):
-        return 'R<%s>' % self._token
+        return 'K<%s>' % self._token
 
     def __hash__(self):
-        return hash(self._token)
+        return hash(str(self.__class__) + self._unique_token)
+
+
+class KeywordControl(Keyword):
+    def __repr__(self):
+        return 'KC<%s>' % self._token
+
+
+class KeywordConstant(Keyword):
+    def __repr__(self):
+        return 'Kc<%s>' % self._token
 
 
 KEYWORDS = {
@@ -32,7 +43,7 @@ KEYWORDS = {
     'resize', 'count', 'set', 'in', 'select', 'find', 'append', 'pushBack', 'pushBackUnique', 'reverse',
     'call', 'spawn', 'SPAWN',
     '&&', 'and', '||', 'or',
-    'isEqualTo', '==', '!=', '>', '<', '>=', '<=', '!', 'not',
+    'isEqualTo', '==', '!=', '>', '<', '>=', '<=', '!', 'not', '>>',
     'isNull', 'isNil',
     'units',
     'createMarker', 'getmarkerpos',
@@ -40,7 +51,7 @@ KEYWORDS = {
     'addPublicVariableEventHandler', 'isServer', 'isClient', 'isDedicated',
 }
 
-from sqf.keywords_db import DB
+from sqf.keywords_db import DB, DB_constants, DB_controls
 
 KEYWORDS = KEYWORDS.union(DB)
 del DB
@@ -50,16 +61,20 @@ class Namespace(Keyword):
     pass
 
 
-NAMESPACES = [Namespace('missionNamespace'), Namespace('profileNamespace'), Namespace('uiNamespace'),
-              Namespace('parsingNamespace')]
+NAMESPACES = set(['missionNamespace','profileNamespace','uiNamespace','parsingNamespace'])
+NAMESPACES = set([x.lower() for x in NAMESPACES])
 
-KEYWORDS = set(Keyword(s) for s in KEYWORDS)
-KEYWORDS = KEYWORDS.union(NAMESPACES)
+KEYWORDS = set([x.lower() for x in KEYWORDS])
 
-KEYWORDS_MAPPING = dict()
-for keyword in KEYWORDS:
-    KEYWORDS_MAPPING[keyword.value] = keyword
 
 # operators by precedence
 ORDERED_OPERATORS = [Keyword(s) for s in ('private', '=', '-', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!',
                                           'getVariable')]
+
+KEYWORDS_CONTROLS = set(DB_controls)
+KEYWORDS_CONTROLS = set([x.lower() for x in KEYWORDS_CONTROLS])
+del DB_controls
+
+KEYWORDS_CONSTANTS = set(DB_constants)
+KEYWORDS_CONSTANTS = set([x.lower() for x in KEYWORDS_CONSTANTS])
+del DB_constants
