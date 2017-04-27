@@ -91,9 +91,9 @@ version = 52;
                 'MarkerIDProvider': {'nextID': N(124)},
                 'Camera': {'pos': Array([N(10253.095), N(59.11644), N(13849.58)])},
             },
-            'addons': Array([String("A3_Structures_F_Mil_Helipads"),
-                             String("A3_Soft_F_Truck"),
-                             String("A3_Soft_F_MRAP_03")])
+            'addons': Array([String('"A3_Structures_F_Mil_Helipads"'),
+                             String('"A3_Soft_F_Truck"'),
+                             String('"A3_Soft_F_MRAP_03"')])
         }
 
         self.assertEqual(expected, interpreter)

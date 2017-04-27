@@ -37,10 +37,13 @@ class String(ConstantValue):
 
     def __init__(self, value):
         assert(isinstance(value, str))
-        super().__init__(value)
+        assert(value[0] == value[-1])
+        assert (value[0] in ["'", '"'])
+        self.container = value[0]
+        super().__init__(value[1:-1])
 
     def __str__(self):
-        return '"%s"' % self.value
+        return "%s%s%s" % (self.container, self.value, self.container)
 
     def __repr__(self):
         return 's<%s>' % self

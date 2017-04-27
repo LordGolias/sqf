@@ -185,12 +185,12 @@ class TestInterpretString(TestCase):
         test = '_x = "ABA";'
         interpreter, outcome = interpret(test)
 
-        self.assertEqual(String('ABA'), interpreter['_x'])
+        self.assertEqual(String('"ABA"'), interpreter['_x'])
 
     def test_add(self):
         test = '_x = "ABA"; _y = "BAB"; _x + _y'
         _, outcome = interpret(test)
-        self.assertEqual(String('ABABAB'), outcome)
+        self.assertEqual(String('"ABABAB"'), outcome)
 
     def test_find(self):
         _, outcome = interpret('"Hello world!" find "world!"')
@@ -314,10 +314,10 @@ class Switch(TestCase):
             case "4";
             case "2": {"2"};
         }'''
-        self.assertEquals(String("3"), interpret(code % '"0"')[1])
-        self.assertEquals(String("default"), interpret(code % '"5"')[1])
-        self.assertEquals(String("2"), interpret(code % '"1"')[1])
-        self.assertEquals(String("3"), interpret(code % '"3"')[1])
+        self.assertEquals(String('"3"'), interpret(code % '"0"')[1])
+        self.assertEquals(String('"default"'), interpret(code % '"5"')[1])
+        self.assertEquals(String('"2"'), interpret(code % '"1"')[1])
+        self.assertEquals(String('"3"'), interpret(code % '"3"')[1])
 
     def test_syntax_error(self):
         with self.assertRaises(SQFSyntaxError) as cm:
@@ -394,7 +394,7 @@ class Markers(TestCase):
     def test_create(self):
         interpreter, outcome = interpret('_marker = createMarker ["m1", [1, 1, 1]];')
 
-        self.assertEqual(String('m1'), interpreter['_marker'])
+        self.assertEqual(String('"m1"'), interpreter['_marker'])
         self.assertTrue('m1' in interpreter.markers)
 
 
@@ -405,7 +405,7 @@ class Operators(TestCase):
         self.assertEquals(Array([N(65), N(97), N(338)]), outcome)
 
         outcome = interpret('toString([65,97,338])')[1]
-        self.assertEquals(String("AaŒ"), outcome)
+        self.assertEquals(String('"AaŒ"'), outcome)
 
     def test_resize_array(self):
         interpreter = interpret('_x = [1,2]; _x resize 4')[0]

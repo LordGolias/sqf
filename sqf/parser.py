@@ -34,24 +34,48 @@ def identify_token(token):
 
 
 def parse_strings(all_tokens, identify_token):
-    tokens = []
-    string_mode = False
     string = ''
-    for token in all_tokens:
-        if token == '"':
-            if string_mode:
-                tokens.append(String(string))
-                string = ''
-                string_mode = False
-            else:
-                string_mode = True
-        else:
-            if string_mode:
-                string += token
-            elif token == '""':
-                tokens.append(String(''))
+    tokens = []
+    in_double = False
+    string_mode = None  # [None, "single", "double"]
+
+    for i, token in enumerate(all_tokens):
+        if string_mode == "double":
+            string += token
+            if token == '"':
+                if in_double:
+                    in_double = False
+                elif not in_double and i != len(all_tokens) - 1 and all_tokens[i+1] == '"':
+                    in_double = True
+                else:
+                    tokens.append(String(string))
+                    string_mode = None
+                    in_double = False
+
+        elif string_mode == "single":
+            string += token
+            if token == "'":
+                if in_double:
+                    in_double = False
+                elif not in_double and i != len(all_tokens) - 1 and all_tokens[i + 1] == "'":
+                    in_double = True
+                else:
+                    tokens.append(String(string))
+                    string_mode = None
+                    in_double = False
+        else:  # string_mode is None:
+            if token == '"':
+                string = token
+                string_mode = "double"
+            elif token == "'":
+                string = token
+                string_mode = "single"
             else:
                 tokens.append(identify_token(token))
+
+    if string_mode is not None:
+        raise SQFParserError(get_coord(tokens), 'String is not closed')
+
     return tokens
 
 
@@ -206,7 +230,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
     for lvl_type in lvls:
         if lvls[lvl_type] != 0:
-            raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Parenthesis "%s" not closed' % lvl_type)
+            raise SQFParenthesisError(get_coord(all_tokens[:start - 1]), 'Parenthesis "%s" not closed' % lvl_type[0])
 
     if tokens:
         statements.append(analyse_tokens(tokens))

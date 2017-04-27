@@ -95,7 +95,7 @@ class ParseCode(ParserTestCase):
     def test_one_bracketed(self):
         code = '{_x="AirS";}'
         result = parse(code)
-        expected = Statement([Statement([Code([Statement([V('_x'), Keyword('='), String('AirS')], ending=True)])])])
+        expected = Statement([Statement([Code([Statement([V('_x'), Keyword('='), String('"AirS"')], ending=True)])])])
         
         self.assertEqualStatement(expected, result, code)
 
@@ -103,13 +103,13 @@ class ParseCode(ParserTestCase):
         code = '(_x="AirS";)'
         result = parse(code)
         expected = Statement([Statement([
-            Statement([V('_x'), Keyword('='), String('AirS')], ending=True)], parenthesis=True)])
+            Statement([V('_x'), Keyword('='), String('"AirS"')], ending=True)], parenthesis=True)])
         
         self.assertEqualStatement(expected, result, code)
 
         code = '(_x="AirS";);'
         result = parse(code)
-        expected = Statement([Statement([Statement([V('_x'), Keyword('='), String('AirS')], ending=True)],
+        expected = Statement([Statement([Statement([V('_x'), Keyword('='), String('"AirS"')], ending=True)],
                                         parenthesis=True, ending=True)
                               ])
         self.assertEqualStatement(expected, result, code)
@@ -118,7 +118,7 @@ class ParseCode(ParserTestCase):
         code = '_x=(_x=="AirS");'
         result = parse(code)
         expected = Statement([Statement([V('_x'), Keyword('='),
-                              Statement([Statement([V('_x'), Keyword('=='), String('AirS')])], parenthesis=True)], ending=True)])
+                              Statement([Statement([V('_x'), Keyword('=='), String('"AirS"')])], parenthesis=True)], ending=True)])
         self.assertEqualStatement(expected, result, code)
 
     def test_assign_array(self):
@@ -214,7 +214,7 @@ class ParseCode(ParserTestCase):
             Code([Statement([
                 Statement([V('_x'), Space()]),
                 Keyword('getVariable'),
-                Statement([Space(), String('AirS')])])])
+                Statement([Space(), String('"AirS"')])])])
             ])])
         
         self.assertEqualStatement(expected, result, code)
@@ -232,7 +232,7 @@ class ParseCode(ParserTestCase):
         result = parse(code)
         expected = Statement([Statement([Keyword('if'), Statement([Statement([Boolean(True)])], parenthesis=True),
                                          Keyword('then'), Code([
-                Statement([Keyword('private'), String('_x')], ending=True),
+                Statement([Keyword('private'), String('"_x"')], ending=True),
                 Statement([V('_x')])])
         ])])
         
@@ -271,13 +271,13 @@ class ParseArray(ParserTestCase):
         test = '["AirS", nil];'
         result = parse(test)
         expected = Statement([Statement([
-            Array([Statement([String('AirS')]), Statement([Space(), Keyword('nil')])])], ending=True)])
+            Array([Statement([String('"AirS"')]), Statement([Space(), Keyword('nil')])])], ending=True)])
 
         self.assertEqual(expected, result)
 
     def test_exceptions(self):
         with self.assertRaises(SQFError):
-            Array([String('AirS'), Keyword(','), Keyword('nil')])
+            Array([String('"AirS"'), Keyword(','), Keyword('nil')])
 
         with self.assertRaises(SQFParserError):
             parse('["AirS"; nil];')
@@ -380,3 +380,32 @@ class ParseBlockComments(ParserTestCase):
         ])
 
         self.assertEqualStatement(expected, result, code)
+
+
+class ParseStrings(ParserTestCase):
+
+    def test_single_double(self):
+        code = '_x=\'"1"\''
+        result = parse(code)
+        self.assertEqual(str(result[0][2]), "'\"1\"'")
+
+    def test_double_single(self):
+        code = '_x="\'1\'"'
+        result = parse(code)
+        self.assertEqual(str(result[0][2]), "\"'1'\"")
+
+    def test_double_escape(self):
+        code = '_x="""1"""'
+        result = parse(code)
+        self.assertEqual(str(result[0][2]), '"""1"""')
+
+    def test_single_escape(self):
+        code = "_x='''1'''"
+        result = parse(code)
+        self.assertEqual(str(result[0][2]), "'''1'''")
+
+    def test_error(self):
+        code = "_x='1111"
+        with self.assertRaises(Exception) as cm:
+            parse(code)
+        self.assertEqual((1, 4), cm.exception.position)

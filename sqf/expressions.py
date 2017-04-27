@@ -98,6 +98,9 @@ class ArithmeticExpression(BinaryExpression):
         lhs_t = type(values[0])
         if type(lhs_v) == Array:
             return Array(OP_ARRAY_OPERATIONS[op](lhs_v.value, rhs_v.value))
+        if type(lhs_v) == String:
+            container = lhs_v.container
+            return String(container + OP_ARRAY_OPERATIONS[op](lhs_v.value, rhs_v.value) + container)
         else:
             return lhs_t(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
 
@@ -297,7 +300,7 @@ EXPRESSIONS = [
     BinaryExpression('append', Array, Array, lambda lhs_v, rhs_v, i: lhs_v.add(rhs_v.value)),
 
     UnaryExpression('toArray', String, lambda rhs_v, i: Array([Number(ord(s)) for s in rhs_v.value])),
-    UnaryExpression('toString', Array, lambda rhs_v, i: String(''.join(chr(s.value) for s in rhs_v.value))),
+    UnaryExpression('toString', Array, lambda rhs_v, i: String('"'+''.join(chr(s.value) for s in rhs_v.value)+'"')),
 
     # code and namespaces
     UnaryExpression('call', Code, lambda rhs_v, i: i.execute_code(rhs_v)),
