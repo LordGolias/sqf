@@ -195,7 +195,10 @@ class _Statement(BaseTypeContainer):
     def __getitem__(self, other):
         return self._tokens[other]
 
-    def _as_str(self, func=str, up_to=-1):
+    def _as_str(self, func=str, up_to=None):
+        if up_to is None:
+            up_to = len(self._tokens)
+
         as_str = ''
         for i, s in enumerate(self._tokens):
             if i == up_to:
@@ -203,8 +206,11 @@ class _Statement(BaseTypeContainer):
             as_str += '%s' % func(s)
 
         if self._parenthesis is not None:
-            as_str = '%s%s%s' % (self._parenthesis[0], as_str, self._parenthesis[1])
-        if self.ending:
+            if up_to == len(self._tokens):
+                as_str = '%s%s%s' % (self._parenthesis[0], as_str, self._parenthesis[1])
+            else:
+                as_str = '%s%s' % (self._parenthesis[0], as_str)
+        if self.ending and up_to == len(self._tokens):
             as_str += ';'
         return as_str
 

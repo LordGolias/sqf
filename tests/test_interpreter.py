@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from sqf.exceptions import SQFSyntaxError
-from sqf.types import String, Number, Array, Boolean, Nothing, Number as N, Statement
+from sqf.types import String, Number, Array, Boolean, Nothing, Number as N
 from sqf.interpreter import interpret
 
 
@@ -322,7 +322,7 @@ class Switch(TestCase):
     def test_syntax_error(self):
         with self.assertRaises(SQFSyntaxError) as cm:
             interpret('switch (0) do {case (1), {"one"};}')
-        self.assertEqual((1, 17), cm.exception.position)
+        self.assertEqual((1, 16), cm.exception.position)
 
         with self.assertRaises(SQFSyntaxError) as cm:
             interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
