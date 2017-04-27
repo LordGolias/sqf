@@ -1,21 +1,26 @@
 # SQF linter
 
-This project contains a compiler and interpreter for SQF (Arma scripting language), written in Python.
+This project contains a parser, compiler, static analyser and interpreter for 
+SQF (Arma scripting language), written in Python.
 It can be used to:
 
 * syntax-check SQF
-* execute SQF
+* static analyze SQF
+* execute SQF on a virtual environment
 
 ## Problem it solves
 
 One of the major bottlenecks in scripting in SQF is the time spent 
 testing it in-game, by running the game.
 
+Often, these scripts contain simple errors (missing ";") that everyone would 
+love to avoid restarting the mission because of them.
+
 Yet, scripts are often focused on a specific functionality and thus 
 require only minor knowledge about the global state of the simulation (encapsulation). 
-Thus, in many situations, a script can be tested without the full simulation.   
+Thus, in many situations, a script can be tested without the full simulation.
 
-This interpreter is intended to do exactly that: run scripts on an 
+The interpreter is intended to do exactly that: run scripts on an 
 emulated (and limited) environment of the simulation.
 The interpreter is obviously *not intended* to run Arma simulation; it is
 aimed for you, moder, run tests of your scripts (e.g. Unit Tests) 
@@ -69,8 +74,8 @@ supports parsing code (but not interpret it).
 
 ## Code organization
 
-This code contains essentially 3 components, a **tokenizer**, 
-a **parser** and an **interpreter**:
+This code contains essentially 4 components, a **tokenizer**, 
+a **parser**, **analyzer** and **interpreter**:
 
 ### Interpreter
 
@@ -97,6 +102,10 @@ The call `interpreter['a']` returns the outermost `Scope`
 of the `Namespace` `"missionNamespace"`, but you can use `setVariable`
 and `getVariable` to interact with other namespaces.
 `sqf.tests.test_interpreter` contains the tests of the implemented functionality.
+
+### Analyzer
+
+The analyzer consumes the result of the parser and checks for static errors.
 
 ### Parser
 
