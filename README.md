@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/LordGolias/sqf.svg?branch=master)](https://travis-ci.org/LordGolias/sqf)
+[![Coverage Status](https://coveralls.io/repos/github/LordGolias/sqf/badge.svg)](https://coveralls.io/github/LordGolias/sqf)
+
 # SQF linter
 
 This project contains a parser, compiler, static analyser and interpreter for 
