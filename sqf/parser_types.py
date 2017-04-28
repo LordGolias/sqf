@@ -4,6 +4,7 @@ from sqf.base_type import ParserType
 class Comment(ParserType):
 
     def __init__(self, string):
+        super().__init__()
         if string.startswith('//'):
             self._line = True
         else:

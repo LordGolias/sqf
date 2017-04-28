@@ -5,10 +5,16 @@ from sqf.base_type import BaseType, BaseTypeContainer
 
 
 class Type(BaseType):
+    """
+    A type represents a type of variable. Every quantity that has a value is a type.
+    """
     pass
 
 
 class ConstantValue(Type):
+    """
+    A constant (literal) value. For example, a number, a string, code.
+    """
     def __init__(self, value=None):
         super().__init__()
         self._value = value
@@ -86,7 +92,7 @@ class Array(Type, BaseTypeContainer):
 
     @staticmethod
     def _is_base_token(token):
-        # ignore tokens that are not relevant for the interpreter
+        # An array only holds relevant statements (or it is syntatically incorrect).
         return True
 
     def _as_str(self, func=str, up_to=None):
@@ -153,6 +159,9 @@ class Array(Type, BaseTypeContainer):
 
 
 class Variable(Type):
+    """
+    A variable that holds values. It has a name (e.g. "_x").
+    """
     def __init__(self, name):
         super().__init__()
         self._name = name
@@ -216,6 +225,10 @@ class _Statement(BaseTypeContainer):
 
 
 class Statement(_Statement, BaseType):
+    """
+    The main class for holding statements. It is a BaseType because it can be nested, and
+    it is a _Statement because it can hold elements.
+    """
     def __init__(self, tokens, parenthesis=False, ending=False):
         if parenthesis:
             parenthesis = '()'
@@ -228,6 +241,9 @@ class Statement(_Statement, BaseType):
 
 
 class Code(_Statement, Type):
+    """
+    The class that holds (non-interpreted) code.
+    """
     def __init__(self, tokens):
         super().__init__(tokens, parenthesis='{}')
 

@@ -49,12 +49,18 @@ class BaseType:
 
 
 class ParserType(BaseType):
-    # type ignored by the interpreter
+    # base type ignored by the interpreter
     pass
 
 
 class BaseTypeContainer(BaseType):
+    """
+    This is the base class for containers (e.g. statements, code).
 
+    Relevant of this class:
+        * `base_tokens` to get tokens that have functionality.
+        * `string_up_to`: the string representation of this class up to an index.
+    """
     def __init__(self, tokens):
         super().__init__()
         for i, s in enumerate(tokens):

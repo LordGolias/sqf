@@ -16,6 +16,9 @@ def get_coord(tokens):
 
 
 def identify_token(token):
+    """
+    The function that converts a token from tokenize to a BaseType.
+    """
     if isinstance(token, Comment):
         return token
     elif token == ' ':
@@ -45,6 +48,9 @@ def identify_token(token):
 
 
 def parse_strings(all_tokens, identify_token):
+    """
+    Function that parses the strings of a script, transforming them into `String`.
+    """
     string = ''
     tokens = []
     in_double = False
