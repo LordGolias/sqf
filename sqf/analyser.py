@@ -1,6 +1,6 @@
 from sqf.exceptions import SQFParserError
 from sqf.keywords import KeywordControl
-from sqf.types import String, Statement, Code, Array, Boolean, Variable, Number
+from sqf.types import String, Statement, Code, Array, Boolean, Variable, Number, Keyword
 
 constantTypes = (Array, Boolean, Variable, Number, Code, String, KeywordControl)
 
@@ -28,6 +28,12 @@ EXCEPTIONS = [
 
 
 def check_statement(tokens, exceptions):
+    if tokens[0] == Keyword("#define"):
+        if len(tokens) == 1:
+            exception = SQFParserError(tokens[0].position, "Syntax error: Wrong syntax for #define")
+            exceptions.append(exception)
+        return None
+
     for i, t in enumerate(tokens):
         if i != len(tokens) - 1:
             tp1 = tokens[i + 1]

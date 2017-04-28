@@ -51,6 +51,8 @@ KEYWORDS = {
     'addPublicVariableEventHandler', 'isServer', 'isClient', 'isDedicated',
 }
 
+KEYWORDS = KEYWORDS.union({'#define','#include', '\\'})
+
 from sqf.keywords_db import DB, DB_constants, DB_controls
 
 KEYWORDS = KEYWORDS.union(DB)

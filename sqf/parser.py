@@ -7,7 +7,7 @@ from sqf.keywords import ORDERED_OPERATORS, KEYWORDS, Keyword, \
     KEYWORDS_CONTROLS, KeywordControl, \
     KEYWORDS_CONSTANTS, KeywordConstant, \
     NAMESPACES, Namespace
-from sqf.parser_types import Comment, Space, Tab, EndOfLine
+from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parse_exp import parse_exp
 
 
@@ -25,6 +25,8 @@ def identify_token(token):
         return Space()
     elif token == '\t':
         return Tab()
+    elif token == '\\\n':
+        return BrokenEndOfLine()
     elif token == '\n':
         return EndOfLine()
     elif token in ('true', 'false'):
@@ -222,31 +224,27 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
             statements.append(analyse_tokens(tokens))
             tokens = []
 
-        elif token == Keyword('#define'):
+        elif token == Keyword('#define') and lvls['define'] == 0:
+            # repeat the loop for this token.
             lvls['define'] += 1
-            expression, size = parse_block(all_tokens, lambda x: Statement(x), lambda x: [Statement(x)], i + 1, lvls)
+            expression, size = parse_block(all_tokens, lambda x: Statement(x), lambda x, _: [Statement(x)], i, lvls)
             lvls['define'] -= 1
 
             statements.append(expression)
-            tokens = []
-            i += size + 1
-        elif token == EndOfLine() and lvls['define'] >= 1:
+            i += size - 1
+        elif token == EndOfLine() and lvls['define'] != 0:
             if lvls['define'] != 1:
                 raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Two consecutive #define')
-            tokens.append(token)
 
-            tokens.insert(0, Keyword('#define'))
+            statements.append(analyse_tokens(tokens))
 
-            if statements:
-                raise SQFParserError(get_coord(all_tokens[:i]), '#define cannot contain statements')
-
-            return analyse_tokens(tokens), i - start
+            return Statement(statements), i - start
         else:
             tokens.append(token)
         i += 1
 
     for lvl_type in lvls:
-        if lvls[lvl_type] != 0:
+        if lvls[lvl_type] != 0 and lvl_type != 'define':
             raise SQFParenthesisError(get_coord(all_tokens[:start - 1]), 'Parenthesis "%s" not closed' % lvl_type[0])
 
     if tokens:

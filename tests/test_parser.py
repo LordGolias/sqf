@@ -5,7 +5,7 @@ from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
 from sqf.keywords import Keyword, KeywordControl
-from sqf.parser_types import Comment, Space, Tab, EndOfLine
+from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parser import parse, parse_strings, identify_token
 from sqf.base_tokenizer import tokenize
 
@@ -282,6 +282,16 @@ class ParseCode(ParserTestCase):
         code = '_x=2 _y=3;'
         result = parse(code)
         self.assertEqual(result[0][1].position, (1, 3))
+
+    def test_define(self):
+        code = "#define CHECK \\\n1"
+        result = parse(code)
+        expected = \
+        Statement([
+            Statement([
+                Statement([Keyword('#define'), Space(), V('CHECK'), Space(), BrokenEndOfLine(), N(1)])])])
+
+        self.assertEqualStatement(expected, result, code)
 
 
 class ParseArray(ParserTestCase):

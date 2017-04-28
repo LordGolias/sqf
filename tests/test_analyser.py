@@ -47,3 +47,20 @@ class AnalyseTestCase(TestCase):
         code = 'mapa = "MapBoard_altis_F" createvehicle [0,0,0];'
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 0)
+
+    def test_define_simple(self):
+        code = "#define CHECK_CATEGORY 2\n"
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 0)
+
+    def test_define_error(self):
+        code = "#define\n"
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 1), errors[0].position)
+
+    def test_define(self):
+        code = '#define CHECK_CATEGORY(_category) (if !(_category in AS_AAFarsenal_categories) then { \\\n' \
+               '\tdiag_log format ["[AS] AS_AAFarsenal: category %1 does not exist.", _category];} \\\n    );\n'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 0)

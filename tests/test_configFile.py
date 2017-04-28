@@ -51,13 +51,8 @@ class Interpreter(TestCase):
         interpreter = interpret(code)
         self.assertEqual({'pos': Array([N(10253.095), N(59.11644), N(13849.58)])}, interpreter)
 
-    def test_define(self):
-        code = '''
-        #define _ARMA_
-
-//Class WholeLottaAltis.Altis : mission.sqm{
-version = 52;
-'''
+    def test_assignment(self):
+        code = '''version = 52;'''
         result = interpret(code)
         self.assertEqual({'version': N(52)}, result)
 

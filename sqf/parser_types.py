@@ -44,3 +44,11 @@ class EndOfLine(ParserType):
 
     def __repr__(self):
         return '<EOL>'
+
+
+class BrokenEndOfLine(ParserType):
+    def __str__(self):
+        return '\\\n'
+
+    def __repr__(self):
+        return '<\EOL>'
