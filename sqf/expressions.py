@@ -8,16 +8,12 @@ from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 class Expression:
     """
-    A generic class to represent an expression: it has a lenght, an action, and tests
+    A generic class to represent an expression: it has a length, an action, and tests
     to identify it.
     """
-    def __init__(self, length, action=None, tests=None):
+    def __init__(self, length, action, tests):
         self.length = length
-        if tests is None:
-            tests = []
         self.tests = tests
-        if action is None:
-            action = lambda t, v, i: True
         self.action = action
 
     def is_match(self, values):

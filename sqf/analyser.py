@@ -59,27 +59,27 @@ def check_statement(tokens, exceptions):
 
     if tokens[0] == Keyword("#define"):
         if len(tokens) == 1:
-            exception = SQFParserError(tokens[0].position, "Syntax error: Wrong syntax for #define")
+            exception = SQFParserError(tokens[0].position, "Wrong syntax for #define")
             exceptions.append(exception)
         return
     if tokens[0] == Keyword("#include"):
         if len(tokens) != 2 or type(tokens[1]) != String:
-            exception = SQFParserError(tokens[0].position, "Syntax error: Wrong syntax for #include")
+            exception = SQFParserError(tokens[0].position, "Wrong syntax for #include")
             exceptions.append(exception)
         return
     if tokens[0] == KeywordControl('switch'):
         if len(tokens) > 1 and not is_parenthesis_statement(tokens[1]):
-            exception = SQFParserError(tokens[1].position, "Syntax error: 'switch' 2nd part must be a parenthesis statement")
+            exception = SQFParserError(tokens[1].position, "'switch' 2nd part must be a parenthesis statement")
             exceptions.append(exception)
     if tokens[0] == KeywordControl('case'):
         if len(tokens) > 2 and tokens[2] != Keyword(":"):
-            exception = SQFParserError(tokens[2].position, "Syntax error: 'case' 3rd part must be ':'")
+            exception = SQFParserError(tokens[2].position, "'case' 3rd part must be ':'")
             exceptions.append(exception)
         if len(tokens) > 3 and type(tokens[3]) != Code:
-            exception = SQFParserError(tokens[3].position, "Syntax error: 'case' 4th part must be code")
+            exception = SQFParserError(tokens[3].position, "'case' 4th part must be code")
             exceptions.append(exception)
         if len(tokens) != 4:
-            exception = SQFParserError(tokens[0].position, "Syntax error: 'case' is a 4-part clause")
+            exception = SQFParserError(tokens[0].position, "'case' is a 4-part clause")
             exceptions.append(exception)
         return
 
@@ -90,7 +90,7 @@ def check_statement(tokens, exceptions):
             if t in (KeywordControl('default'), KeywordControl('while')):
                 if type(first_base_token(tp1)) != Code:
                     exception = SQFParserError(tp1.position,
-                                               "Syntax error: '%s' must be followed by a code statement" % t.value)
+                                               "'%s' must be followed by a code statement" % t.value)
                     exceptions.append(exception)
                 continue
 
@@ -101,7 +101,7 @@ def check_statement(tokens, exceptions):
                         invalid = False
                         break
                 if invalid:
-                    exception = SQFParserError(tp1.position, "Syntax error: '%s' can't preceed '%s' (missing ';'?)" % (t, tp1))
+                    exception = SQFParserError(tp1.position, "'%s' can't preceed '%s' (missing ';'?)" % (t, tp1))
                     exceptions.append(exception)
 
 
