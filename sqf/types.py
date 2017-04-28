@@ -99,20 +99,6 @@ class Array(Type, BaseTypeContainer):
         if up_to is None:
             return '[%s]' % ','.join(func(item) for item in self._tokens)
 
-        assert(up_to < len(self._tokens))
-        inside = ''
-        for i, item in enumerate(self._tokens):
-            comma = ''
-            if i != 0:
-                comma = ','
-
-            if i == up_to:
-                if i != 0:
-                    inside += comma
-                break
-            inside += comma + func(item)
-        return '[' + inside
-
     def __len__(self):
         return len(self._tokens)
 

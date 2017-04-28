@@ -85,10 +85,6 @@ class BaseTypeContainer(BaseType):
         raise NotImplementedError
 
     @property
-    def tokens(self):
-        return self._tokens
-
-    @property
     def base_tokens(self):
         return self._base_tokens
 

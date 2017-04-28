@@ -236,9 +236,6 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
             statements.append(expression)
             i += size - 1
         elif token == EndOfLine() and (lvls['#define'] != 0 or lvls['#include'] != 0):
-            if lvls['#define'] + lvls['#include'] != 1:
-                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'two pre-processor statements')
-
             statements.append(analyse_tokens(tokens))
 
             return Statement(statements), i - start
