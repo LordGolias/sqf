@@ -253,30 +253,22 @@ class ParseCode(ParserTestCase):
         self.assertEqualStatement(expected, result, code)
 
     def test_switch(self):
-        code = 'switch (0) do'
+        code = 'switch (0) do {}'
         result = parse(code)
-        expected = Statement([Statement([
-            KeywordControl('switch'),
-            Space(),
-            Statement([Statement([N(0)])], parenthesis=True),
-            Space(),
-            KeywordControl('do')])])
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        KeywordControl('switch'),
+                        Statement([Space(), Statement([Statement([N(0)])], parenthesis=True), Space()]),
+                    ]),
+                    KeywordControl('do'),
+                    Statement([
+                        Space(), Code([])
+                    ])
+                ])
+            ])
         self.assertEqualStatement(expected, result, code)
-
-    def test_position_statement(self):
-        code = 'switch (0) do'
-        result = parse(code)
-        self.assertEqual((1, 9), result[0][2][0].position)  # the 0 is in column 9
-
-    def test_position_array(self):
-        code = 'switch [1,2] do'
-        result = parse(code)
-        number1 = result[0][2].value[0][0]
-        number2 = result[0][2].value[1][0]
-        assert (number1 == N(1))
-        assert (number2 == N(2))
-        self.assertEqual((1, 9), number1.position)
-        self.assertEqual((1, 11), number2.position)
 
     def test_position(self):
         code = '_x=2 _y=3;'
@@ -311,6 +303,61 @@ class ParseCode(ParserTestCase):
             ])
 
         self.assertEqualStatement(expected, result, code)
+
+    def test_signed_precedence(self):
+        code = "_x = -1"
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([V('_x'), Space()]),
+                    Keyword('='),
+                    Statement([Space(), Keyword('-'), N(1)])
+                ])
+            ])
+        self.assertEqualStatement(expected, result, code)
+
+    def test_for(self):
+        code = 'for "_i" from 0 to 10 do {}'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Statement([
+                            Statement([
+                                KeywordControl('for'),
+                                Statement([Space(), String('"_i"'), Space()])
+                            ]),
+                            KeywordControl('from'),
+                            Statement([Space(), N(0), Space()]),
+                        ]),
+                        KeywordControl('to'),
+                        Statement([Space(), N(10), Space()]),
+                    ]),
+                    KeywordControl('do'),
+                    Statement([Space(), Code([])])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_while(self):
+        code = 'while {} do {}'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        KeywordControl('while'),
+                        Statement([
+                            Space(), Code([]), Space()
+                        ])
+                    ]),
+                    KeywordControl('do'),
+                    Statement([
+                        Space(), Code([])
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
 
 
 class ParseArray(ParserTestCase):

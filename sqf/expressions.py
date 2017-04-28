@@ -2,11 +2,15 @@ import math
 
 from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
 from sqf.keywords import Keyword, KeywordControl, Namespace
+from sqf.interpreter_types import WhileType, ForType, ForFromType, ForFromToStepType, ForSpecType, SwitchType
 from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 
 class Expression:
-
+    """
+    A generic class to represent an expression: it has a lenght, an action, and tests
+    to identify it.
+    """
     def __init__(self, length, action=None, tests=None):
         self.length = length
         if tests is None:
@@ -131,6 +135,179 @@ class IfThenExpression(Expression):
         return self.action(values, interpreter)
 
 
+def _while_loop(interpreter, condition_code, do_code):
+    outcome = Nothing
+    while True:
+        condition_outcome = interpreter.execute_code(condition_code)
+        if condition_outcome.value is False:
+            break
+        outcome = interpreter.execute_code(do_code)
+    return outcome
+
+
+class WhileExpression(Expression):
+    """
+    Catches `While {}` expression and stores it as a WhileType
+    """
+    def __init__(self):
+        super().__init__(2, lambda t, v, i: WhileType(v[1]), [
+            lambda values: values[0] == KeywordControl('while') and isinstance(values[1], Code)
+        ])
+
+
+class WhileDoExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: _while_loop(i, v[0].condition, v[2]), [
+            lambda values: type(values[0]) == WhileType and
+                           values[1] == KeywordControl('do') and
+                           type(values[2]) == Code
+        ])
+
+
+class ForSpecExpression(Expression):
+    def __init__(self):
+        super().__init__(2, lambda t, v, i: ForSpecType(v[1]), [
+            lambda values: values[0] == KeywordControl('for') and isinstance(values[1], Array) and
+            len(values[1]) == 3
+        ])
+
+
+def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
+    outcome = Nothing
+
+    interpreter.execute_code(start_code)
+    while True:
+        condition_outcome = interpreter.execute_code(stop_code)
+        if condition_outcome.value is False:
+            break
+
+        outcome = interpreter.execute_code(do_code)
+        interpreter.execute_code(increment_code)
+    return outcome
+
+
+class ForSpecDoExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: _forspecs_loop(i, v[0].array[0], v[0].array[1], v[0].array[2], v[2]), [
+            lambda values: type(values[0]) == ForSpecType and
+                           values[1] == KeywordControl('do') and
+                           type(values[2]) == Code
+        ])
+
+
+class ForExpression(Expression):
+    def __init__(self):
+        super().__init__(2, lambda t, v, i: ForType(v[1]), [
+            lambda values: values[0] == KeywordControl('for') and isinstance(values[1], String)
+        ])
+
+
+class ForFromExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: ForFromType(v[0].variable, v[2]), [
+            lambda values: type(values[0]) == ForType and
+                           values[1] == KeywordControl('from') and
+                           type(values[2]) == Number
+        ])
+
+
+class ForFromToExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: ForFromToStepType(v[0].variable, v[0].from_, v[2]), [
+            lambda values: type(values[0]) == ForFromType and
+                           values[1] == KeywordControl('to') and
+                           type(values[2]) == Number
+        ])
+
+
+class ForFromToStepExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: ForFromToStepType(v[0].variable, v[0].from_, v[0].to, v[2]), [
+            lambda values: type(values[0]) == ForFromToStepType and
+                           values[1] == KeywordControl('step') and
+                           type(values[2]) == Number
+        ])
+
+
+def _forvar_loop(interpreter, token_name, start, stop, step, code):
+    outcome = Nothing
+    for i in range(start, stop + 1, step):
+        outcome = interpreter.execute_code(code, extra_scope={token_name: Number(i)})
+    return outcome
+
+
+class ForFromToDoExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: _forvar_loop(i, v[0].variable.value, v[0].from_.value, v[0].to.value, v[0].step.value, v[2]), [
+            lambda values: type(values[0]) == ForFromToStepType and
+                           values[1] == KeywordControl('do') and
+                           type(values[2]) == Code
+        ])
+
+
+class SwitchExpression(Expression):
+    def __init__(self):
+        super().__init__(2, lambda t, v, i: SwitchType(v[1]), [
+            lambda values: values[0] == KeywordControl('switch') and
+                           isinstance(values[1], Type)
+        ])
+
+
+def _switch(interpreter, result, code):
+    default = None
+    outcome = None
+
+    # a flag that is set to True when a case is fulfilled and the next outcome_statement is to be run.
+    run_next = False
+
+    for statement in code.base_tokens:
+        if not statement.base_tokens:
+            pass
+        elif statement.base_tokens[0] == KeywordControl('default'):
+            if default is not None:
+                raise SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`')
+            default = statement.base_tokens[1]
+        elif statement.base_tokens[0] == KeywordControl('case') and (
+                    len(statement.base_tokens) == 2 or
+                    len(statement.base_tokens) == 4 and statement.base_tokens[2] == Keyword(':')):
+            condition_statement = statement.base_tokens[1]
+            if len(statement.base_tokens) == 2:
+                outcome_statement = None
+            else:
+                outcome_statement = statement.base_tokens[3]
+
+            condition_outcome = interpreter.execute_token(condition_statement)[1]
+
+            if outcome_statement and run_next:
+                outcome = interpreter.execute_code(outcome_statement)
+                break
+            elif condition_outcome == result:
+                if outcome_statement:
+                    outcome = interpreter.execute_code(outcome_statement)
+                    break
+                else:
+                    run_next = True
+        else:
+            raise SQFSyntaxError(statement.position, 'Switch statement "%s" is syntactically wrong' % statement)
+
+    if outcome is None:
+        if default is not None:
+            outcome = interpreter.execute_code(default)
+        else:
+            outcome = Boolean(True)
+
+    return outcome
+
+
+class SwitchDoExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: _switch(i, v[0].result, v[2]), [
+            lambda values: type(values[0]) == SwitchType and
+                           values[1] == KeywordControl('do') and
+                           isinstance(values[2], Code)
+        ])
+
+
 def _select_array(lhs_v, rhs_v, _):
     start = rhs_v.value[0].value
     count = rhs_v.value[1].value
@@ -199,85 +376,22 @@ def _if_then_else(interpreter, condition, then, else_=None):
             return Nothing
 
 
-def _while_loop(interpreter, condition_code, do_code):
-    outcome = Nothing
-    while True:
-        condition_outcome = interpreter.execute_code(condition_code)
-        if condition_outcome.value is False:
-            break
-        outcome = interpreter.execute_code(do_code)
-    return outcome
-
-
-def _forvar_loop(interpreter, token_name, start, stop, step, code):
-    outcome = Nothing
-    for i in range(start, stop + 1, step):
-        outcome = interpreter.execute_code(code, extra_scope={token_name: Number(i)})
-    return outcome
-
-
-def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
-    outcome = Nothing
-
-    interpreter.execute_code(start_code)
-    while True:
-        condition_outcome = interpreter.execute_code(stop_code)
-        if condition_outcome.value is False:
-            break
-
-        outcome = interpreter.execute_code(do_code)
-        interpreter.execute_code(increment_code)
-    return outcome
-
-
-def _switch(interpreter, result, code):
-    default = None
-    outcome = None
-
-    # a flag that is set to True when a case is fulfilled and the next outcome_statement is to be run.
-    run_next = False
-
-    for statement in code.base_tokens:
-        if not statement.base_tokens:
-            pass
-        elif statement.base_tokens[0] == KeywordControl('default'):
-            if default is not None:
-                raise SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`')
-            default = statement.base_tokens[1]
-        elif statement.base_tokens[0] == KeywordControl('case') and (
-                    len(statement.base_tokens) == 2 or
-                    len(statement.base_tokens) == 4 and statement.base_tokens[2] == Keyword(':')):
-            condition_statement = statement.base_tokens[1]
-            if len(statement.base_tokens) == 2:
-                outcome_statement = None
-            else:
-                outcome_statement = statement.base_tokens[3]
-
-            condition_outcome = interpreter.execute_token(condition_statement)[1]
-
-            if outcome_statement and run_next:
-                outcome = interpreter.execute_code(outcome_statement)
-                break
-            elif condition_outcome == result:
-                if outcome_statement:
-                    outcome = interpreter.execute_code(outcome_statement)
-                    break
-                else:
-                    run_next = True
-        else:
-            raise SQFSyntaxError(statement.position, 'Switch statement "%s" is syntactically wrong' % statement)
-
-    if outcome is None:
-        if default is not None:
-            outcome = interpreter.execute_code(default)
-        else:
-            outcome = Boolean(True)
-
-    return outcome
-
-
 EXPRESSIONS = [
+    WhileExpression(),
+    WhileDoExpression(),
+
+    ForExpression(),
+    ForFromExpression(),
+    ForFromToExpression(),
+    ForFromToStepExpression(),
+    ForFromToDoExpression(),
+    ForSpecExpression(),
+    ForSpecDoExpression(),
+    SwitchExpression(),
+    SwitchDoExpression(),
+
     # Unary
+    UnaryExpression('-', Number, lambda rhs_v, i: Number(-rhs_v.value)),
     UnaryExpression('floor', Number, lambda rhs_v, i: Number(math.floor(rhs_v.value))),
     UnaryExpression('reverse', Array, lambda rhs_v, i: rhs_v.reverse()),
     UnaryExpression('createMarker', Array, lambda rhs_v, i: i.create_marker(rhs_v)),
@@ -322,51 +436,6 @@ EXPRESSIONS = [
                                lambda values: values[4] == KeywordControl('else'),
                                lambda values: type(values[5]) == Code],
                      action=lambda v, i: _if_then_else(i, v[1], v[3], v[5])),
-
-    Expression(4, tests=[lambda values: values[0] == KeywordControl('while'),
-                         lambda values: type(values[1]) == Code,
-                         lambda values: values[2] == KeywordControl('do'),
-                         lambda values: type(values[3]) == Code],
-               action=lambda t, v, i: _while_loop(i, v[1], v[3])),
-
-    Expression(4, tests=[lambda values: values[0] == KeywordControl('for'),
-                         lambda values: type(values[1]) == Array,
-                         lambda values: values[2] == KeywordControl('do'),
-                         lambda values: type(values[3]) == Code,
-                         ],
-               action=lambda t, v, i: _forspecs_loop(i, v[1].value[0], v[1].value[1], v[1].value[2], v[3])),
-
-    Expression(8, tests=[lambda values: values[0] == KeywordControl('for'),
-                         lambda values: type(values[1]) == String,
-                         lambda values: values[2] == KeywordControl('from'),
-                         lambda values: type(values[3]) == Number,
-                         lambda values: values[4] == KeywordControl('to'),
-                         lambda values: type(values[5]) == Number,
-                         lambda values: values[6] == KeywordControl('do'),
-                         lambda values: type(values[7]) == Code,
-                         ],
-               action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, 1, v[7])),
-
-    Expression(10, tests=[lambda values: values[0] == KeywordControl('for'),
-                         lambda values: type(values[1]) == String,
-                         lambda values: values[2] == KeywordControl('from'),
-                         lambda values: type(values[3]) == Number,
-                         lambda values: values[4] == KeywordControl('to'),
-                         lambda values: type(values[5]) == Number,
-                         lambda values: values[6] == KeywordControl('step'),
-                         lambda values: type(values[7]) == Number,
-                         lambda values: values[8] == KeywordControl('do'),
-                         lambda values: type(values[9]) == Code,
-                         ],
-               action=lambda t, v, i: _forvar_loop(i, v[1].value, v[3].value, v[5].value, v[7].value, v[9])),
-
-    # switch
-    Expression(4, tests=[
-        lambda values: values[0] == KeywordControl('switch'),
-        lambda values: isinstance(values[1], Type),
-        lambda values: values[2] == KeywordControl('do'),
-        lambda values: isinstance(values[3], Code)
-        ], action=lambda t, v, i: _switch(i, v[1], v[3]))
 ]
 
 

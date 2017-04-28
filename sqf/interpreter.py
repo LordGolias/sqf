@@ -1,4 +1,5 @@
 from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
+from sqf.interpreter_types import InterpreterType
 from sqf.keywords import Keyword
 from sqf.object import Marker
 from sqf.parser import parse
@@ -73,7 +74,7 @@ class Interpreter:
         if isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
             return scope[token.name]
-        elif isinstance(token, (ConstantValue, Array, Code, Keyword)):
+        elif isinstance(token, (ConstantValue, Array, Code, Keyword, InterpreterType)):
             return token
         else:
             raise NotImplementedError(repr(token))

@@ -68,10 +68,11 @@ NAMESPACES = set([x.lower() for x in NAMESPACES])
 
 KEYWORDS = set([x.lower() for x in KEYWORDS])
 
-
-# operators by precedence
-ORDERED_OPERATORS = [Keyword(s) for s in ('private', '=', '-', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!',
-                                          'getVariable')]
+# operators by precedence. This is is used to build the tree
+ORDERED_OPERATORS = [
+    Keyword('private'), Keyword('=')] + \
+    list(reversed([KeywordControl('while'), KeywordControl('switch'), KeywordControl('for'), KeywordControl('from'), KeywordControl('to'), KeywordControl('step'), KeywordControl('do')])) + \
+    [Keyword(x) for x in ['floor', '-', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!', 'getVariable']]
 
 KEYWORDS_CONTROLS = set(DB_controls)
 KEYWORDS_CONTROLS = set([x.lower() for x in KEYWORDS_CONTROLS])

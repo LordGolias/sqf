@@ -113,6 +113,12 @@ class Array(Type, BaseTypeContainer):
             inside += comma + func(item)
         return '[' + inside
 
+    def __len__(self):
+        return len(self._tokens)
+
+    def __getitem__(self, other):
+        return self._tokens[other]
+
     @property
     def value(self):
         return self._tokens

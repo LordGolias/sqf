@@ -21,17 +21,25 @@ def identify_token(token):
     """
     if isinstance(token, Comment):
         return token
-    elif token == ' ':
+    if token == ' ':
         return Space()
-    elif token == '\t':
+    if token == '\t':
         return Tab()
-    elif token == '\\\n':
+    if token == '\\\n':
         return BrokenEndOfLine()
-    elif token == '\n':
+    if token == '\n':
         return EndOfLine()
-    elif token in ('true', 'false'):
+    if token in ('true', 'false'):
         return Boolean(token == 'true')
-    elif token.lower() in NAMESPACES:
+    try:
+        return Number(int(token))
+    except ValueError:
+        pass
+    try:
+        return Number(float(token))
+    except ValueError:
+        pass
+    if token.lower() in NAMESPACES:
         return Namespace(token)
     elif token.lower() in KEYWORDS_CONTROLS:
         return KeywordControl(token)
@@ -40,13 +48,7 @@ def identify_token(token):
     elif token.lower() in KEYWORDS:
         return Keyword(token)
     else:
-        try:
-            return Number(int(token))
-        except ValueError:
-            try:
-                return Number(float(token))
-            except ValueError:
-                return Variable(token)
+        return Variable(token)
 
 
 def parse_strings(all_tokens, identify_token):

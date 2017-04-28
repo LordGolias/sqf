@@ -13,6 +13,12 @@ class TestInterpreter(TestCase):
         self.assertEqual(Boolean(False), interpreter['_x'])
         self.assertEqual(Nothing, outcome)
 
+    def test_negative(self):
+        test = '_x = -2;'
+        interpreter, outcome = interpret(test)
+        self.assertEqual(Number(-2), interpreter['_x'])
+        self.assertEqual(Nothing, outcome)
+
     def test_var_not_defined(self):
         with self.assertRaises(NotImplementedError):
             interpret('_y == 3;')
@@ -302,6 +308,10 @@ class Switch(TestCase):
         code = 'switch ("blue") do {case "blue": {true}; case "red": {false}}'
         interpreter, outcome = interpret(code)
         self.assertEqual(Boolean(True), outcome)
+
+        code = 'switch ("red") do {case "blue": {true}; case "red": {false}}'
+        interpreter, outcome = interpret(code)
+        self.assertEqual(Boolean(False), outcome)
 
     def test_return_true(self):
         code = 'switch (0) do {case (1): {"one"};}'
