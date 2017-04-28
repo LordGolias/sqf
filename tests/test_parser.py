@@ -4,7 +4,7 @@ from sqf.parse_exp import parse_exp, partition
 from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N
-from sqf.keywords import Keyword, KeywordControl
+from sqf.keywords import Keyword, KeywordControl, KeywordConstant
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parser import parse, parse_strings, identify_token
 from sqf.base_tokenizer import tokenize
@@ -357,6 +357,14 @@ class ParseCode(ParserTestCase):
                     ])
                 ])
             ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_parse_keyword_constant(self):
+        code = '_x = west'
+        expected = Statement([Statement([Statement([
+            V('_x'), Space()]),
+            Keyword('='), Statement([Space(), KeywordConstant('west'),
+            ])])])
         self.assertEqualStatement(expected, parse(code), code)
 
 

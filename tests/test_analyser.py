@@ -146,3 +146,9 @@ class SwitchTestCase(TestCase):
         code = 'default {[]};'
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 0)
+
+    def test_default_error(self):
+        code = 'default : {[]};'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 9), errors[0].position)
