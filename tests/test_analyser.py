@@ -64,3 +64,20 @@ class AnalyseTestCase(TestCase):
                '\tdiag_log format ["[AS] AS_AAFarsenal: category %1 does not exist.", _category];} \\\n    );\n'
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 0)
+
+    def test_include(self):
+        code = '#include "macros.hpp"\n_x = 1;'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 0)
+
+    def test_include_error(self):
+        code = '#include _x\n'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 1), errors[0].position)
+
+    def test_include_error_len(self):
+        code = '#include\n'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 1), errors[0].position)

@@ -32,7 +32,12 @@ def check_statement(tokens, exceptions):
         if len(tokens) == 1:
             exception = SQFParserError(tokens[0].position, "Syntax error: Wrong syntax for #define")
             exceptions.append(exception)
-        return None
+        return
+    if tokens[0] == Keyword("#include"):
+        if len(tokens) != 2 or type(tokens[1]) != String:
+            exception = SQFParserError(tokens[0].position, "Syntax error: Wrong syntax for #include")
+            exceptions.append(exception)
+        return
 
     for i, t in enumerate(tokens):
         if i != len(tokens) - 1:
@@ -53,9 +58,6 @@ def analyze(statement, exceptions=None):
     if exceptions is None:
         exceptions = []  # mutable can't be default argument
 
-    if not statement.base_tokens:
-        return exceptions
-
     tokens = statement.base_tokens
 
     for s in tokens:
@@ -64,7 +66,5 @@ def analyze(statement, exceptions=None):
             analyze(s, exceptions=exceptions)
         elif isinstance(s, Code):
             analyze(s, exceptions=exceptions)
-        else:
-            pass
 
     return exceptions

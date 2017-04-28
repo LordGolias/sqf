@@ -287,9 +287,28 @@ class ParseCode(ParserTestCase):
         code = "#define CHECK \\\n1"
         result = parse(code)
         expected = \
-        Statement([
             Statement([
-                Statement([Keyword('#define'), Space(), V('CHECK'), Space(), BrokenEndOfLine(), N(1)])])])
+                Statement([
+                    Statement([
+                        Keyword('#define'), Space(), V('CHECK'), Space(), BrokenEndOfLine(), N(1)
+            ])])])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_include(self):
+        code = '#include "macros.hpp"\n_x = 1'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#include'), Space(), String('"macros.hpp"')
+                ])]),
+                Statement([
+                    Statement([
+                        EndOfLine(), V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
+                ])
+            ])
 
         self.assertEqualStatement(expected, result, code)
 
