@@ -229,6 +229,10 @@ class _Statement(BaseTypeContainer):
             as_str += ';'
         return as_str
 
+    @property
+    def parenthesis(self):
+        return self._parenthesis
+
 
 class Statement(_Statement, BaseType):
     """

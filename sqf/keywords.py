@@ -17,6 +17,12 @@ class Keyword(BaseType):
     def __repr__(self):
         return 'K<%s>' % self._token
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._unique_token == other._unique_token
+        else:
+            return False
+
     def __hash__(self):
         return hash(str(self.__class__) + self._unique_token)
 

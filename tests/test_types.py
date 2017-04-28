@@ -3,7 +3,7 @@ from unittest import TestCase
 from sqf.types import Statement, Array, Boolean, Code, Nothing, \
     Variable as V, Number as N
 from sqf.parser_types import Space, Comment, EndOfLine
-from sqf.keywords import Keyword
+from sqf.keywords import Keyword, KeywordControl
 
 
 class TestTypesToString(TestCase):
@@ -27,6 +27,12 @@ class TestTypesToString(TestCase):
 
     def test_code(self):
         self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), Keyword('='), N(2)], ending=True)])))
+
+
+class CaseInsensitiveTests(TestCase):
+
+    def test_keyword(self):
+        self.assertEqual(KeywordControl('forEach'), KeywordControl('foreach'))
 
 
 class TestGetPosition(TestCase):

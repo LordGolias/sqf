@@ -3,6 +3,9 @@ class SQFError(Exception):
 
 
 class SQFParserError(SQFError):
+    """
+    Raised by the parser and analyser
+    """
     def __init__(self, position, message):
         assert(isinstance(position, tuple))
         self.position = position
@@ -14,6 +17,9 @@ class SQFParenthesisError(SQFParserError):
 
 
 class SQFSyntaxError(SQFError):
+    """
+    Raised by the interpreter
+    """
     def __init__(self, position, message):
         self.position = position
         super().__init__('%s: %s' % (position, message))

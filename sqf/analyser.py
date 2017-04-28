@@ -5,6 +5,28 @@ from sqf.types import String, Statement, Code, Array, Boolean, Variable, Number,
 constantTypes = (Array, Boolean, Variable, Number, Code, String, KeywordControl, Statement)
 
 
+def first_base_token(statement):
+    if not isinstance(statement, Statement):
+        return statement
+    assert (len(statement.base_tokens) > 0)
+    token = statement.base_tokens[0]
+
+    if isinstance(token, Statement):
+        return first_base_token(token)
+    else:
+        return token
+
+
+def is_parenthesis_statement(statement):
+    if isinstance(statement, Statement):
+        if statement.parenthesis == '()':
+            return True
+        else:
+            assert(len(statement.base_tokens) > 0)
+            return is_parenthesis_statement(statement.base_tokens[0])
+    return False
+
+
 def is_invalid(t, tp1):
     return isinstance(t, constantTypes) and isinstance(tp1, constantTypes)
 
@@ -13,6 +35,8 @@ EXCEPTIONS = [
     lambda t,tp1: t == KeywordControl("from") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("for") and type(tp1) in (String, Statement, Variable),
     lambda t,tp1: t == KeywordControl("if") and type(tp1) in (Statement,),
+    lambda t,tp1: t == KeywordControl("switch") and type(tp1) in (Statement,),
+    lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("step") and type(tp1) in (Number, Statement, Variable),
@@ -21,7 +45,7 @@ EXCEPTIONS = [
     lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: type(t) == Code and tp1 == KeywordControl("forEach"),
     lambda t,tp1: t == KeywordControl("forEach") and type(tp1) in [Array, Statement, Variable],
-    lambda t,tp1: tp1 in [KeywordControl("then"), KeywordControl("to"), KeywordControl("from"), KeywordControl("do"), KeywordControl("step")],
+    lambda t,tp1: tp1 in [KeywordControl('exitWith'), KeywordControl("then"), KeywordControl("to"), KeywordControl("from"), KeywordControl("do"), KeywordControl("step")],
     lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("case"),
     lambda t,tp1: t == KeywordControl("else") and type(tp1) in (Code, Statement, Variable),
@@ -30,6 +54,9 @@ EXCEPTIONS = [
 
 
 def check_statement(tokens, exceptions):
+    if len(tokens) == 0:
+        return
+
     if tokens[0] == Keyword("#define"):
         if len(tokens) == 1:
             exception = SQFParserError(tokens[0].position, "Syntax error: Wrong syntax for #define")
@@ -40,10 +67,32 @@ def check_statement(tokens, exceptions):
             exception = SQFParserError(tokens[0].position, "Syntax error: Wrong syntax for #include")
             exceptions.append(exception)
         return
+    if tokens[0] == KeywordControl('switch'):
+        if len(tokens) > 1 and not is_parenthesis_statement(tokens[1]):
+            exception = SQFParserError(tokens[1].position, "Syntax error: 'switch' 2nd part must be a parenthesis statement")
+            exceptions.append(exception)
+    if tokens[0] == KeywordControl('case'):
+        if len(tokens) > 2 and tokens[2] != Keyword(":"):
+            exception = SQFParserError(tokens[2].position, "Syntax error: 'case' 3rd part must be ':'")
+            exceptions.append(exception)
+        if len(tokens) > 3 and type(tokens[3]) != Code:
+            exception = SQFParserError(tokens[3].position, "Syntax error: 'case' 4th part must be code")
+            exceptions.append(exception)
+        if len(tokens) != 4:
+            exception = SQFParserError(tokens[0].position, "Syntax error: 'case' is a 4-part clause")
+            exceptions.append(exception)
+        return
 
     for i, t in enumerate(tokens):
         if i != len(tokens) - 1:
             tp1 = tokens[i + 1]
+
+            if t in (KeywordControl('default'), KeywordControl('while')):
+                if type(first_base_token(tp1)) != Code:
+                    exception = SQFParserError(tp1.position,
+                                               "Syntax error: '%s' must be followed by a code statement" % t.value)
+                    exceptions.append(exception)
+                continue
 
             invalid = is_invalid(t,tp1)
             if invalid:

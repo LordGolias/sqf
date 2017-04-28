@@ -109,6 +109,7 @@ and `getVariable` to interact with other namespaces.
 ### Analyzer
 
 The analyzer consumes the result of the parser and checks for static errors.
+The source is in `sqf/analyzer.py`, the tests in `tests/test_analyzer.py`.
 
 ### Parser
 
