@@ -81,3 +81,15 @@ class AnalyseTestCase(TestCase):
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 1), errors[0].position)
+
+    def test_for_missing_do(self):
+        code = 'for "_i" from 1 to 10 {y pushBack _i;};'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 23), errors[0].position)
+
+    def test_if_missing_then(self):
+        code = 'if (true) {1}'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 11), errors[0].position)

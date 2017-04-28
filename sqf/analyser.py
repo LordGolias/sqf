@@ -2,7 +2,7 @@ from sqf.exceptions import SQFParserError
 from sqf.keywords import KeywordControl
 from sqf.types import String, Statement, Code, Array, Boolean, Variable, Number, Keyword
 
-constantTypes = (Array, Boolean, Variable, Number, Code, String, KeywordControl)
+constantTypes = (Array, Boolean, Variable, Number, Code, String, KeywordControl, Statement)
 
 
 def is_invalid(t, tp1):
@@ -10,19 +10,21 @@ def is_invalid(t, tp1):
 
 # Exceptions for constantTypes that can be next to each other
 EXCEPTIONS = [
-    lambda t,tp1: t == KeywordControl("from") and type(tp1) in (Number, Variable),
-    lambda t,tp1: t == KeywordControl("for") and type(tp1) in (String, Variable),
-    lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Variable),
-    lambda t,tp1: t == KeywordControl("step") and type(tp1) in (Number, Variable),
-    lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Variable),
-    lambda t,tp1: t == KeywordControl("do") and type(tp1) in (Code, Variable),
-    lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Variable),
+    lambda t,tp1: t == KeywordControl("from") and type(tp1) in (Number, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("for") and type(tp1) in (String, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("if") and type(tp1) in (Statement,),
+    lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("step") and type(tp1) in (Number, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("do") and type(tp1) in (Code, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: type(t) == Code and tp1 == KeywordControl("forEach"),
-    lambda t,tp1: t == KeywordControl("forEach") and type(tp1) in [Array, Variable],
-    lambda t,tp1: tp1 in [KeywordControl("to"), KeywordControl("from"), KeywordControl("do"), KeywordControl("step")],
-    lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Variable),
+    lambda t,tp1: t == KeywordControl("forEach") and type(tp1) in [Array, Statement, Variable],
+    lambda t,tp1: tp1 in [KeywordControl("then"), KeywordControl("to"), KeywordControl("from"), KeywordControl("do"), KeywordControl("step")],
+    lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("case"),
-    lambda t,tp1: t == KeywordControl("else") and type(tp1) in (Code, Variable),
+    lambda t,tp1: t == KeywordControl("else") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: type(t) == Code and tp1 == KeywordControl("else"),
 ]
 
