@@ -106,6 +106,10 @@ of the `Namespace` `"missionNamespace"`, but you can use `setVariable`
 and `getVariable` to interact with other namespaces.
 `sqf.tests.test_interpreter` contains the tests of the implemented functionality.
 
+The source is in `sqf/interpreter.py`, the tests in `tests/test_interpreter.py`.
+The main loop of the interpreter is defined in `sqf/interpreter.py`, and the 
+expressions it evaluates are defined in `sqf/expressions.py`.
+
 ### Analyzer
 
 The analyzer consumes the result of the parser and checks for static errors.
