@@ -92,7 +92,7 @@ class BaseInterpreter:
                 name = variable.value
 
             if not name.startswith('_'):
-                self.exception(SQFSyntaxError(variable.position, 'Cannot use global variable "%s" in `private`' % name))
+                self.exception(SQFSyntaxError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % name))
             self.current_scope[name] = Nothing
 
     def execute_code(self, code, params=None, extra_scope=None):
