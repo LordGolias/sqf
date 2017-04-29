@@ -367,6 +367,19 @@ class ParseCode(ParserTestCase):
             ])])])
         self.assertEqualStatement(expected, parse(code), code)
 
+    def test_private(self):
+        code = 'private _x = 2'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('private'), Statement([Space(), V('_x'), Space()])
+                    ]),
+                    Keyword('='), Statement([Space(), N(2)])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
 
 class ParseArray(ParserTestCase):
 

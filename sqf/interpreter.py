@@ -1,4 +1,5 @@
 from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
+from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
 from sqf.object import Marker
 from sqf.parser import parse
@@ -72,7 +73,7 @@ class Interpreter(BaseInterpreter):
         tokens = []
         types = []
 
-        for token in statement.base_tokens:
+        for token in base_tokens:
             t, v = self.execute_token(token)
             values.append(v)
             tokens.append(t)
@@ -104,19 +105,14 @@ class Interpreter(BaseInterpreter):
             self.simulation.broadcast(var_name, scope[var_name], -1)  # -1 => to server
 
         elif len(tokens) == 2 and tokens[0] == Keyword('private'):
-
             if isinstance(values[1], String):
                 self.add_privates([values[1]])
             elif isinstance(values[1], Array):
                 self.add_privates(values[1].value)
-            elif isinstance(base_tokens[1], Statement) and len(base_tokens[1]) == 3 and \
-                base_tokens[1][1] == Keyword('='):
-                variable = self.get_variable(base_tokens[1][0])
-
-                self.add_privates([variable])
-                outcome = self.execute_single(base_tokens[1])
-            else:
-                raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
+            elif isinstance(base_tokens[1], Statement) and isinstance(base_tokens[1].base_tokens[0], Variable):
+                var = base_tokens[1].base_tokens[0]
+                self.add_privates([String('"' + var.name + '"')])
+                outcome = PrivateType(var)
         # binary operators
         elif len(tokens) == 3 and isinstance(tokens[1], Keyword):
             # it is a binary statement: token, operation, token
@@ -130,7 +126,10 @@ class Interpreter(BaseInterpreter):
             rhs_t = types[2]
 
             if op == Keyword('='):
-                lhs = self.get_variable(base_tokens[0])
+                if isinstance(lhs, PrivateType):
+                    lhs = lhs.variable
+                else:
+                    lhs = self.get_variable(base_tokens[0])
 
                 if not isinstance(lhs, Variable) or not isinstance(rhs_v, Type):
                     raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)

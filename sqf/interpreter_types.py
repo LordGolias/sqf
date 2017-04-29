@@ -1,10 +1,20 @@
 from sqf.base_type import BaseType
-from sqf.types import Code, String, Number, Array, Type
+from sqf.types import Code, String, Number, Array, Type, Variable
 
 
 class InterpreterType(BaseType):
     # type that is used by the interpreter (e.g. While type)
     pass
+
+
+class PrivateType(InterpreterType):
+    """
+    A type to store the result of "private _x" as in "private _x = 2"
+    """
+    def __init__(self, variable):
+        assert(isinstance(variable, Variable))
+        super().__init__()
+        self.variable = variable
 
 
 class WhileType(InterpreterType):
