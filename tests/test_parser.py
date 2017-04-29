@@ -1,13 +1,45 @@
 from unittest import TestCase
 
+from sqf.base_type import get_coord
 from sqf.parse_exp import parse_exp, partition
 from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
-    Number as N
+    Number as N, BaseTypeContainer
 from sqf.keywords import Keyword, KeywordControl, KeywordConstant
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parser import parse, parse_strings, identify_token
 from sqf.base_tokenizer import tokenize
+
+
+def build_indexes(string):
+    indexes = {}
+    for i in range(len(string)):
+        coord = get_coord(string[:i])
+        indexes[coord] = i
+
+    return indexes
+
+
+class Element:
+    def __init__(self, string, coordinates):
+        self.string = string
+        self.coordinates = coordinates
+
+    def __repr__(self):
+        return '<%s|%d,%d>' % tuple((self.string,) + self.coordinates)
+
+
+def _get_elements(statement1):
+    positions = []
+
+    for token in statement1._tokens:
+        if isinstance(token, BaseTypeContainer):
+            positions.append(_get_elements(token))
+        else:
+            positions.append([Element(str(token), token.position)])
+
+    # flatten
+    return [item for sublist in positions for item in sublist]
 
 
 class TestExpParser(TestCase):
@@ -60,6 +92,14 @@ class ParserTestCase(TestCase):
     def assertEqualStatement(self, expected, result, code):
         self.assertEqual(expected, result)
         self.assertEqual(code, str(result))
+        self.assertCorrectPositions(result, code)
+
+    def assertCorrectPositions(self, result, code):
+        indexes = build_indexes(code)
+        for element in _get_elements(result):
+            index = indexes[element.coordinates]
+            lenght = len(element.string)
+            self.assertEqual(code[index:index+lenght], element.string)
 
 
 class ParseCode(ParserTestCase):
@@ -547,3 +587,31 @@ class ParseStrings(ParserTestCase):
         with self.assertRaises(Exception) as cm:
             parse(code)
         self.assertEqual((1, 4), cm.exception.position)
+
+
+class ParsePreprocessor(ParserTestCase):
+
+    def test_define(self):
+        code = "#define a(_x) \\\n(_x==2)"
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#define'), Space(), V('a'),
+                        Statement([
+                            Statement([V('_x')])
+                        ], parenthesis=True),
+                        Space(), BrokenEndOfLine(),
+                        Statement([
+                            Statement([V('_x'), Keyword('=='), N(2)])
+                        ], parenthesis=True)
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, result, code)
+
+    def test_define_with_comment(self):
+        code = "a\n// 1.\n#define a\n"
+        result = parse(code)
+        self.assertEqual(str(result), code)

@@ -228,6 +228,11 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
         elif (token == Keyword('#define') and lvls['#define'] == 0) or \
                 (token == Keyword('#include') and lvls['#include'] == 0):
+            if tokens:
+                # a pre-processor starts a new statement
+                statements.append(analyse_tokens(tokens))
+                tokens = []
+
             # repeat the loop for this token.
             lvls[token.value] += 1
             expression, size = parse_block(all_tokens, lambda x: Statement(x), lambda x, _: [Statement(x)], i, lvls)
