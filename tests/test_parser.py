@@ -380,6 +380,28 @@ class ParseCode(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
+    def test_params_simple(self):
+        code = 'params ["_x"]'
+        # S<S<K<params>' '[S<s<"_x">>]>>
+        expected = \
+            Statement([
+                Statement([
+                    Keyword('params'), Space(), Array([Statement([String('"_x"')])])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_params_call(self):
+        code = '[1] params ["_x"]'
+        expected = \
+            Statement([
+                Statement([
+                    Array([Statement([N(1)])]), Space(),
+                    Keyword('params'), Space(), Array([Statement([String('"_x"')])])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
 
 class ParseArray(ParserTestCase):
 
