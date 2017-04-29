@@ -16,13 +16,19 @@ class SQFParenthesisError(SQFParserError):
     pass
 
 
-class SQFSyntaxError(SQFError):
+class SQFWarning(SQFParserError):
+    """
+    Something that the interpreter understands but that is a bad practice or potentially
+    semantically incorrect.
+    """
+    pass
+
+
+class SQFSyntaxError(SQFParserError):
     """
     Raised by the interpreter
     """
-    def __init__(self, position, message):
-        self.position = position
-        super().__init__('%s: %s' % (position, message))
+    pass
 
 
 class ExecutionError(SQFError):
