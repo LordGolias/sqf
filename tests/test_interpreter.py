@@ -73,7 +73,7 @@ class TestInterpreter(TestCase):
 
     def test_private_single(self):
         interpreter, outcome = interpret('private "_x";')
-        self.assertEqual(Nothing, interpreter['_x'])
+        self.assertTrue('_x' in interpreter)
 
     def test_private_many(self):
         interpreter, outcome = interpret('private ["_x", "_y"];')
