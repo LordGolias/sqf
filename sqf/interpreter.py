@@ -86,7 +86,7 @@ class Interpreter(BaseInterpreter):
                 break
 
         if case_found is not None:
-            outcome = case_found.execute(tokens, values, self)
+            outcome = case_found.execute(values, self)
         # todo: replace all elif below by expressions
         elif len(tokens) == 2 and tokens[0] == Keyword('publicVariable'):
             if not isinstance(tokens[1], String) or tokens[1].value.startswith('_'):

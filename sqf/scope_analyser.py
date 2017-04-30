@@ -117,7 +117,7 @@ class ScopeAnalyzer(BaseInterpreter):
                 self.execute_code(tokens[2].value[0])
                 self.execute_code(tokens[2].value[1])
             else:
-                outcome = case_found.execute(tokens, tokens, self)
+                outcome = case_found.execute(tokens, self)
 
         elif len(tokens) == 2 and tokens[0] == Keyword('params'):
             self._add_params(tokens)

@@ -9,71 +9,93 @@ from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 class Expression:
     """
-    A generic class to represent an expression: it has a length, an action, and tests
-    to identify it.
+    A generic class to represent an expression. The expression matches according to the
+    types of their elements, listed in `types`.
     """
-    def __init__(self, length, action, tests):
-        self.length = length
-        self.tests = tests
-        self.action = action
+    def __init__(self, types_or_values):
+        self.types_or_values = types_or_values
 
     def is_match(self, values):
-        if len(values) != self.length:
+        if len(values) != len(self.types_or_values):
             return False
 
-        for test in self.tests:
-            if not test(values):
+        for ts_or_vs, value in zip(self.types_or_values, values):
+            if not isinstance(ts_or_vs, (list, tuple)):
+                ts_or_vs = (ts_or_vs,)
+            passes = False
+            for t_or_v in ts_or_vs:
+                if isinstance(t_or_v, type):
+                    if isinstance(value, t_or_v):
+                        passes = True
+                        break  # if any type matches, it passes
+                else:  # is a value
+                    if value == t_or_v:
+                        passes = True
+                        break
+            if not passes:
                 return False
-        else:
-            return True
+        return True
 
-    def execute(self, tokens, values, interpreter):
-        return self.action(tokens, values, interpreter)
+    def execute(self, values, interpreter):
+        raise NotImplementedError
 
 
 class UnaryExpression(Expression):
-    def __init__(self, op_name, rhs_type, action, tests=None):
-        self._op_name = op_name
-
+    def __init__(self, op, rhs_type, action, tests=None):
+        assert (isinstance(op, Keyword))
         if tests is None:
             tests = []
-        super().__init__(2, action, [
-            lambda values: values[0] == Keyword(op_name),
-            lambda values: isinstance(values[1], rhs_type),
-            ] + tests)
+        self.action = action
+        self.tests = tests
+        super().__init__([op, rhs_type])
 
-    def execute(self, tokens, values, interpreter):
+    def is_match(self, values):
+        if super().is_match(values):
+            for test in self.tests:
+                if not test(values):
+                    return False
+            return True
+        else:
+            return False
+
+    def execute(self, values, interpreter):
         return self.action(values[1], interpreter)
 
 
 class BinaryExpression(Expression):
-    def __init__(self, op_name, lhs_type, rhs_type, action=None, tests=None):
-        self._op_name = op_name
+    def __init__(self, lhs_type, op, rhs_type, action=None, tests=None):
+        assert(isinstance(op, Keyword))
         if tests is None:
             tests = []
         if action is None:
             action = lambda lhs_v, rhs_v, i: True
-        super().__init__(3, action, [
-            lambda values: values[1] == Keyword(op_name),
-            lambda values: isinstance(values[0], lhs_type),
-            lambda values: isinstance(values[2], rhs_type),
-            ] + tests)
 
-    def execute(self, tokens, values, interpreter):
-        lhs_v = values[0]
-        rhs_v = values[2]
-        return self.action(lhs_v, rhs_v, interpreter)
+        self.action = action
+        self.tests = tests
+        super().__init__([lhs_type, op, rhs_type])
+
+    def is_match(self, values):
+        if super().is_match(values):
+            for test in self.tests:
+                if not test(values):
+                    return False
+            return True
+        else:
+            return False
+
+    def execute(self, values, interpreter):
+        return self.action(values[0], values[2], interpreter)
 
 
 class ComparisonExpression(BinaryExpression):
 
-    def __init__(self, op_name):
-        assert(Keyword(op_name) in OP_COMPARISON)
+    def __init__(self, op):
+        assert(op in OP_COMPARISON)
         tests = [lambda values: type(values[0]) == type(values[2]),
                  lambda values: not (type(values[0]) == Boolean == type(values[2]))]
-        super().__init__(op_name, Type, Type, tests=tests)
+        super().__init__(Type, op, Type, tests=tests)
 
-    def execute(self, tokens, values, _):
+    def execute(self, values, _):
         lhs_v = values[0]
         op = values[1]
         rhs_v = values[2]
@@ -82,17 +104,16 @@ class ComparisonExpression(BinaryExpression):
 
 class ArithmeticExpression(BinaryExpression):
 
-    def __init__(self, op_name):
-        op = Keyword(op_name)
+    def __init__(self, op):
         assert (op in OP_ARITHMETIC)
         tests = [lambda values: type(values[0]) == type(values[2]) == Array and
                                 op in OP_ARRAY_OPERATIONS or
                                 type(values[0]) == type(values[2]) == String and
                                 op == Keyword('+') or
                                 type(values[0]) == type(values[2]) == Number]
-        super().__init__(op.value, Type, Type, tests=tests)
+        super().__init__(Type, op, Type, tests=tests)
 
-    def execute(self, tokens, values, _):
+    def execute(self, values, _):
         lhs_v = values[0]
         op = values[1]
         rhs_v = values[2]
@@ -107,13 +128,14 @@ class ArithmeticExpression(BinaryExpression):
 
 
 class LogicalExpression(BinaryExpression):
-    def __init__(self, op_name):
-        assert (Keyword(op_name) in OP_LOGICAL)
+    def __init__(self, op):
+        assert (op in OP_LOGICAL)
+        self._op = op
 
         tests = [lambda values: type(values[0]) == type(values[2]) == Boolean]
-        super().__init__(op_name, Type, Type, tests=tests)
+        super().__init__(Type, op, Type, tests=tests)
 
-    def execute(self, tokens, values, _):
+    def execute(self, values, _):
         lhs_v = values[0]
         op = values[1]
         rhs_v = values[2]
@@ -130,31 +152,25 @@ def _while_loop(interpreter, condition_code, do_code):
     return outcome
 
 
-class WhileExpression(Expression):
+class WhileExpression(UnaryExpression):
     """
     Catches `While {}` expression and stores it as a WhileType
     """
     def __init__(self):
-        super().__init__(2, lambda t, v, i: WhileType(v[1]), [
-            lambda values: values[0] == KeywordControl('while') and isinstance(values[1], Code)
-        ])
+        super().__init__(KeywordControl('while'), Code,
+                         lambda v, i: WhileType(v))
 
 
-class WhileDoExpression(Expression):
+class WhileDoExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: _while_loop(i, v[0].condition, v[2]), [
-            lambda values: type(values[0]) == WhileType and
-                           values[1] == KeywordControl('do') and
-                           type(values[2]) == Code
-        ])
+        super().__init__(WhileType, KeywordControl('do'), Code,
+                         lambda lhs, rhs, i: _while_loop(i, lhs.condition, rhs))
 
 
-class ForSpecExpression(Expression):
+class ForSpecExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(2, lambda t, v, i: ForSpecType(v[1]), [
-            lambda values: values[0] == KeywordControl('for') and isinstance(values[1], Array) and
-            len(values[1]) == 3
-        ])
+        super().__init__(KeywordControl('for'), Array,
+                         lambda v, i: ForSpecType(v), [lambda values: len(values[1]) == 3])
 
 
 def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
@@ -171,47 +187,33 @@ def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
     return outcome
 
 
-class ForSpecDoExpression(Expression):
+class ForSpecDoExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: _forspecs_loop(i, v[0].array[0], v[0].array[1], v[0].array[2], v[2]), [
-            lambda values: type(values[0]) == ForSpecType and
-                           values[1] == KeywordControl('do') and
-                           type(values[2]) == Code
-        ])
+        super().__init__(ForSpecType, KeywordControl('do'), Code,
+                         lambda lhs, rhs, i: _forspecs_loop(i, lhs.array[0], lhs.array[1], lhs.array[2], rhs))
 
 
-class ForExpression(Expression):
+class ForExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(2, lambda t, v, i: ForType(v[1]), [
-            lambda values: values[0] == KeywordControl('for') and isinstance(values[1], String)
-        ])
+        super().__init__(KeywordControl('for'), String, lambda rhs, i: ForType(rhs))
 
 
-class ForFromExpression(Expression):
+class ForFromExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: ForFromType(v[0].variable, v[2]), [
-            lambda values: type(values[0]) == ForType and
-                           values[1] == KeywordControl('from') and
-                           type(values[2]) == Number
-        ])
+        super().__init__(ForType, KeywordControl('from'), Number,
+                         lambda lhs, rhs, i: ForFromType(lhs.variable, rhs))
 
 
-class ForFromToExpression(Expression):
+class ForFromToExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: ForFromToStepType(v[0].variable, v[0].from_, v[2]), [
-            lambda values: type(values[0]) == ForFromType and
-                           values[1] == KeywordControl('to') and
-                           type(values[2]) == Number
-        ])
+        super().__init__(ForFromType, KeywordControl('to'), Number,
+                         lambda lhs, rhs, i: ForFromToStepType(lhs.variable, lhs.from_, rhs))
 
 
-class ForFromToStepExpression(Expression):
+class ForFromToStepExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: ForFromToStepType(v[0].variable, v[0].from_, v[0].to, v[2]), [
-            lambda values: type(values[0]) == ForFromToStepType and
-                           values[1] == KeywordControl('step') and
-                           type(values[2]) == Number
-        ])
+        super().__init__(ForFromToStepType, KeywordControl('step'), Number,
+                         lambda lhs, rhs, i: ForFromToStepType(lhs.variable, lhs.from_, lhs.to, rhs))
 
 
 def _forvar_loop(interpreter, token_name, start, stop, step, code):
@@ -221,21 +223,17 @@ def _forvar_loop(interpreter, token_name, start, stop, step, code):
     return outcome
 
 
-class ForFromToDoExpression(Expression):
+class ForFromToDoExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: _forvar_loop(i, v[0].variable.value, v[0].from_.value, v[0].to.value, v[0].step.value, v[2]), [
-            lambda values: type(values[0]) == ForFromToStepType and
-                           values[1] == KeywordControl('do') and
-                           type(values[2]) == Code
-        ])
+        super().__init__(ForFromToStepType, KeywordControl('do'), Code,
+                         lambda lhs, rhs, i: _forvar_loop(
+                             i, lhs.variable.value, lhs.from_.value, lhs.to.value, lhs.step.value, rhs))
 
 
-class SwitchExpression(Expression):
+class SwitchExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(2, lambda t, v, i: SwitchType(v[1]), [
-            lambda values: values[0] == KeywordControl('switch') and
-                           isinstance(values[1], Type)
-        ])
+        super().__init__(KeywordControl('switch'), Type,
+                         lambda v, i: SwitchType(v))
 
 
 def _switch(interpreter, result, code):
@@ -284,21 +282,16 @@ def _switch(interpreter, result, code):
     return outcome
 
 
-class SwitchDoExpression(Expression):
+class SwitchDoExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: _switch(i, v[0].result, v[2]), [
-            lambda values: type(values[0]) == SwitchType and
-                           values[1] == KeywordControl('do') and
-                           isinstance(values[2], Code)
-        ])
+        super().__init__(SwitchType, KeywordControl('do'), Code,
+                         lambda lhs, rhs, i: _switch(i, lhs.result, rhs))
 
 
-class IfExpression(Expression):
+class IfExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(2, lambda t, v, i: IfType(v[1]), [
-            lambda values: values[0] == KeywordControl('if') and
-                           isinstance(values[1], Boolean)
-        ])
+        super().__init__(KeywordControl('if'), Boolean,
+                         lambda v, i: IfType(v))
 
 
 def _if_then_else(interpreter, condition, then, else_=None):
@@ -312,40 +305,28 @@ def _if_then_else(interpreter, condition, then, else_=None):
     return result
 
 
-class IfThenExpression(Expression):
+class IfThenExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: _if_then_else(i, v[0].condition.value, v[2]), [
-            lambda values: type(values[0]) == IfType and
-                           values[1] == KeywordControl('then') and
-                           type(values[2]) == Code
-        ])
+        super().__init__(IfType, KeywordControl('then'), Code,
+                         lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs))
 
 
-class ElseExpression(Expression):
+class ElseExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: ElseType(v[0], v[2]), [
-            lambda values: type(values[0]) == Code and
-                           values[1] == KeywordControl('else') and
-                           type(values[2]) == Code
-        ])
+        super().__init__(Code, KeywordControl('else'), Code,
+                         lambda lhs, rhs, i: ElseType(lhs, rhs))
 
 
-class IfThenElseExpression(Expression):
+class IfThenElseExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: _if_then_else(i, v[0].condition.value, v[2].then, v[2].else_), [
-            lambda values: type(values[0]) == IfType and
-                           values[1] == KeywordControl('then') and
-                           type(values[2]) == ElseType
-        ])
+        super().__init__(IfType, KeywordControl('then'), ElseType,
+                         lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs.then, rhs.else_))
 
 
-class IfThenSpecExpression(Expression):
+class IfThenSpecExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(3, lambda t, v, i: _if_then_else(i, v[0].condition.value, v[2].value[0], v[2].value[1]), [
-            lambda values: type(values[0]) == IfType and
-                           values[1] == KeywordControl('then') and
-                           type(values[2]) == Array
-        ])
+        super().__init__(IfType, KeywordControl('then'), Array,
+                         lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs.value[0], rhs.value[1]))
 
 
 def _select_array(lhs_v, rhs_v, _):
@@ -427,42 +408,42 @@ EXPRESSIONS = [
     IfThenExpression(),
 
     # Unary
-    UnaryExpression('-', Number, lambda rhs_v, i: Number(-rhs_v.value)),
-    UnaryExpression('floor', Number, lambda rhs_v, i: Number(math.floor(rhs_v.value))),
-    UnaryExpression('reverse', Array, lambda rhs_v, i: rhs_v.reverse()),
-    UnaryExpression('createMarker', Array, lambda rhs_v, i: i.create_marker(rhs_v)),
+    UnaryExpression(Keyword('-'), Number, lambda rhs_v, i: Number(-rhs_v.value)),
+    UnaryExpression(Keyword('floor'), Number, lambda rhs_v, i: Number(math.floor(rhs_v.value))),
+    UnaryExpression(Keyword('reverse'), Array, lambda rhs_v, i: rhs_v.reverse()),
+    UnaryExpression(Keyword('createMarker'), Array, lambda rhs_v, i: i.create_marker(rhs_v)),
     # Binary
-    BinaryExpression('set', Array, Array, lambda lhs_v, rhs_v, i: lhs_v.set(rhs_v)),
+    BinaryExpression(Array, Keyword('set'), Array, lambda lhs_v, rhs_v, i: lhs_v.set(rhs_v)),
 
     # Array related
-    BinaryExpression('resize', Array, Number, lambda lhs_v, rhs_v, i: lhs_v.resize(rhs_v.value)),
-    UnaryExpression('count', Array, lambda rhs_v, i: Number(len(rhs_v.value))),
-    BinaryExpression('in', Type, Array, lambda lhs_v, rhs_v, i: Boolean(lhs_v in rhs_v.value)),
+    BinaryExpression(Array, Keyword('resize'), Number, lambda lhs_v, rhs_v, i: lhs_v.resize(rhs_v.value)),
+    UnaryExpression(Keyword('count'), Array, lambda rhs_v, i: Number(len(rhs_v.value))),
+    BinaryExpression(Type, Keyword('in'), Array, lambda lhs_v, rhs_v, i: Boolean(lhs_v in rhs_v.value)),
 
-    BinaryExpression('select', Array, (Number, Boolean), lambda lhs_v, rhs_v, i: lhs_v.value[int(round(rhs_v.value))]),
-    BinaryExpression('select', Array, Array, _select_array),
+    BinaryExpression(Array, Keyword('select'), (Number, Boolean), lambda lhs_v, rhs_v, i: lhs_v.value[int(round(rhs_v.value))]),
+    BinaryExpression(Array, Keyword('select'), Array, _select_array),
 
-    BinaryExpression('find', Array, Type, _find),
-    BinaryExpression('find', String, String, lambda lhs_v, rhs_v, i: Number(lhs_v.value.find(rhs_v.value))),
+    BinaryExpression(Array, Keyword('find'), Type, _find),
+    BinaryExpression(String, Keyword('find'), String, lambda lhs_v, rhs_v, i: Number(lhs_v.value.find(rhs_v.value))),
 
-    BinaryExpression('pushBack', Array, Type, _pushBack),
-    BinaryExpression('pushBackUnique', Array, Type, _pushBackUnique),
-    BinaryExpression('append', Array, Array, lambda lhs_v, rhs_v, i: lhs_v.add(rhs_v.value)),
+    BinaryExpression(Array, Keyword('pushBack'), Type, _pushBack),
+    BinaryExpression(Array, Keyword('pushBackUnique'), Type, _pushBackUnique),
+    BinaryExpression(Array, Keyword('append'), Array, lambda lhs_v, rhs_v, i: lhs_v.add(rhs_v.value)),
 
-    UnaryExpression('toArray', String, lambda rhs_v, i: Array([Number(ord(s)) for s in rhs_v.value])),
-    UnaryExpression('toString', Array, lambda rhs_v, i: String('"'+''.join(chr(s.value) for s in rhs_v.value)+'"')),
+    UnaryExpression(Keyword('toArray'), String, lambda rhs_v, i: Array([Number(ord(s)) for s in rhs_v.value])),
+    UnaryExpression(Keyword('toString'), Array, lambda rhs_v, i: String('"'+''.join(chr(s.value) for s in rhs_v.value)+'"')),
 
     # code and namespaces
-    UnaryExpression('call', Code, lambda rhs_v, i: i.execute_code(rhs_v)),
-    BinaryExpression('call', Array, Code, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, params=lhs_v)),
+    UnaryExpression(Keyword('call'), Code, lambda rhs_v, i: i.execute_code(rhs_v)),
+    BinaryExpression(Array, Keyword('call'), Code, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, params=lhs_v)),
 
-    BinaryExpression('setVariable', Namespace, Array, _setVariable, tests=[lambda values: len(values[2].value) == 2]),
+    BinaryExpression(Namespace, Keyword('setVariable'), Array, _setVariable, tests=[lambda values: len(values[2].value) == 2]),
 
-    BinaryExpression('getVariable', Namespace, String, _getVariableString),
-    BinaryExpression('getVariable', Namespace, Array, _getVariableArray,
+    BinaryExpression(Namespace, Keyword('getVariable'), String, _getVariableString),
+    BinaryExpression(Namespace, Keyword('getVariable'), Array, _getVariableArray,
                      tests=[lambda values: len(values[2].value) == 2]),
 
-    BinaryExpression('addPublicVariableEventHandler', String, Code, _addPublicVariableEventHandler),
+    BinaryExpression(String, Keyword('addPublicVariableEventHandler'), Code, _addPublicVariableEventHandler),
 
 ]
 
@@ -511,8 +492,8 @@ OP_ARRAY_OPERATIONS = {
 
 
 for operator in OP_COMPARISON:
-    EXPRESSIONS.append(ComparisonExpression(operator.value))
+    EXPRESSIONS.append(ComparisonExpression(operator))
 for operator in OP_ARITHMETIC:
-    EXPRESSIONS.append(ArithmeticExpression(operator.value))
+    EXPRESSIONS.append(ArithmeticExpression(operator))
 for operator in OP_LOGICAL:
-    EXPRESSIONS.append(LogicalExpression(operator.value))
+    EXPRESSIONS.append(LogicalExpression(operator))
