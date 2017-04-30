@@ -2,29 +2,38 @@ class SQFError(Exception):
     pass
 
 
-class SQFParserError(SQFError):
+class SQFParserException(SQFError):
     """
     Raised by the parser and analyser
     """
     def __init__(self, position, message):
         assert(isinstance(position, tuple))
         self.position = position
-        self.message = "Syntax error: %s" % message
+        self.message = message
 
 
-class SQFParenthesisError(SQFParserError):
+class SQFParserError(SQFParserException):
+    """
+    Raised by the parser and analyser
+    """
+    def __init__(self, position, message):
+        super().__init__(position, "error:%s" % message)
+
+
+class SQFParenthesisError(SQFParserException):
     pass
 
 
-class SQFWarning(SQFParserError):
+class SQFWarning(SQFParserException):
     """
     Something that the interpreter understands but that is a bad practice or potentially
     semantically incorrect.
     """
-    pass
+    def __init__(self, position, message):
+        super().__init__(position, "warning:%s" % message)
 
 
-class SQFSyntaxError(SQFParserError):
+class SQFSyntaxError(SQFParserException):
     """
     Raised by the interpreter
     """
