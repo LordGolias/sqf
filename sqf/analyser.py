@@ -3,6 +3,7 @@ from sqf.keywords import KeywordControl
 from sqf.types import String, Statement, Code, Array, Boolean, Variable, Number, Keyword
 
 constantTypes = (Array, Boolean, Variable, Number, Code, String, KeywordControl, Statement)
+switchTypes = (Array, Boolean, Variable, Number, String, Statement)
 
 
 def first_base_token(statement):
@@ -17,16 +18,6 @@ def first_base_token(statement):
         return token
 
 
-def is_parenthesis_statement(statement):
-    if isinstance(statement, Statement):
-        if statement.parenthesis == '()':
-            return True
-        else:
-            assert(len(statement.base_tokens) > 0)
-            return is_parenthesis_statement(statement.base_tokens[0])
-    return False
-
-
 def is_invalid(t, tp1):
     return isinstance(t, constantTypes) and isinstance(tp1, constantTypes)
 
@@ -36,7 +27,7 @@ EXCEPTIONS = [
     lambda t,tp1: t == KeywordControl("from") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("for") and type(tp1) in (String, Statement, Variable),
     lambda t,tp1: t == KeywordControl("if") and type(tp1) in (Statement,),
-    lambda t,tp1: t == KeywordControl("switch") and type(tp1) in (Statement,),
+    lambda t,tp1: t == KeywordControl("switch") and type(tp1) in switchTypes,
     lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
@@ -68,10 +59,6 @@ def check_statement(tokens, exceptions):
             exception = SQFParserError(tokens[0].position, "Wrong syntax for #include")
             exceptions.append(exception)
         return
-    if tokens[0] == KeywordControl('switch'):
-        if len(tokens) > 1 and not is_parenthesis_statement(tokens[1]):
-            exception = SQFParserError(tokens[1].position, "'switch' 2nd part must be a parenthesis statement")
-            exceptions.append(exception)
     if tokens[0] == KeywordControl('case'):
         if len(tokens) > 2 and tokens[2] != Keyword(":"):
             exception = SQFParserError(tokens[2].position, "'case' 3rd part must be ':'")

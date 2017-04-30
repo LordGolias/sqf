@@ -118,11 +118,10 @@ class SwitchTestCase(TestCase):
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 0)
 
-    def test_not_switch_statement(self):
+    def test_switch_statement_without_parenthesis(self):
         code = 'switch _x do {case 1: {"one"};}'
         errors = analyze(parse(code))
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 7), errors[0].position)
+        self.assertEqual(len(errors), 0)
 
     def test_missing_do(self):
         code = 'switch (_x) {case 1: {"one"};}'
