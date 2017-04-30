@@ -125,6 +125,12 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
 
+    def test_code(self):
+        code = 'if (false) then {_damage = 0.95;};'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
 
 class ScopeAnalyserDefineTestCase(TestCase):
 

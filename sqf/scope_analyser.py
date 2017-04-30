@@ -23,7 +23,7 @@ class ScopeAnalyzer(BaseInterpreter):
     def value(self, token, namespace_name=None):
         if isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
-            if self.current_scope != scope and token.name.startswith('_'):
+            if scope.level == 0 and token.name.startswith('_'):
                 self.exception(SQFWarning(token.position, 'Local variable "%s" is not from this scope (not private)' % token))
 
             return scope[token.name]
@@ -37,6 +37,8 @@ class ScopeAnalyzer(BaseInterpreter):
         # interpret the statement recursively
         if isinstance(token, Statement):
             result = self.execute_single(statement=token)
+        elif isinstance(token, Code):
+            result = self.execute_code(token)
         elif isinstance(token, Array):
             result = Array([self.execute_token(s) for s in token.value if s])
         else:
@@ -113,8 +115,8 @@ class ScopeAnalyzer(BaseInterpreter):
                 self.exception(SQFSyntaxError(statement.position, 'lhs of assignment operator cannot be a literal'))
             else:
                 scope = self.get_scope(lhs.name)
-                if self.current_scope != scope and lhs.name.startswith('_'):
-                    self.exception(SQFWarning(lhs.position, 'Local variable assigned "%s" to an outer scope (not private)' % lhs.name))
+                if scope.level == 0 and lhs.name.startswith('_'):
+                    self.exception(SQFWarning(lhs.position, 'Local variable "%s" assigned to an outer scope (not private)' % lhs.name))
 
                 scope[lhs.name] = rhs_v
                 outcome = rhs

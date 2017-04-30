@@ -3,10 +3,11 @@ from sqf.types import Nothing
 
 class Scope:
 
-    def __init__(self, values=None):
+    def __init__(self, level, values=None):
         if values is None:
             values = {}
         self.values = values
+        self.level = level
 
     def __contains__(self, other):
         return other in self.values
@@ -23,7 +24,7 @@ class Scope:
 
 class Namespace:
     def __init__(self, all_vars=None):
-        self._stack = [Scope(all_vars)]
+        self._stack = [Scope(0, all_vars)]
 
     @property
     def current_scope(self):
@@ -44,7 +45,7 @@ class Namespace:
             return self._stack[0]
 
     def add_scope(self, values=None):
-        self._stack.append(Scope(values))
+        self._stack.append(Scope(len(self._stack), values))
 
     def del_scope(self):
         del self._stack[-1]
