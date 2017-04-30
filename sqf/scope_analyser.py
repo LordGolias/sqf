@@ -1,13 +1,13 @@
 from sqf.expressions import ForExpression, ForFromExpression, ForFromToExpression, ForFromToStepExpression, \
     ForFromToDoExpression, IfExpression, ElseExpression, IfThenExpression, IfThenSpecExpression, IfThenElseExpression
-from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String
-from sqf.interpreter_types import InterpreterType, PrivateType
+from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
+from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFSyntaxError, SQFWarning
 from sqf.base_interpreter import BaseInterpreter
 
 
-CONSTANT_VALUES = (Code, ConstantValue, Number, Boolean, Keyword, Variable, Array, InterpreterType)
+CONSTANT_VALUES = (String, Code, ConstantValue, Number, Boolean, Keyword, Variable, Array)
 
 
 EXPRESSIONS = [
@@ -19,10 +19,37 @@ EXPRESSIONS = [
 
     IfExpression(),
     ElseExpression(),
-    IfThenSpecExpression(),
     IfThenElseExpression(),
     IfThenExpression(),
+    IfThenSpecExpression(),
 ]
+
+# replace all occurrences of constant types by `Type` so the expressions are matched even when
+# the types are unknown
+TYPES_TO_REPLACE = (String, ConstantValue, Number, Boolean, Array)
+for x in EXPRESSIONS:
+    types_or_values = []
+    for ts_or_vs in x.types_or_values:
+        if not isinstance(ts_or_vs, (list, tuple)):
+            if isinstance(ts_or_vs, type):
+                if ts_or_vs in TYPES_TO_REPLACE:
+                    types_or_values.append(Type)
+                else:
+                    types_or_values.append(ts_or_vs)
+            else:
+                if isinstance(ts_or_vs, TYPES_TO_REPLACE):
+                    types_or_values.append(Type)
+                else:
+                    types_or_values.append(ts_or_vs)
+        else:
+            list_ = []
+            for t_or_v in ts_or_vs:
+                if isinstance(t_or_v, type):
+                    list_.append(Type)
+                else:  # is a value
+                    list_.append(t_or_v)
+            types_or_values.append(list_)
+    x.types_or_values = types_or_values
 
 
 class ScopeAnalyzer(BaseInterpreter):
@@ -116,6 +143,8 @@ class ScopeAnalyzer(BaseInterpreter):
             elif type(case_found) == IfThenSpecExpression:
                 self.execute_code(tokens[2].value[0])
                 self.execute_code(tokens[2].value[1])
+            elif type(case_found) == ForFromToDoExpression:
+                outcome = self.execute_code(tokens[2], extra_scope={tokens[0].variable.value: Number(0)})
             else:
                 outcome = case_found.execute(tokens, self)
 
@@ -155,8 +184,8 @@ class ScopeAnalyzer(BaseInterpreter):
                 scope[lhs.name] = rhs_v
                 outcome = rhs
         # code, variables and values
-        elif len(tokens) == 1 and isinstance(tokens[0], CONSTANT_VALUES):
-            outcome = tokens[0]
+        elif len(tokens) == 1:
+            outcome = self.execute_token(tokens[0])
         else:
             # force the tokens to be evaluated so it detects variables not assigned.
             for token in base_tokens:

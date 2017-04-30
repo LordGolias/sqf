@@ -40,15 +40,15 @@ class ForSpecType(InterpreterType):
 
 class ForFromType(ForType):
     def __init__(self, variable, from_):
-        assert (isinstance(from_, Number))
+        assert (isinstance(from_, Type))
         super().__init__(variable)
         self.from_ = from_
 
 
 class ForFromToStepType(ForFromType):
     def __init__(self, variable, from_, to, step=Number(1)):
-        assert (isinstance(to, Number))
-        assert (isinstance(step, Number))
+        assert (isinstance(to, Type))
+        assert (isinstance(step, Type))
         super().__init__(variable, from_)
         self.to = to
         self.step = step
@@ -63,7 +63,7 @@ class SwitchType(InterpreterType):
 
 class IfType(InterpreterType):
     def __init__(self, condition):
-        assert (isinstance(condition, Boolean))
+        assert (isinstance(condition, Type))
         super().__init__()
         self.condition = condition
 
