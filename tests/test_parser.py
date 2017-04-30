@@ -281,15 +281,25 @@ class ParseCode(ParserTestCase):
         
         self.assertEqualStatement(expected, result, code)
 
-    def test_if_then(self):
-        code = 'if(true)then{private"_x";_x}'
+    def test_if_then_else(self):
+        code = 'if(true)then{1}else{2}'
         result = parse(code)
-        expected = Statement([Statement([KeywordControl('if'), Statement([Statement([Boolean(True)])], parenthesis=True),
-                                         KeywordControl('then'), Code([
-                Statement([Keyword('private'), String('"_x"')], ending=True),
-                Statement([V('_x')])])
-        ])])
-        
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        KeywordControl('if'),
+                        Statement([
+                            Statement([Boolean(True)])], parenthesis=True),
+                    ]),
+                    KeywordControl('then'),
+                    Statement([
+                        Code([Statement([N(1)])]),
+                        KeywordControl('else'),
+                        Code([Statement([N(2)])]),
+                    ])
+                ])
+            ])
         self.assertEqualStatement(expected, result, code)
 
     def test_switch(self):

@@ -1,5 +1,5 @@
 from sqf.base_type import BaseType
-from sqf.types import Code, String, Number, Array, Type, Variable
+from sqf.types import Code, String, Number, Array, Type, Variable, Boolean
 
 
 class InterpreterType(BaseType):
@@ -59,3 +59,17 @@ class SwitchType(InterpreterType):
         assert (isinstance(result, Type))
         super().__init__()
         self.result = result
+
+
+class IfType(InterpreterType):
+    def __init__(self, condition):
+        assert (isinstance(condition, Boolean))
+        super().__init__()
+        self.condition = condition
+
+
+class ElseType(InterpreterType):
+    def __init__(self, then, else_):
+        super().__init__()
+        self.then = then
+        self.else_ = else_

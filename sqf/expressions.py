@@ -2,7 +2,8 @@ import math
 
 from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
 from sqf.keywords import Keyword, KeywordControl, Namespace
-from sqf.interpreter_types import WhileType, ForType, ForFromType, ForFromToStepType, ForSpecType, SwitchType
+from sqf.interpreter_types import WhileType, \
+    ForType, ForFromType, ForFromToStepType, ForSpecType, SwitchType, IfType, ElseType
 from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 
@@ -117,18 +118,6 @@ class LogicalExpression(BinaryExpression):
         op = values[1]
         rhs_v = values[2]
         return Boolean(OP_OPERATIONS[op](lhs_v.value, rhs_v.value))
-
-
-class IfThenExpression(Expression):
-
-    def __init__(self, length, tests, action):
-        base_test = lambda values: values[0] == KeywordControl('if') and \
-                                   isinstance(values[1], Boolean) and values[2] == KeywordControl('then')
-
-        super().__init__(length, action, [base_test] + tests)
-
-    def execute(self, tokens, values, interpreter):
-        return self.action(values, interpreter)
 
 
 def _while_loop(interpreter, condition_code, do_code):
@@ -304,6 +293,61 @@ class SwitchDoExpression(Expression):
         ])
 
 
+class IfExpression(Expression):
+    def __init__(self):
+        super().__init__(2, lambda t, v, i: IfType(v[1]), [
+            lambda values: values[0] == KeywordControl('if') and
+                           isinstance(values[1], Boolean)
+        ])
+
+
+def _if_then_else(interpreter, condition, then, else_=None):
+    if condition:
+        result = interpreter.execute_code(then)
+    else:
+        if else_ is not None:
+            result = interpreter.execute_code(else_)
+        else:
+            result = Nothing
+    return result
+
+
+class IfThenExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: _if_then_else(i, v[0].condition.value, v[2]), [
+            lambda values: type(values[0]) == IfType and
+                           values[1] == KeywordControl('then') and
+                           type(values[2]) == Code
+        ])
+
+
+class ElseExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: ElseType(v[0], v[2]), [
+            lambda values: type(values[0]) == Code and
+                           values[1] == KeywordControl('else') and
+                           type(values[2]) == Code
+        ])
+
+
+class IfThenElseExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: _if_then_else(i, v[0].condition.value, v[2].then, v[2].else_), [
+            lambda values: type(values[0]) == IfType and
+                           values[1] == KeywordControl('then') and
+                           type(values[2]) == ElseType
+        ])
+
+
+class IfThenSpecExpression(Expression):
+    def __init__(self):
+        super().__init__(3, lambda t, v, i: _if_then_else(i, v[0].condition.value, v[2].value[0], v[2].value[1]), [
+            lambda values: type(values[0]) == IfType and
+                           values[1] == KeywordControl('then') and
+                           type(values[2]) == Array
+        ])
+
+
 def _select_array(lhs_v, rhs_v, _):
     start = rhs_v.value[0].value
     count = rhs_v.value[1].value
@@ -362,16 +406,6 @@ def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
         raise ExecutionError('"addPublicVariableEventHandler" called without a client')
 
 
-def _if_then_else(interpreter, condition, then, else_=None):
-    if condition.value is True:
-        return interpreter.execute_code(then)
-    else:
-        if else_:
-            return interpreter.execute_code(else_)
-        else:
-            return Nothing
-
-
 EXPRESSIONS = [
     WhileExpression(),
     WhileDoExpression(),
@@ -385,6 +419,12 @@ EXPRESSIONS = [
     ForSpecDoExpression(),
     SwitchExpression(),
     SwitchDoExpression(),
+
+    IfExpression(),
+    ElseExpression(),
+    IfThenSpecExpression(),
+    IfThenElseExpression(),
+    IfThenExpression(),
 
     # Unary
     UnaryExpression('-', Number, lambda rhs_v, i: Number(-rhs_v.value)),
@@ -424,14 +464,6 @@ EXPRESSIONS = [
 
     BinaryExpression('addPublicVariableEventHandler', String, Code, _addPublicVariableEventHandler),
 
-    IfThenExpression(4, tests=[lambda values: type(values[3]) == Code],
-                     action=lambda v, i: _if_then_else(i, v[1], v[3])),
-    IfThenExpression(4, tests=[lambda values: type(values[3]) == Array],
-                     action=lambda v, i: _if_then_else(i, v[1], v[3].value[0], v[3].value[1])),
-    IfThenExpression(6, tests=[lambda values: type(values[3]) == Code,
-                               lambda values: values[4] == KeywordControl('else'),
-                               lambda values: type(values[5]) == Code],
-                     action=lambda v, i: _if_then_else(i, v[1], v[3], v[5])),
 ]
 
 

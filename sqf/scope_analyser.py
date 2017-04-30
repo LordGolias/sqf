@@ -1,3 +1,5 @@
+from sqf.expressions import ForExpression, ForFromExpression, ForFromToExpression, ForFromToStepExpression, \
+    ForFromToDoExpression, IfExpression, ElseExpression, IfThenExpression, IfThenSpecExpression, IfThenElseExpression
 from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String
 from sqf.interpreter_types import InterpreterType, PrivateType
 from sqf.keywords import Keyword
@@ -6,6 +8,21 @@ from sqf.base_interpreter import BaseInterpreter
 
 
 CONSTANT_VALUES = (Code, ConstantValue, Number, Boolean, Keyword, Variable, Array, InterpreterType)
+
+
+EXPRESSIONS = [
+    ForExpression(),
+    ForFromExpression(),
+    ForFromToExpression(),
+    ForFromToStepExpression(),
+    ForFromToDoExpression(),
+
+    IfExpression(),
+    ElseExpression(),
+    IfThenSpecExpression(),
+    IfThenElseExpression(),
+    IfThenExpression(),
+]
 
 
 class ScopeAnalyzer(BaseInterpreter):
@@ -37,8 +54,6 @@ class ScopeAnalyzer(BaseInterpreter):
         # interpret the statement recursively
         if isinstance(token, Statement):
             result = self.execute_single(statement=token)
-        elif isinstance(token, Code):
-            result = self.execute_code(token)
         elif isinstance(token, Array):
             result = Array([self.execute_token(s) for s in token.value if s])
         else:
@@ -85,11 +100,30 @@ class ScopeAnalyzer(BaseInterpreter):
             t = self.execute_token(token)
             tokens.append(t)
 
-        if len(tokens) == 2 and tokens[0] == Keyword('params'):
+        case_found = None
+        for case in EXPRESSIONS:
+            if case.is_match(tokens):
+                case_found = case
+                break
+
+        if case_found is not None:
+            # evaluate the code of an IfThen expression
+            if type(case_found) == IfThenExpression:
+                self.execute_code(tokens[2])
+            elif type(case_found) == IfThenElseExpression:
+                self.execute_code(tokens[2].then)
+                self.execute_code(tokens[2].else_)
+            elif type(case_found) == IfThenSpecExpression:
+                self.execute_code(tokens[2].value[0])
+                self.execute_code(tokens[2].value[1])
+            else:
+                outcome = case_found.execute(tokens, tokens, self)
+
+        elif len(tokens) == 2 and tokens[0] == Keyword('params'):
             self._add_params(tokens)
-        if len(tokens) == 3 and tokens[1] == Keyword('params'):
+        elif len(tokens) == 3 and tokens[1] == Keyword('params'):
             self._add_params(tokens[1:])
-        if len(tokens) == 2 and tokens[0] == Keyword('private'):
+        elif len(tokens) == 2 and tokens[0] == Keyword('private'):
             if isinstance(tokens[1], String):
                 self.add_privates([tokens[1]])
             elif isinstance(tokens[1], Array):

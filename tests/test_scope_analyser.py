@@ -125,11 +125,29 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
 
-    def test_code(self):
+    def test_if_then(self):
         code = 'if (false) then {_damage = 0.95;};'
         analyser = interpret(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
+
+    def test_if_then_else(self):
+        code = 'if (false) then {_damage = 0.95} else {_damage = 1};'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 2)
+
+    def test_if_then_specs(self):
+        code = 'if (false) then [{_damage = 0.95},{_damage = 1}]'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 2)
+
+    def test_for(self):
+        code = 'for "_i" from 0 to 10 do {hint str _i}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
 
 
 class ScopeAnalyserDefineTestCase(TestCase):

@@ -114,7 +114,7 @@ class Interpreter(BaseInterpreter):
                 self.add_privates([String('"' + var.name + '"')])
                 outcome = PrivateType(var)
         # binary operators
-        elif len(tokens) == 3 and isinstance(tokens[1], Keyword):
+        elif len(tokens) == 3 and tokens[1] in (Keyword('='), Keyword('publicVariableClient')):
             # it is a binary statement: token, operation, token
             lhs = tokens[0]
             lhs_v = values[0]
@@ -144,13 +144,11 @@ class Interpreter(BaseInterpreter):
                 var_name = rhs.value
                 scope = self.get_scope(var_name, 'missionNamespace')
                 self.simulation.broadcast(var_name, scope[var_name], client_id)
-            else:
-                raise NotImplementedError([lhs, op, rhs])
         # code, variables and values
         elif len(tokens) == 1 and isinstance(tokens[0], (Code, ConstantValue, Keyword, Variable, Array)):
             outcome = values[0]
         else:
-            raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % statement)
+            raise SQFSyntaxError(statement.position, 'Interpretation of "%s" failed' % repr(statement))
 
         if statement.ending:
             outcome = Nothing

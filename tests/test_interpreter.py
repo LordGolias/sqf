@@ -20,7 +20,7 @@ class TestInterpreter(TestCase):
         self.assertEqual(Nothing, outcome)
 
     def test_var_not_defined(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('_y == 3;')
 
     def test_one_statement2(self):
@@ -29,12 +29,12 @@ class TestInterpreter(TestCase):
         self.assertEqual(Boolean(False), outcome)
 
     def test_cant_compare_booleans(self):
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('true == false;')
 
     def test_wrong_type_arithmetic(self):
         interpret('_x = true;')
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(SQFSyntaxError):
             interpret('_x = true; _x + 2;')
 
     def test_code_dont_execute(self):

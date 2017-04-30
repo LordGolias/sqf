@@ -78,6 +78,7 @@ KEYWORDS = set([x.lower() for x in KEYWORDS])
 ORDERED_OPERATORS = [
     Keyword('='), Keyword('private')] + \
     list(reversed([KeywordControl('while'), KeywordControl('switch'), KeywordControl('for'), KeywordControl('from'), KeywordControl('to'), KeywordControl('step'), KeywordControl('do')])) + \
+    list(reversed([KeywordControl('if'), KeywordControl('else'), KeywordControl('then')])) + \
     [Keyword(x) for x in ['floor', '-', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!', 'getVariable']]
 
 KEYWORDS_CONTROLS = set(DB_controls)
