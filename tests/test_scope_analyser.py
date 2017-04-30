@@ -124,3 +124,18 @@ class ScopeAnalyserTestCase(TestCase):
         analyser = interpret(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
+
+
+class ScopeAnalyserDefineTestCase(TestCase):
+
+    def test_define_simple(self):
+        code = "#define A (true)\nprivate _x = A;"
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_define(self):
+        code = "#define A(_x) (_x == 2)\nprivate _x = A(3);"
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)

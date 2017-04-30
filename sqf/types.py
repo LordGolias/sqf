@@ -176,6 +176,9 @@ class Variable(Type):
     def name(self):
         return self._name
 
+    def is_global(self):
+        return self.name[0] != '_'
+
     def __str__(self):
         return self._name
 

@@ -73,6 +73,10 @@ class ScopeAnalyzer(BaseInterpreter):
 
         # evaluate the types of all tokens
         base_tokens = statement.base_tokens
+
+        if base_tokens and base_tokens[0] == Keyword('#define'):
+            return outcome
+
         tokens = []
 
         for token in statement.base_tokens:

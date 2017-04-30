@@ -32,6 +32,7 @@ def is_invalid(t, tp1):
 
 # Exceptions for constantTypes that can be next to each other
 EXCEPTIONS = [
+    lambda t,tp1: type(t) == Variable and t.is_global and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("from") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("for") and type(tp1) in (String, Statement, Variable),
     lambda t,tp1: t == KeywordControl("if") and type(tp1) in (Statement,),
