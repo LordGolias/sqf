@@ -13,6 +13,13 @@ class ScopeAnalyserTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 14), errors[0].position)
 
+    def test_evaluate(self):
+        code = 'private _x = 2;'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(Number(2), analyser['_x'])
+        self.assertEqual(len(errors), 0)
+
     def test_assign_wrong(self):
         analyser = interpret(parse('1 = 2;'))
         errors = analyser.exceptions
@@ -120,10 +127,10 @@ class ScopeAnalyserTestCase(TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_error_inside_array(self):
-        code = '_x = []; [1, _x select 0];'
+        code = '[1, _x select 0];'
         analyser = interpret(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 2)
+        self.assertEqual(len(errors), 1)
 
     def test_if_then(self):
         code = 'if (false) then {_damage = 0.95;};'
@@ -184,6 +191,12 @@ class ScopeAnalyserTestCase(TestCase):
         analyser = interpret(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 6)
+
+    def test_for_code(self):
+        code = 'private _x = {hint str _y}; for "_i" from 0 to 10 do _x'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
 
 
 class ScopeAnalyserDefineTestCase(TestCase):
