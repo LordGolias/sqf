@@ -234,6 +234,12 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
 
+    def test_custom_function(self):
+        code = 'a = createMarker ["a", [0,0,0]];'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class ScopeAnalyserDefineTestCase(TestCase):
 

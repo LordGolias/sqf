@@ -404,14 +404,6 @@ class Namespaces(TestCase):
         self.assertEqual(N(2), outcome)
 
 
-class Markers(TestCase):
-    def test_create(self):
-        interpreter, outcome = interpret('_marker = createMarker ["m1", [1, 1, 1]];')
-
-        self.assertEqual(String('"m1"'), interpreter['_marker'])
-        self.assertTrue('m1' in interpreter.markers)
-
-
 class Operators(TestCase):
 
     def test_to_array_string(self):

@@ -433,7 +433,6 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('-'), Number, lambda rhs_v, i: Number(-rhs_v.value)),
     UnaryExpression(Keyword('floor'), Number, lambda rhs_v, i: Number(math.floor(rhs_v.value))),
     UnaryExpression(Keyword('reverse'), Array, lambda rhs_v, i: rhs_v.reverse()),
-    UnaryExpression(Keyword('createMarker'), Array, lambda rhs_v, i: i.create_marker(rhs_v)),
     # Binary
     BinaryExpression(Array, Keyword('set'), Array, lambda lhs_v, rhs_v, i: lhs_v.set(rhs_v)),
 

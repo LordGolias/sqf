@@ -1,9 +1,8 @@
 from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
 from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
-from sqf.object import Marker
 from sqf.parser import parse
-from sqf.exceptions import ExecutionError, SQFSyntaxError, SQFError
+from sqf.exceptions import ExecutionError, SQFSyntaxError
 from sqf.expressions import EXPRESSIONS
 from sqf.base_interpreter import BaseInterpreter
 
@@ -153,16 +152,6 @@ class Interpreter(BaseInterpreter):
         if statement.ending:
             outcome = Nothing
         return outcome
-
-    def create_marker(self, rhs_v):
-        name = rhs_v.value[0].value
-        if name in self._markers:
-            raise ExecutionError('Marker "%s" already exists' % name)
-        pos = rhs_v.value[1]
-        if not isinstance(pos, Array):
-            raise SQFError('Second argument of "createMarker" must be a position')
-        self._markers[name] = Marker(pos)
-        return rhs_v.value[0]
 
 
 def interpret(script, interpreter=None):
