@@ -125,7 +125,7 @@ class ScopeAnalyzer(BaseInterpreter):
         if base_tokens and base_tokens[0] == Keyword('#define'):
             return outcome
         elif len(base_tokens) == 2 and base_tokens[0] == Keyword('private'):
-            rhs = self.execute_single(base_tokens[1])
+            rhs = self.execute_token(base_tokens[1])
             if isinstance(rhs, String):
                 self.add_privates([rhs])
             elif isinstance(rhs, Array):
@@ -139,7 +139,7 @@ class ScopeAnalyzer(BaseInterpreter):
             return outcome
         # assignment operator
         elif len(base_tokens) == 3 and base_tokens[1] == Keyword('='):
-            lhs = self.execute_single(base_tokens[0])
+            lhs = self.execute_token(base_tokens[0])
             if isinstance(lhs, PrivateType):
                 self.privates.remove(lhs)
                 lhs = lhs.variable
