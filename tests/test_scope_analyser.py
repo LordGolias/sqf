@@ -126,6 +126,12 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_params(self):
+        code = 'params [["_player",objNull,[objNull]],["_isMale",true]];'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
     def test_error_inside_array(self):
         code = '[1, _x select 0];'
         analyser = interpret(parse(code))

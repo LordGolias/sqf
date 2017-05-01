@@ -101,14 +101,14 @@ class ScopeAnalyzer(BaseInterpreter):
                         continue
                     self.add_privates([token])
                 elif isinstance(token, Array):
-                    if len(token) in [2, 4]:
+                    if len(token) in (2, 3, 4):
                         self.add_privates([token[0]])
                         lhs = token[0].value
                         scope = self.get_scope(lhs)
                         scope[lhs] = token[1]
                     else:
                         self.exception(
-                            SQFSyntaxError(tokens[1].position, '`params` array element have 2-4 elements'))
+                            SQFSyntaxError(tokens[1].position, '`params` array element must have 2-4 elements'))
                 else:
                     self.exception(SQFSyntaxError(tokens[1].position, '`params` array element must be a string or array'))
         else:
