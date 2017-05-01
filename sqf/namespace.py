@@ -2,7 +2,11 @@ from sqf.types import Nothing
 
 
 class Scope:
-
+    """
+    A scope is a dictionary that stores variables. Its level is controlled by a namespace
+    and has no function to the scope itself.
+    The values are case insensitive because SQF variables are case-insensitive.
+    """
     def __init__(self, level, values=None):
         if values is None:
             values = {}
@@ -10,16 +14,16 @@ class Scope:
         self.level = level
 
     def __contains__(self, other):
-        return other in self.values
+        return other.lower() in self.values
 
     def __getitem__(self, name):
-        if name in self.values:
-            return self.values[name]
+        if name.lower() in self.values:
+            return self.values[name.lower()]
         else:
             return Nothing
 
     def __setitem__(self, item, value):
-        self.values[item] = value
+        self.values[item.lower()] = value
 
 
 class Namespace:

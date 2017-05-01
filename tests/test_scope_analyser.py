@@ -7,6 +7,12 @@ from sqf.scope_analyser import interpret
 
 class ScopeAnalyserTestCase(TestCase):
 
+    def test_insensitive_variables(self):
+        code = 'private "_x"; a = _X'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
     def test_warn_not_in_scope(self):
         analyser = interpret(parse('private _y = _z;'))
         errors = analyser.exceptions
@@ -268,3 +274,4 @@ class ScopeAnalyzerArrays(TestCase):
 
         self.assertEqual(len(errors), 2)
         self.assertEqual((3, 8), errors[1].position)
+
