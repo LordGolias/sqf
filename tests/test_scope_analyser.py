@@ -132,12 +132,6 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_error_inside_array(self):
-        code = '[1, _x select 0];'
-        analyser = interpret(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
     def test_if_then(self):
         code = 'if (false) then {_damage = 0.95;};'
         analyser = interpret(parse(code))
@@ -228,13 +222,6 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
 
-    def test_no_space(self):
-        code = 'x set[_cIndex, 2]'
-        analyser = interpret(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 7), errors[0].position)
-
 
 class ScopeAnalyserDefineTestCase(TestCase):
 
@@ -249,3 +236,35 @@ class ScopeAnalyserDefineTestCase(TestCase):
         analyser = interpret(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
+
+
+class ScopeAnalyzerArrays(TestCase):
+
+    def test_basic(self):
+        code = 'a=[_x,\n_y]'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 2)
+        self.assertEqual((1, 4), errors[0].position)
+        self.assertEqual((2, 1), errors[1].position)
+
+    def test_error_inside_array(self):
+        code = 'x=[1, _x select 0];'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_no_space(self):
+        code = 'x set[_cIndex, 2]'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 7), errors[0].position)
+
+    def test_strange(self):
+        code = '{\n\tformat ["",\n\t\t\t_z, _y];\n} forEach a;\n'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+
+        self.assertEqual(len(errors), 2)
+        self.assertEqual((3, 8), errors[1].position)

@@ -66,28 +66,29 @@ class ScopeAnalyzer(BaseInterpreter):
         self.exceptions.append(exception)
 
     def value(self, token, namespace_name=None):
+        """
+        Given a single token, recursively evaluates and returns its value
+        """
+        if isinstance(token, Statement):
+            return self.value(self.execute_single(statement=token))
         if isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
-            if scope.level == 0 and token.name.startswith('_'):
+            if scope.level == 0 and not token.is_global:
                 self.exception(SQFWarning(token.position, 'Local variable "%s" is not from this scope (not private)' % token))
 
             return scope[token.name]
         elif isinstance(token, Array):
-            token._tokens = [self.value(s) for s in token.value]
-            return token
+            return Array([self.value(s) for s in token.value])
         else:
             return token
 
     def execute_token(self, token):
         """
-        Given a single token, recursively evaluate it and return its value.
+        Given a single token, recursively evaluate it without returning its value (only type)
         """
         # interpret the statement recursively
         if isinstance(token, Statement):
             result = self.execute_single(statement=token)
-        elif isinstance(token, Array):
-            token._tokens = [self.execute_single(s) for s in token.value]
-            result = token
         else:
             result = token
 
@@ -126,11 +127,12 @@ class ScopeAnalyzer(BaseInterpreter):
         if base_tokens and base_tokens[0] == Keyword('#define'):
             return outcome
         elif len(base_tokens) == 2 and base_tokens[0] == Keyword('private'):
+            # the rhs may be a variable, so we cannot get the value
             rhs = self.execute_token(base_tokens[1])
             if isinstance(rhs, String):
                 self.add_privates([rhs])
             elif isinstance(rhs, Array):
-                self.add_privates(rhs.value)
+                self.add_privates(self.value(rhs))
             elif isinstance(rhs, Variable):
                 self.add_privates([String('"' + rhs.name + '"')])
                 outcome = PrivateType(rhs)
@@ -146,7 +148,8 @@ class ScopeAnalyzer(BaseInterpreter):
                 lhs = lhs.variable
             else:
                 lhs = self.get_variable(base_tokens[0])
-            rhs = self.execute_token(base_tokens[2])
+
+            rhs_v = self.value(base_tokens[2])
 
             if not isinstance(lhs, Variable):
                 self.exception(SQFSyntaxError(statement.position, 'lhs of assignment operator cannot be a literal'))
@@ -156,8 +159,8 @@ class ScopeAnalyzer(BaseInterpreter):
                     self.exception(SQFWarning(lhs.position,
                                               'Local variable "%s" assigned to an outer scope (not private)' % lhs.name))
 
-                scope[lhs.name] = self.value(rhs)
-                outcome = rhs
+                scope[lhs.name] = rhs_v
+                outcome = rhs_v
             if statement.ending:
                 outcome = Nothing
             return outcome
@@ -168,7 +171,7 @@ class ScopeAnalyzer(BaseInterpreter):
         # evaluate all the base_tokens, trying to obtain their values
         values = []
         for token in base_tokens:
-            v = self.value(self.execute_token(token))
+            v = self.value(token)
             values.append(v)
 
         # try to find a match for any expression, both typed and un-typed
