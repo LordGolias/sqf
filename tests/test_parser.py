@@ -495,6 +495,14 @@ class ParseArray(ParserTestCase):
 
         self.assertEqual(expected, result, code)
 
+    def test_or_together(self):
+        code = '||isNull'
+        result = parse(code)
+        expected = Statement([Statement([
+            Keyword('||'), Keyword('isNull')
+        ])])
+        self.assertEqualStatement(expected, result, code)
+
 
 class ParseLineComments(ParserTestCase):
 
