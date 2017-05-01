@@ -10,7 +10,7 @@ class Scope:
     def __init__(self, level, values=None):
         if values is None:
             values = {}
-        self.values = values
+        self.values = {key.lower(): values[key] for key in values}
         self.level = level
 
     def __contains__(self, other):

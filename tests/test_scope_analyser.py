@@ -13,6 +13,12 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_insensitive__foreachindex(self):
+        code = '{_foreachindex, _X} forEach [0]'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
     def test_warn_not_in_scope(self):
         analyser = interpret(parse('private _y = _z;'))
         errors = analyser.exceptions
