@@ -6,6 +6,11 @@ from sqf.analyser import analyze
 
 class AnalyserTestCase(TestCase):
 
+    def test_missing_op(self):
+        code = '_x 2'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+
     def test_statement(self):
         code = '_x=2 _y=3;'
         result = parse(code)
@@ -157,3 +162,8 @@ class SwitchTestCase(TestCase):
         code = 'CHECK(_x)'
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 0)
+
+    def test_array(self):
+        code = '[{3 2},0,0];'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)

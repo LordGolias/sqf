@@ -176,6 +176,7 @@ class Variable(Type):
     def name(self):
         return self._name
 
+    @property
     def is_global(self):
         return self.name[0] != '_'
 

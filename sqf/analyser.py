@@ -103,6 +103,10 @@ def analyze(statement, exceptions=None):
         if isinstance(s, Statement):
             check_statement(s.base_tokens, exceptions)
             analyze(s, exceptions=exceptions)
+        elif isinstance(s, Array):
+            for s_s in s.value:
+                check_statement(s_s.base_tokens, exceptions)
+                analyze(s_s, exceptions)
         elif isinstance(s, Code):
             analyze(s, exceptions=exceptions)
 
