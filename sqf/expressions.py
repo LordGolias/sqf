@@ -40,6 +40,14 @@ class Expression:
         raise NotImplementedError
 
 
+class InterpreterExpression:
+    """
+    This is an expression whose evaluation is just the return of an InterpreterType.
+    These can be evaluated safely without the risk of changing the state.
+    """
+    pass
+
+
 class UnaryExpression(Expression):
     def __init__(self, op, rhs_type, action, tests=None):
         assert (isinstance(op, Keyword))
@@ -152,7 +160,7 @@ def _while_loop(interpreter, condition_code, do_code):
     return outcome
 
 
-class WhileExpression(UnaryExpression):
+class WhileExpression(UnaryExpression, InterpreterExpression):
     """
     Catches `While {}` expression and stores it as a WhileType
     """
@@ -167,7 +175,7 @@ class WhileDoExpression(BinaryExpression):
                          lambda lhs, rhs, i: _while_loop(i, lhs.condition, rhs))
 
 
-class ForSpecExpression(UnaryExpression):
+class ForSpecExpression(UnaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(KeywordControl('for'), Array,
                          lambda v, i: ForSpecType(v), [lambda values: len(values[1]) == 3])
@@ -193,24 +201,24 @@ class ForSpecDoExpression(BinaryExpression):
                          lambda lhs, rhs, i: _forspecs_loop(i, lhs.array[0], lhs.array[1], lhs.array[2], rhs))
 
 
-class ForExpression(UnaryExpression):
+class ForExpression(UnaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(KeywordControl('for'), String, lambda rhs, i: ForType(rhs))
 
 
-class ForFromExpression(BinaryExpression):
+class ForFromExpression(BinaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(ForType, KeywordControl('from'), Number,
                          lambda lhs, rhs, i: ForFromType(lhs.variable, rhs))
 
 
-class ForFromToExpression(BinaryExpression):
+class ForFromToExpression(BinaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(ForFromType, KeywordControl('to'), Number,
                          lambda lhs, rhs, i: ForFromToStepType(lhs.variable, lhs.from_, rhs))
 
 
-class ForFromToStepExpression(BinaryExpression):
+class ForFromToStepExpression(BinaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(ForFromToStepType, KeywordControl('step'), Number,
                          lambda lhs, rhs, i: ForFromToStepType(lhs.variable, lhs.from_, lhs.to, rhs))
@@ -230,7 +238,7 @@ class ForFromToDoExpression(BinaryExpression):
                              i, lhs.variable.value, lhs.from_.value, lhs.to.value, lhs.step.value, rhs))
 
 
-class SwitchExpression(UnaryExpression):
+class SwitchExpression(UnaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(KeywordControl('switch'), Type,
                          lambda v, i: SwitchType(v))
@@ -288,7 +296,7 @@ class SwitchDoExpression(BinaryExpression):
                          lambda lhs, rhs, i: _switch(i, lhs.result, rhs))
 
 
-class IfExpression(UnaryExpression):
+class IfExpression(UnaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(KeywordControl('if'), Boolean,
                          lambda v, i: IfType(v))
@@ -311,7 +319,7 @@ class IfThenExpression(BinaryExpression):
                          lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs))
 
 
-class ElseExpression(BinaryExpression):
+class ElseExpression(BinaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(Code, KeywordControl('else'), Code,
                          lambda lhs, rhs, i: ElseType(lhs, rhs))

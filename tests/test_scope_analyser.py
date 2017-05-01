@@ -173,6 +173,18 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_while(self):
+        code = 'while {true} do {_x = 2}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_for_specs(self):
+        code = 'for [{_x = 1},{_x <= 10},{_x = _x + 1}] do {_y = _y + 2}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 6)
+
 
 class ScopeAnalyserDefineTestCase(TestCase):
 

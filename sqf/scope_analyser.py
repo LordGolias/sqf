@@ -1,7 +1,11 @@
-from sqf.expressions import ForExpression, ForFromExpression, ForFromToExpression, ForFromToStepExpression, \
-    ForFromToDoExpression, IfExpression, ElseExpression, IfThenExpression, IfThenSpecExpression, IfThenElseExpression
+import copy
+
+from sqf.expressions import InterpreterExpression, EXPRESSIONS, \
+    IfThenExpression, IfThenSpecExpression, IfThenElseExpression, \
+    ForFromToDoExpression, ForSpecDoExpression, \
+    WhileDoExpression
 from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
-from sqf.interpreter_types import PrivateType
+from sqf.interpreter_types import PrivateType, InterpreterType
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFSyntaxError, SQFWarning
 from sqf.base_interpreter import BaseInterpreter
@@ -10,24 +14,18 @@ from sqf.base_interpreter import BaseInterpreter
 CONSTANT_VALUES = (String, Code, ConstantValue, Number, Boolean, Keyword, Variable, Array)
 
 
-EXPRESSIONS = [
-    ForExpression(),
-    ForFromExpression(),
-    ForFromToExpression(),
-    ForFromToStepExpression(),
-    ForFromToDoExpression(),
+UNTYPED_EXPRESSIONS = copy.deepcopy(EXPRESSIONS)
 
-    IfExpression(),
-    ElseExpression(),
-    IfThenElseExpression(),
-    IfThenExpression(),
-    IfThenSpecExpression(),
-]
+
+# the function that every non-typed expression runs. It just executes every element.
+def execute(values, interpreter):
+    [interpreter.value(x) for x in values]
+    return Nothing
 
 # replace all occurrences of constant types by `Type` so the expressions are matched even when
 # the types are unknown
 TYPES_TO_REPLACE = (String, ConstantValue, Number, Boolean, Array)
-for x in EXPRESSIONS:
+for x in UNTYPED_EXPRESSIONS:
     types_or_values = []
     for ts_or_vs in x.types_or_values:
         if not isinstance(ts_or_vs, (list, tuple)):
@@ -50,6 +48,12 @@ for x in EXPRESSIONS:
                     list_.append(t_or_v)
             types_or_values.append(list_)
     x.types_or_values = types_or_values
+    if not isinstance(x, InterpreterExpression):
+        x.execute = execute
+
+
+# This allows to first get the typed expressions, and only then try the unknown expressions.
+EXPRESSIONS = EXPRESSIONS + UNTYPED_EXPRESSIONS
 
 
 class ScopeAnalyzer(BaseInterpreter):
@@ -145,6 +149,11 @@ class ScopeAnalyzer(BaseInterpreter):
                 self.execute_code(tokens[2].value[1])
             elif type(case_found) == ForFromToDoExpression:
                 outcome = self.execute_code(tokens[2], extra_scope={tokens[0].variable.value: Number(0)})
+            elif type(case_found) == ForSpecDoExpression:
+                for code in [tokens[0].array[0], tokens[0].array[1], tokens[0].array[2], tokens[2]]:
+                    outcome = self.execute_code(code)
+            elif type(case_found) == WhileDoExpression:
+                outcome = self.execute_code(tokens[2])
             else:
                 outcome = case_found.execute(tokens, self)
 
