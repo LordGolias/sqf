@@ -204,6 +204,37 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
 
+    def test_foreach(self):
+        code = '{hint str _x} forEach [1,2]'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_foreach_error(self):
+        code = '{hint str _y} forEach [1,2]'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_foreach_empty(self):
+        code = '{hint str _x} forEach []'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_foreach_variable(self):
+        code = '{hint str _y} forEach _d;'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 2)
+
+    def test_no_space(self):
+        code = 'x set[_cIndex, 2]'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 7), errors[0].position)
+
 
 class ScopeAnalyserDefineTestCase(TestCase):
 

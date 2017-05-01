@@ -3,15 +3,12 @@ import copy
 from sqf.expressions import InterpreterExpression, EXPRESSIONS, \
     IfThenExpression, IfThenSpecExpression, IfThenElseExpression, \
     ForFromToDoExpression, ForSpecDoExpression, \
-    WhileDoExpression
-from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
+    WhileDoExpression, ForEachExpression
+from sqf.types import Statement, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
 from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFSyntaxError, SQFWarning
 from sqf.base_interpreter import BaseInterpreter
-
-
-CONSTANT_VALUES = (String, Code, ConstantValue, Number, Boolean, Keyword, Variable, Array)
 
 
 UNTYPED_EXPRESSIONS = copy.deepcopy(EXPRESSIONS)
@@ -48,7 +45,7 @@ for x in UNTYPED_EXPRESSIONS:
                     list_.append(t_or_v)
             types_or_values.append(list_)
     x.types_or_values = types_or_values
-    if not isinstance(x, InterpreterExpression):
+    if not isinstance(x, InterpreterExpression) and type(x) != ForEachExpression:
         x.execute = execute
 
 
@@ -75,6 +72,9 @@ class ScopeAnalyzer(BaseInterpreter):
                 self.exception(SQFWarning(token.position, 'Local variable "%s" is not from this scope (not private)' % token))
 
             return scope[token.name]
+        elif isinstance(token, Array):
+            token._tokens = [self.value(s) for s in token.value]
+            return token
         else:
             return token
 
@@ -86,7 +86,8 @@ class ScopeAnalyzer(BaseInterpreter):
         if isinstance(token, Statement):
             result = self.execute_single(statement=token)
         elif isinstance(token, Array):
-            result = Array([self.execute_token(s) for s in token.value if s])
+            token._tokens = [self.execute_single(s) for s in token.value]
+            result = token
         else:
             result = token
 
@@ -194,6 +195,14 @@ class ScopeAnalyzer(BaseInterpreter):
                     outcome = self.execute_code(code)
             elif type(case_found) == WhileDoExpression:
                 outcome = self.execute_code(values[2])
+            elif type(case_found) == ForEachExpression:
+                # let us execute it for a single element. That element is either the first element
+                # of the list, or Nothing
+                if isinstance(values[2], Array) and len(values[2].value) != 0:
+                    element = values[2].value[0]
+                else:
+                    element = Nothing
+                outcome = case_found.execute([values[0], values[1], Array([element])], self)
             else:
                 try:
                     outcome = case_found.execute(values, self)

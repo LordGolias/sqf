@@ -238,6 +238,19 @@ class ForFromToDoExpression(BinaryExpression):
                              i, lhs.variable.value, lhs.from_.value, lhs.to.value, lhs.step.value, rhs))
 
 
+def _foreach_loop(interpreter, code, elements):
+    outcome = Nothing
+    for i, x in enumerate(elements):
+        outcome = interpreter.execute_code(code, extra_scope={'_x': x, '_forEachIndex': i})
+    return outcome
+
+
+class ForEachExpression(BinaryExpression):
+    def __init__(self):
+        super().__init__(Code, KeywordControl('forEach'), Array,
+                         lambda lhs, rhs, i: _foreach_loop(i, lhs, rhs.value))
+
+
 class SwitchExpression(UnaryExpression, InterpreterExpression):
     def __init__(self):
         super().__init__(KeywordControl('switch'), Type,
@@ -396,6 +409,7 @@ def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
 
 
 EXPRESSIONS = [
+    ForEachExpression(),
     WhileExpression(),
     WhileDoExpression(),
 
