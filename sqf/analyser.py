@@ -59,17 +59,6 @@ def check_statement(tokens, exceptions):
             exception = SQFParserError(tokens[0].position, "Wrong syntax for #include")
             exceptions.append(exception)
         return
-    if tokens[0] == KeywordControl('case'):
-        if len(tokens) > 2 and tokens[2] != Keyword(":"):
-            exception = SQFParserError(tokens[2].position, "'case' 3rd part must be ':'")
-            exceptions.append(exception)
-        if len(tokens) > 3 and type(tokens[3]) not in (Code, Variable):
-            exception = SQFParserError(tokens[3].position, "'case' 4th part must be code")
-            exceptions.append(exception)
-        if len(tokens) != 4:
-            exception = SQFParserError(tokens[0].position, "'case' is a 4-part clause")
-            exceptions.append(exception)
-        return
 
     for i, t in enumerate(tokens):
         if i != len(tokens) - 1:

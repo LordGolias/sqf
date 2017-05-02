@@ -329,3 +329,37 @@ class ParseSwitchTest(TestCase):
         self.assertEqual(conditions[0], (String('"blue"'), None))
         self.assertEqual(conditions[1], (String('"red"'), Code([Statement([Boolean(False)])])))
         self.assertEqual(conditions[2], ('default', Code([Statement([Boolean(False)])])))
+
+    def test_case_not_code(self):
+        code = 'switch (x) do {case 1: 2}'
+        analyser = interpret(parse(code))
+        self.assertEqual(len(analyser.exceptions), 1)
+        self.assertEqual((1, 24), analyser.exceptions[0].position)
+
+    def test_incomplete_case(self):
+        code = 'switch (x) do {case 1: }'
+        analyser = interpret(parse(code))
+        self.assertEqual(len(analyser.exceptions), 1)
+        self.assertEqual((1, 16), analyser.exceptions[0].position)
+
+    def test_no_double_colon(self):
+        code = 'switch (0) do {case 1, {"one"};}'
+        analyser = interpret(parse(code))
+        self.assertEqual(len(analyser.exceptions), 1)
+        self.assertEqual((1, 22), analyser.exceptions[0].position)
+
+    def test_case_with_variable_code(self):
+        code = 'switch (x) do {case 1: _y}'
+        analyser = interpret(parse(code))
+        self.assertEqual(len(analyser.exceptions), 1)
+
+    def test_default(self):
+        code = 'switch (x) do {default {[]}}'
+        analyser = interpret(parse(code))
+        self.assertEqual(len(analyser.exceptions), 0)
+
+    def test_default_error(self):
+        code = 'switch (x) do {default : {[]}}'
+        analyser = interpret(parse(code))
+        self.assertEqual(len(analyser.exceptions), 1)
+        self.assertEqual((1, 24), analyser.exceptions[0].position)

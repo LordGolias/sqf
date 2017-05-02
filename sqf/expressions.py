@@ -269,17 +269,30 @@ def parse_switch(interpreter, code):
             if default_used:
                 interpreter.exception(SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`'))
             default_used = True
-            conditions.append(('default', base_tokens[1]))
-        elif base_tokens[0] == KeywordControl('case') and (
-                    len(base_tokens) == 2 or
-                    len(base_tokens) == 4 and base_tokens[2] == Keyword(':')):
-            condition_statement = base_tokens[1]
             if len(base_tokens) == 2:
-                outcome_statement = None
+                if isinstance(base_tokens[1], (Variable, Code)):
+                    conditions.append(('default', base_tokens[1]))
+                else:
+                    interpreter.exception(
+                        SQFSyntaxError(base_tokens[1].position, '"default" 2nd argument must be code'))
             else:
-                outcome_statement = base_tokens[3]
-
-            conditions.append((condition_statement, outcome_statement))
+                interpreter.exception(
+                    SQFSyntaxError(base_tokens[1].position, '"default" must contain 2 clauses'))
+        elif base_tokens[0] == KeywordControl('case'):
+            if len(base_tokens) == 2:
+                condition_statement = base_tokens[1]
+                conditions.append((condition_statement, None))
+            elif len(base_tokens) == 4:
+                if base_tokens[2] == Keyword(':'):
+                    condition_statement = base_tokens[1]
+                    outcome_statement = base_tokens[3]
+                    conditions.append((condition_statement, outcome_statement))
+                else:
+                    interpreter.exception(
+                        SQFSyntaxError(base_tokens[2].position, '"case" second argument must be ":"'))
+            else:
+                interpreter.exception(
+                    SQFSyntaxError(statement.position, '"case" must be a 2 or 4 statement'))
         else:
             interpreter.exception(SQFSyntaxError(statement.position, 'Switch code can only start with "case" or "default"'))
 

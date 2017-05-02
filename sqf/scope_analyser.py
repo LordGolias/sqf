@@ -211,8 +211,12 @@ class ScopeAnalyzer(BaseInterpreter):
                 for condition, outcome in conditions:
                     if condition != 'default':
                         self.value(condition)
-                    if outcome is not None and isinstance(outcome, Code):
-                        self.execute_code(outcome)
+                    if outcome is not None:
+                        outcome = self.value(outcome)
+                        if isinstance(outcome, Code):
+                            self.execute_code(outcome)
+                        elif outcome != Nothing:
+                            self.exception(SQFWarning(outcome.position, "'case' 4th part must be code"))
                 outcome = Nothing
             else:
                 try:

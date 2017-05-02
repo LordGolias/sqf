@@ -117,12 +117,6 @@ class AnalyserTestCase(TestCase):
 
 class SwitchTestCase(TestCase):
 
-    def test_no_double_colon(self):
-        code = 'switch (0) do {case 1, {"one"};}'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 22), errors[0].position)
-
     def test_not_statement(self):
         code = 'switch (1) do {case 1: {"one"};}'
         errors = analyze(parse(code))
@@ -138,34 +132,6 @@ class SwitchTestCase(TestCase):
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 13), errors[0].position)
-
-    def test_incomplete_case(self):
-        code = 'switch (_x) do {case 1: }'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 17), errors[0].position)
-
-    def test_case_without_code(self):
-        code = 'switch (_x) do {case 1: 2}'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 25), errors[0].position)
-
-    def test_case_with_variable_code(self):
-        code = 'switch (_x) do {case 1: _y}'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 0)
-
-    def test_default(self):
-        code = 'default {[]};'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 0)
-
-    def test_default_error(self):
-        code = 'default : {[]};'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 9), errors[0].position)
 
     def test_defines(self):
         # ignore "macros" (not correct since CHECK may not be defined, bot for that we need a pre-processor)
