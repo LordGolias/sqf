@@ -125,6 +125,12 @@ class ParseCode(ParserTestCase):
         self.assertTrue(isinstance(result[4], String))
         self.assertEqual('', result[4].value)
 
+    def test_parse_windows_eol(self):
+        code = '_x\r\n'
+        result = parse(code)
+        expected = Statement([Statement([V('_x'), EndOfLine('\r\n')])])
+        self.assertEqualStatement(expected, result, code)
+
     def test_parse_bool(self):
         code = '_x=true;'
         result = parse(code)
@@ -348,7 +354,7 @@ class ParseCode(ParserTestCase):
                 ])]),
                 Statement([
                     Statement([
-                        EndOfLine(), V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
+                        EndOfLine('\n'), V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
                 ])
             ])
 
@@ -559,7 +565,7 @@ class ParseBlockComments(ParserTestCase):
             Keyword('='),
             N(2)], ending=True),
             Statement([Statement([Comment('/* the two \n the three\n the four\n */'),
-                                  EndOfLine(), V('_x')]), Keyword('='), N(3)])
+                                  EndOfLine('\n'), V('_x')]), Keyword('='), N(3)])
         ])
 
         self.assertEqualStatement(expected, result, code)
@@ -572,7 +578,7 @@ class ParseBlockComments(ParserTestCase):
             Keyword('='),
             N(2)], ending=True),
             Statement(
-                [Statement([Comment('/* // two four\n */'), EndOfLine(), V('_x')]), Keyword('='), N(3)])
+                [Statement([Comment('/* // two four\n */'), EndOfLine('\n'), V('_x')]), Keyword('='), N(3)])
         ])
 
         self.assertEqualStatement(expected, result, code)

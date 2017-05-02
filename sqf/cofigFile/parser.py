@@ -11,8 +11,8 @@ def identify_token(token):
         return token
     elif token == ' ':
         return Space()
-    elif token == '\n':
-        return EndOfLine()
+    elif token in ('\n', '\r\n'):
+        return EndOfLine(token)
     elif token == '\t':
         return Tab()
     elif token in ('class', '(', ')', '[', ']', '{', '}', ';', '=', ','):

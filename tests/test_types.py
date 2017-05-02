@@ -54,7 +54,7 @@ class TestGetPosition(TestCase):
                     N(2)], ending=True),
                 Statement([
                     Statement([Comment('/* the two \n the three\n the four\n */'),
-                               EndOfLine(),
+                               EndOfLine('\n'),
                                V('_x')]),
                     Keyword('='),
                     N(3)

@@ -39,8 +39,13 @@ class Tab(ParserType):
 
 
 class EndOfLine(ParserType):
+    def __init__(self, value):
+        super().__init__()
+        assert(value in ['\n', '\r\n'])
+        self.value = value
+
     def __str__(self):
-        return '\n'
+        return self.value
 
     def __repr__(self):
         return '<EOL>'

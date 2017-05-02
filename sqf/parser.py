@@ -27,8 +27,8 @@ def identify_token(token):
         return Tab()
     if token == '\\\n':
         return BrokenEndOfLine()
-    if token == '\n':
-        return EndOfLine()
+    if token in ('\n', '\r\n'):
+        return EndOfLine(token)
     if token in ('true', 'false'):
         return Boolean(token == 'true')
     try:
@@ -240,7 +240,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
             statements.append(expression)
             i += size - 1
-        elif token == EndOfLine() and (lvls['#define'] != 0 or lvls['#include'] != 0):
+        elif type(token) == EndOfLine and (lvls['#define'] != 0 or lvls['#include'] != 0):
             statements.append(analyse_tokens(tokens))
 
             return Statement(statements), i - start
