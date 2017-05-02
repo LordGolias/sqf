@@ -8,7 +8,7 @@ setup(
     description='A SQF (Arma) linter',
     url='https://github.com/LordGolias/sqf',
     license='BSD',
-    py_modules=['sqf'],
+    packages=['sqf'],
     include_package_data=True,
     scripts=[
         'sqflint.py'
