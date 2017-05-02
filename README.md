@@ -67,10 +67,12 @@ You can install it by going to its directory and running:
 The code is heavily tested (coverage 98%+), and the tests
 can be found in `tests.py`. Run them using standard Python unittest.
 
-## SQF Lint
+## Compatibility with editors
 
-This code is fully compatible with [atom-linter](https://atomlinter.github.io/).
-The script `sqflint.py` is the public interface for the [linter-sqf](https://github.com/LordGolias/linter-sqf).
+* [atom-linter](https://atomlinter.github.io/): [linter-sqf](https://github.com/LordGolias/linter-sqf)
+* [sublimeLinter](http://www.sublimelinter.com/en/latest/): [SublimeLinter-contrib-sqflint](https://github.com/LordGolias/SublimeLinter-contrib-sqflint)
+
+The script `sqflint.py` is the public interface for linting.
 
 ## Features
 
