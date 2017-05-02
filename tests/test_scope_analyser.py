@@ -313,6 +313,13 @@ class ScopeAnalyzerArrays(TestCase):
         self.assertEqual(len(errors), 2)
         self.assertEqual((3, 8), errors[1].position)
 
+    def test_position_of_array(self):
+        code = 'y = if (x) then[{hint _x}, {damage _y}];'
+        analyser = interpret(parse(code))
+        self.assertEqual(len(analyser.exceptions), 2)
+        self.assertEqual((1, 35), analyser.exceptions[1].position)
+        self.assertEqual((1, 23), analyser.exceptions[0].position)
+
 
 class ParseSwitchTest(TestCase):
     def test_parse_switch_code(self):

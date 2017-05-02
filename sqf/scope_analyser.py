@@ -78,7 +78,12 @@ class ScopeAnalyzer(BaseInterpreter):
 
             return scope[token.name]
         elif isinstance(token, Array):
-            return Array([self.value(s) for s in token.value])
+            result = Array([self.value(s) for s in token.value])
+            # emulate the parent and position of the result so its position
+            # is computed in relation to the token._parent.
+            result._parent = token._parent
+            result._parent_index = token._parent_index
+            return result
         else:
             return token
 
