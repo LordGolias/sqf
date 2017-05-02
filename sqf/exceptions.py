@@ -20,7 +20,7 @@ class SQFParserError(SQFParserException):
         super().__init__(position, "error:%s" % message)
 
 
-class SQFParenthesisError(SQFParserException):
+class SQFParenthesisError(SQFParserError):
     pass
 
 
