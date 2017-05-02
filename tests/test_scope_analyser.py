@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from sqf.expressions import parse_switch
-from sqf.types import Number, String, Boolean, Code, Statement
+from sqf.types import Number, String, Boolean, Code, Statement, Variable
 from sqf.parser import parse
 from sqf.scope_analyser import interpret
 
@@ -249,6 +249,19 @@ class ScopeAnalyserTestCase(TestCase):
 
     def test_case_by_variable(self):
         code = 'switch (a) do {case "blue": x; case "red": {false}}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_get_variable_default(self):
+        code = 'private _x = missionNamespace getVariable ["x", 2];'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(2), analyser.value(Variable('_x')))
+
+    def test_get_variable_unknown_first_element(self):
+        code = 'missionNamespace getVariable[format["x_%1",x],[]];'
         analyser = interpret(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)

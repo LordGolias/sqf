@@ -399,10 +399,10 @@ def _setVariable(lhs_v, rhs_v, interpreter):
     # get the variable name
     variable_name = rhs_v.value[0].value
     # get the value
-    rhs_assignment = interpreter.execute_token(rhs_v.value[1])[1]
+    rhs_assignment = rhs_v.value[1]
 
-    variable_scope = interpreter.get_scope(variable_name, namespace_name)
-    variable_scope[variable_name] = rhs_assignment
+    scope = interpreter.get_scope(variable_name, namespace_name)
+    scope[variable_name] = rhs_assignment
     return Nothing
 
 
@@ -474,11 +474,14 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('call'), Code, lambda rhs_v, i: i.execute_code(rhs_v)),
     BinaryExpression(Array, Keyword('call'), Code, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, params=lhs_v)),
 
-    BinaryExpression(Namespace, Keyword('setVariable'), Array, _setVariable, tests=[lambda values: len(values[2].value) == 2]),
+    BinaryExpression(Namespace, Keyword('setVariable'), Array, _setVariable,
+                     tests=[lambda values: len(values[2].value) in [2,3],
+                            lambda values: type(values[2].value[0]) == String]),
 
     BinaryExpression(Namespace, Keyword('getVariable'), String, _getVariableString),
     BinaryExpression(Namespace, Keyword('getVariable'), Array, _getVariableArray,
-                     tests=[lambda values: len(values[2].value) == 2]),
+                     tests=[lambda values: len(values[2].value) == 2,
+                            lambda values: type(values[2].value[0]) == String]),
 
     BinaryExpression(String, Keyword('addPublicVariableEventHandler'), Code, _addPublicVariableEventHandler),
 
