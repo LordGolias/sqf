@@ -10,6 +10,9 @@ setup(
     license='BSD',
     py_modules=['sqf'],
     include_package_data=True,
+    scripts=[
+        'sqflint.py'
+    ],
     entry_points={
         'console_scripts': [
             'sqflint = sqflint:_main',
