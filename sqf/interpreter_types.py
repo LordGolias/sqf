@@ -73,3 +73,10 @@ class ElseType(InterpreterType):
         super().__init__()
         self.then = then
         self.else_ = else_
+
+
+class TryType(InterpreterType):
+    def __init__(self, code):
+        assert (isinstance(code, Type))
+        super().__init__()
+        self.code = code

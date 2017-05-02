@@ -266,6 +266,12 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_try_catch(self):
+        code = 'try {hint _x} catch {hint _y; hint _exception}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 2)
+
 
 class ScopeAnalyserDefineTestCase(TestCase):
 

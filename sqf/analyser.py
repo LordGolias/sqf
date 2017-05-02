@@ -28,19 +28,16 @@ EXCEPTIONS = [
     lambda t,tp1: t == KeywordControl("for") and type(tp1) in (String, Statement, Variable),
     lambda t,tp1: t == KeywordControl("if") and type(tp1) in (Statement,),
     lambda t,tp1: t == KeywordControl("switch") and type(tp1) in switchTypes,
-    lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Statement, Variable),
-    lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Statement, Variable),
+    lambda t,tp1: t in (KeywordControl("exitWith"), KeywordControl("then"), KeywordControl("try"), KeywordControl("do"), KeywordControl("else"), KeywordControl("catch"))
+                  and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("step") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Array, Code, Statement, Variable),
-    lambda t,tp1: t == KeywordControl("do") and type(tp1) in (Code, Statement, Variable),
-    lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: type(t) == Code and tp1 == KeywordControl("forEach"),
     lambda t,tp1: t == KeywordControl("forEach") and type(tp1) in [Array, Statement, Variable],
-    lambda t,tp1: tp1 in [KeywordControl('exitWith'), KeywordControl("then"), KeywordControl("to"), KeywordControl("from"), KeywordControl("do"), KeywordControl("step"), KeywordControl("else")],
+    lambda t,tp1: tp1 in [KeywordControl('exitWith'), KeywordControl("then"), KeywordControl("to"), KeywordControl("from"), KeywordControl("do"), KeywordControl("step"), KeywordControl("else"), KeywordControl("catch")],
     lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("case"),
-    lambda t,tp1: t == KeywordControl("else") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: type(t) == Code and tp1 == KeywordControl("else"),
 ]
 

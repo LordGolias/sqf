@@ -1,24 +1,39 @@
 import sys
+import argparse
 
 from sqf.parser import parse
-from sqf.analyser import analyze
+import sqf.analyser
 from sqf.scope_analyser import interpret
 from sqf.exceptions import SQFParserError
 
 
-def _main():
-    text = sys.stdin.read()
-
+def analyze(code, writer=sys.stdout.write):
     try:
-        result = parse(text)
+        result = parse(code)
     except SQFParserError as e:
-        sys.stdout.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
+        writer('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
         return
 
-    exceptions = analyze(result)
+    exceptions = sqf.analyser.analyze(result)
     exceptions += interpret(result).exceptions
     for e in exceptions:
-        sys.stdout.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
+        writer('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
+
+
+def _main():
+    parser = argparse.ArgumentParser(description="Static Analyser of SQF code")
+    parser.add_argument('filename', nargs='?', type=argparse.FileType('r'), default=None,
+                        help='The full path to the file to be analyzed')
+
+    args = parser.parse_args()
+
+    if args.filename is not None:
+        with open(args.filename) as file:
+            code = file.read()
+    else:
+        code = sys.stdin.read()
+
+    analyze(code)
 
 
 if __name__ == "__main__":

@@ -458,6 +458,21 @@ class ParseCode(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
+    def test_try_catch(self):
+        code = 'try {} catch {}'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        KeywordControl('try'),
+                        Statement([Space(), Code([]), Space()]),
+                    ]),
+                    KeywordControl('catch'),
+                    Statement([Space(), Code([])]),
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
 
 class ParseArray(ParserTestCase):
 

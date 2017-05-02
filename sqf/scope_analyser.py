@@ -2,7 +2,7 @@ import copy
 
 from sqf.expressions import InterpreterExpression, EXPRESSIONS, \
     IfThenExpression, IfThenSpecExpression, IfThenElseExpression, \
-    ForFromToDoExpression, ForSpecDoExpression, \
+    ForFromToDoExpression, ForSpecDoExpression, TryCatchExpression, \
     WhileDoExpression, ForEachExpression, SwitchDoExpression, parse_switch
 from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
 from sqf.interpreter_types import PrivateType
@@ -45,7 +45,7 @@ for x in UNTYPED_EXPRESSIONS:
                     list_.append(t_or_v)
             types_or_values.append(list_)
     x.types_or_values = types_or_values
-    if not isinstance(x, InterpreterExpression) and type(x) != ForEachExpression:
+    if not isinstance(x, InterpreterExpression) and type(x) not in (ForEachExpression, TryCatchExpression):
         x.execute = execute
 
 

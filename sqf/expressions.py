@@ -3,7 +3,7 @@ import math
 from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
 from sqf.keywords import Keyword, KeywordControl, Namespace
 from sqf.interpreter_types import WhileType, \
-    ForType, ForFromType, ForFromToStepType, ForSpecType, SwitchType, IfType, ElseType
+    ForType, ForFromType, ForFromToStepType, ForSpecType, SwitchType, IfType, ElseType, TryType
 from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 
@@ -379,6 +379,25 @@ class IfThenSpecExpression(BinaryExpression):
                          lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs.value[0], rhs.value[1]))
 
 
+def _try_catch(interpreter, try_code, catch_code):
+    result = interpreter.execute_code(try_code)
+    # todo: find a way to execute catch_code on error
+    interpreter.execute_code(catch_code, extra_scope={'_exception': Nothing})
+    return result
+
+
+class TryExpression(UnaryExpression, InterpreterExpression):
+    def __init__(self):
+        super().__init__(KeywordControl('try'), Code,
+                         lambda v, i: TryType(v))
+
+
+class TryCatchExpression(BinaryExpression):
+    def __init__(self):
+        super().__init__(TryType, KeywordControl('catch'), Code,
+                         lambda lhs, rhs, i: _try_catch(i, lhs.code, rhs))
+
+
 def _select_array(lhs_v, rhs_v, _):
     start = rhs_v.value[0].value
     count = rhs_v.value[1].value
@@ -438,6 +457,9 @@ def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
 
 
 EXPRESSIONS = [
+    TryExpression(),
+    TryCatchExpression(),
+
     ForEachExpression(),
     WhileExpression(),
     WhileDoExpression(),
