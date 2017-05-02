@@ -9,7 +9,7 @@ class SQFParserException(SQFError):
     def __init__(self, position, message):
         assert(isinstance(position, tuple))
         self.position = position
-        self.message = message
+        self.message = message.replace("\n", "\\n").replace("\t", "\\t")
 
 
 class SQFParserError(SQFParserException):
