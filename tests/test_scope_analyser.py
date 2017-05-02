@@ -359,7 +359,7 @@ class ParseSwitchTest(TestCase):
         code = 'switch (0) do {case 1, {"one"};}'
         analyser = interpret(parse(code))
         self.assertEqual(len(analyser.exceptions), 1)
-        self.assertEqual((1, 22), analyser.exceptions[0].position)
+        self.assertEqual((1, 23), analyser.exceptions[0].position)
 
     def test_case_with_variable_code(self):
         code = 'switch (x) do {case 1: _y}'

@@ -336,7 +336,7 @@ class Switch(TestCase):
     def test_syntax_error(self):
         with self.assertRaises(SQFSyntaxError) as cm:
             interpret('switch (0) do {case (1), {"one"};}')
-        self.assertEqual((1, 24), cm.exception.position)
+        self.assertEqual((1, 25), cm.exception.position)
 
         with self.assertRaises(SQFSyntaxError) as cm:
             interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')

@@ -145,7 +145,7 @@ For example,
     >>> script = '_x=2;'
     >>> result = parse(script)
     >>> result
-    Statement([Statement([Variable('_x'), Keyword('='), Number(2)], ending=True)])
+    Statement([Statement([Variable('_x'), Keyword('='), Number(2)], ending=';')])
     >>> script == str(result) # True
 
 This rather convolved `result` takes into account operator precedence and

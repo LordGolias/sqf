@@ -26,7 +26,7 @@ class TestTypesToString(TestCase):
         self.assertEqual('Nothing', str(Nothing))
 
     def test_code(self):
-        self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), Keyword('='), N(2)], ending=True)])))
+        self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), Keyword('='), N(2)], ending=';')])))
 
 
 class CaseInsensitiveTests(TestCase):
@@ -51,7 +51,7 @@ class TestGetPosition(TestCase):
                 Statement([
                     V('_x'),
                     Keyword('='),
-                    N(2)], ending=True),
+                    N(2)], ending=';'),
                 Statement([
                     Statement([Comment('/* the two \n the three\n the four\n */'),
                                EndOfLine('\n'),

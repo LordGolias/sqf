@@ -131,10 +131,10 @@ def parse_comments(all_tokens):
 
 
 def _analyse_tokens(tokens):
-    ending = False
-    if tokens and tokens[-1] == Keyword(';'):
+    ending = ''
+    if tokens and tokens[-1] in (Keyword(';'), Keyword(',')):
+        ending = tokens[-1].value
         del tokens[-1]
-        ending = True
 
     statement = parse_exp(tokens, ORDERED_OPERATORS, Statement)
     if isinstance(statement, Statement):
@@ -167,7 +167,7 @@ def _analyse_array_tokens(tokens, tokens_until):
     return result
 
 
-def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls=None):
+def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls=None, stop_statement='both'):
     if not initial_lvls:
         initial_lvls = {'[]': 0, '()': 0, '{}': 0, '#define': 0, '#include': 0}
     lvls = initial_lvls.copy()
@@ -181,19 +181,19 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
         if token == Keyword('['):
             lvls['[]'] += 1
-            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls)
+            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls, stop_statement='single')
             lvls['[]'] -= 1
             tokens.append(expression)
             i += size + 1
         elif token == Keyword('('):
             lvls['()'] += 1
-            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls)
+            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls, stop_statement)
             lvls['()'] -= 1
             tokens.append(expression)
             i += size + 1
         elif token == Keyword('{'):
             lvls['{}'] += 1
-            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls)
+            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i + 1, lvls, stop_statement)
             lvls['{}'] -= 1
             tokens.append(expression)
             i += size + 1
@@ -203,7 +203,8 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
                 raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close right parenthesis without them opened.')
 
             if statements:
-                raise SQFParserError(get_coord(all_tokens[:i]), 'A statement %s cannot be in an array' % Statement(statements))
+               raise SQFParserError(get_coord(all_tokens[:i]), 'A statement %s cannot be in an array' % Statement(statements))
+
             return Array(analyse_array(tokens, all_tokens[:i])), i - start
         elif token == Keyword(')'):
             if lvls['()'] == 0:
@@ -221,7 +222,8 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
                 statements.append(analyse_tokens(tokens))
 
             return Code(statements), i - start
-        elif token == Keyword(';'):
+        elif stop_statement == 'both' and token in (Keyword(';'), Keyword(',')) or \
+            stop_statement == 'single' and token == Keyword(';'):
             tokens.append(token)
             statements.append(analyse_tokens(tokens))
             tokens = []
@@ -235,7 +237,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
             # repeat the loop for this token.
             lvls[token.value] += 1
-            expression, size = parse_block(all_tokens, lambda x: Statement(x), lambda x, _: [Statement(x)], i, lvls)
+            expression, size = parse_block(all_tokens, lambda x: Statement(x), lambda x, _: [Statement(x)], i, lvls, stop_statement)
             lvls[token.value] -= 1
 
             statements.append(expression)

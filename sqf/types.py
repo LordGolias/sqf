@@ -188,7 +188,7 @@ class Variable(Type):
 
 
 class _Statement(BaseTypeContainer):
-    def __init__(self, tokens, parenthesis=None, ending=False):
+    def __init__(self, tokens, parenthesis=None, ending=''):
         assert (isinstance(tokens, list))
         for i, s in enumerate(tokens):
             assert(isinstance(s, (Type, Keyword, Statement, ParserType)))
@@ -229,8 +229,8 @@ class _Statement(BaseTypeContainer):
                 as_str = '%s%s%s' % (self._parenthesis[0], as_str, self._parenthesis[1])
             else:
                 as_str = '%s%s' % (self._parenthesis[0], as_str)
-        if self.ending and up_to == len(self._tokens):
-            as_str += ';'
+        if up_to == len(self._tokens):
+            as_str += self.ending
         return as_str
 
     @property
@@ -243,7 +243,7 @@ class Statement(_Statement, BaseType):
     The main class for holding statements. It is a BaseType because it can be nested, and
     it is a _Statement because it can hold elements.
     """
-    def __init__(self, tokens, parenthesis=False, ending=False):
+    def __init__(self, tokens, parenthesis=False, ending=''):
         if parenthesis:
             parenthesis = '()'
         else:
