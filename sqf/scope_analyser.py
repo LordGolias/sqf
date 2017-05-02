@@ -3,8 +3,8 @@ import copy
 from sqf.expressions import InterpreterExpression, EXPRESSIONS, \
     IfThenExpression, IfThenSpecExpression, IfThenElseExpression, \
     ForFromToDoExpression, ForSpecDoExpression, \
-    WhileDoExpression, ForEachExpression
-from sqf.types import Statement, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
+    WhileDoExpression, ForEachExpression, SwitchDoExpression, parse_switch
+from sqf.types import Statement, Code, ConstantValue, Number, Boolean, Nothing, Variable, Array, String, Type
 from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFSyntaxError, SQFWarning
@@ -206,6 +206,14 @@ class ScopeAnalyzer(BaseInterpreter):
                 else:
                     element = Nothing
                 outcome = case_found.execute([values[0], values[1], Array([element])], self)
+            elif type(case_found) == SwitchDoExpression:
+                conditions = parse_switch(self, values[2])
+                for condition, outcome in conditions:
+                    if condition != 'default':
+                        self.value(condition)
+                    if outcome is not None and isinstance(outcome, Code):
+                        self.execute_code(outcome)
+                outcome = Nothing
             else:
                 try:
                     outcome = case_found.execute(values, self)

@@ -257,56 +257,72 @@ class SwitchExpression(UnaryExpression, InterpreterExpression):
                          lambda v, i: SwitchType(v))
 
 
-def _switch(interpreter, result, code):
-    default = None
-    outcome = None
-
-    # a flag that is set to True when a case is fulfilled and the next outcome_statement is to be run.
-    run_next = False
+def parse_switch(interpreter, code):
+    conditions = []
+    default_used = False
 
     for statement in code.base_tokens:
-        if not statement.base_tokens:
+        base_tokens = statement.base_tokens
+        if not base_tokens:
             pass
-        elif statement.base_tokens[0] == KeywordControl('default'):
-            if default is not None:
-                raise SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`')
-            default = statement.base_tokens[1]
-        elif statement.base_tokens[0] == KeywordControl('case') and (
-                    len(statement.base_tokens) == 2 or
-                    len(statement.base_tokens) == 4 and statement.base_tokens[2] == Keyword(':')):
-            condition_statement = statement.base_tokens[1]
-            if len(statement.base_tokens) == 2:
+        elif base_tokens[0] == KeywordControl('default'):
+            if default_used:
+                interpreter.exception(SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`'))
+            default_used = True
+            conditions.append(('default', base_tokens[1]))
+        elif base_tokens[0] == KeywordControl('case') and (
+                    len(base_tokens) == 2 or
+                    len(base_tokens) == 4 and base_tokens[2] == Keyword(':')):
+            condition_statement = base_tokens[1]
+            if len(base_tokens) == 2:
                 outcome_statement = None
             else:
-                outcome_statement = statement.base_tokens[3]
+                outcome_statement = base_tokens[3]
 
-            condition_outcome = interpreter.execute_token(condition_statement)[1]
+            conditions.append((condition_statement, outcome_statement))
+        else:
+            interpreter.exception(SQFSyntaxError(statement.position, 'Switch code can only start with "case" or "default"'))
 
-            if outcome_statement and run_next:
-                outcome = interpreter.execute_code(outcome_statement)
+    return conditions
+
+
+def execute_switch(interpreter, result, conditions):
+    try:
+        default = next(o for c, o in conditions if c == 'default')
+    except StopIteration:
+        default = None
+
+    final_outcome = None
+
+    execute_next = False
+    for condition, outcome in conditions:
+        if condition == 'default':
+            continue
+        condition_outcome = interpreter.value(condition)
+
+        if outcome is not None and execute_next:
+            final_outcome = interpreter.execute_code(outcome)
+            break
+        elif condition_outcome == result:
+            if outcome is not None:
+                final_outcome = interpreter.execute_code(outcome)
                 break
-            elif condition_outcome == result:
-                if outcome_statement:
-                    outcome = interpreter.execute_code(outcome_statement)
-                    break
-                else:
-                    run_next = True
-        else:
-            raise SQFSyntaxError(statement.position, 'Switch statement "%s" is syntactically wrong' % statement)
+            else:
+                execute_next = True
 
-    if outcome is None:
+    if final_outcome is None:
         if default is not None:
-            outcome = interpreter.execute_code(default)
+            final_outcome = interpreter.execute_code(default)
         else:
-            outcome = Boolean(True)
+            final_outcome = Boolean(True)
 
-    return outcome
+    return final_outcome
 
 
 class SwitchDoExpression(BinaryExpression):
     def __init__(self):
         super().__init__(SwitchType, KeywordControl('do'), Code,
-                         lambda lhs, rhs, i: _switch(i, lhs.result, rhs))
+                         lambda lhs, rhs, i: execute_switch(i, lhs.result, parse_switch(i, rhs)))
 
 
 class IfExpression(UnaryExpression, InterpreterExpression):

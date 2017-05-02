@@ -48,7 +48,9 @@ class BaseInterpreter:
         return other in self.values
 
     def value(self, token, namespace_name=None):
-        if isinstance(token, Variable):
+        if isinstance(token, Statement):
+            return self.value(self.execute_single(statement=token))
+        elif isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
             return scope[token.name]
         elif isinstance(token, (ConstantValue, Array, Number, Code, Keyword, InterpreterType)):

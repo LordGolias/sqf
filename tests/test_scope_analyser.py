@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from sqf.types import Number
+from sqf.expressions import parse_switch
+from sqf.types import Number, String, Boolean, Code, Statement
 from sqf.parser import parse
 from sqf.scope_analyser import interpret
 
@@ -240,6 +241,18 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_error_in_case(self):
+        code = 'switch (a) do {case "blue": {hint _x}; case "red": {false}}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_case_by_variable(self):
+        code = 'switch (a) do {case "blue": x; case "red": {false}}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class ScopeAnalyserDefineTestCase(TestCase):
 
@@ -287,3 +300,19 @@ class ScopeAnalyzerArrays(TestCase):
         self.assertEqual(len(errors), 2)
         self.assertEqual((3, 8), errors[1].position)
 
+
+class ParseSwitchTest(TestCase):
+    def test_parse_switch_code(self):
+        analyser = interpret(parse(""))
+        result = parse('{case "blue": {true}; case "red": {false}}')
+        conditions = parse_switch(analyser, result[0][0])
+        self.assertEqual(conditions[0], (String('"blue"'), Code([Statement([Boolean(True)])])))
+        self.assertEqual(conditions[1], (String('"red"'), Code([Statement([Boolean(False)])])))
+
+    def test_parse_with_next(self):
+        analyser = interpret(parse(""))
+        result = parse('{case "blue"; case "red": {false}; default {false}}')
+        conditions = parse_switch(analyser, result[0][0])
+        self.assertEqual(conditions[0], (String('"blue"'), None))
+        self.assertEqual(conditions[1], (String('"red"'), Code([Statement([Boolean(False)])])))
+        self.assertEqual(conditions[2], ('default', Code([Statement([Boolean(False)])])))
