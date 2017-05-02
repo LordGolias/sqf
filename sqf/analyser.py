@@ -32,7 +32,7 @@ EXCEPTIONS = [
     lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("to") and type(tp1) in (Number, Statement, Variable),
     lambda t,tp1: t == KeywordControl("step") and type(tp1) in (Number, Statement, Variable),
-    lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Code, Statement, Variable),
+    lambda t,tp1: t == KeywordControl("then") and type(tp1) in (Array, Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("do") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: t == KeywordControl("exitWith") and type(tp1) in (Code, Statement, Variable),
     lambda t,tp1: type(t) == Code and tp1 == KeywordControl("forEach"),

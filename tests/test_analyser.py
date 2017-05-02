@@ -109,6 +109,11 @@ class AnalyserTestCase(TestCase):
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 0)
 
+    def test_array_after_then(self):
+        code = 'then[];'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 0)
+
 
 class SwitchTestCase(TestCase):
 
