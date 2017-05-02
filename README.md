@@ -19,17 +19,35 @@ testing it in-game, by running the game.
 Often, these scripts contain simple errors (missing ";") that everyone would 
 love to avoid restarting the mission because of them.
 
-Yet, scripts are often focused on a specific functionality and thus 
-require only minor knowledge about the global state of the simulation (encapsulation). 
-Thus, in many situations, a script can be tested without the full simulation.
+This package allows to parse SQF in Python to check for syntactic errors,
+wrong types, problems in variables scopes, etc.
 
-The interpreter is intended to do exactly that: run scripts on an 
-emulated (and limited) environment of the simulation.
+The interpreter is able to run scripts on an emulated (and limited) environment of the simulation.
 The interpreter is obviously *not intended* to run Arma simulation; it is
 aimed for you, moder, run tests of your scripts (e.g. Unit Tests) 
 without having to run the game.
 
-## Example
+### Parser example
+
+    >>> code = '[1, 2, 3]'
+    >>> sqf.parser.parse(code)
+    Statement([Statement([
+        Array([Statement([N(1)]), Statement([Space(), N(2)]), Statement([Space(), N(3)])])
+    ])])
+
+### Analyzer examples
+
+    >>> code = 'if (true) {1}'
+    >>> errors = sqf.analyzer.analyze(sqf.parser.parse(code))
+    >>> errors[0]
+    SQFParserError((1, 11), "'(true)' can't preceed '{1}' (missing ';'?)")
+
+    >>> code = 'private _y = _z'
+    >>> analyser = sqf.scope_analyzer.interpret(sqf.parser.parse(code))
+    >>> analyser.exceptions[0]
+    SQFWarning((1, 14), 'Local variable "_z" is not from this scope (not private)')
+
+### Interpreter example
 
     from sqf.interpreter import interpret
     interpreter, outcome = interpret('_x = [1, 2]; _y = _x; reverse _y;')
@@ -40,19 +58,19 @@ without having to run the game.
 ## Requirements and installation
 
 This code is written in Python 3 and has no dependencies.
-You can install the code using the `setup.py` provided in the package:
+You can install it by going to its directory and running:
 
-    pip setup.py install
+    pip install .
 
 ## Tests and coverage
 
-The code is heavily tested (coverage 95%+), and the tests
+The code is heavily tested (coverage 98%+), and the tests
 can be found in `tests.py`. Run them using standard Python unittest.
 
 ## SQF Lint
 
-The script `sqflint.py` is the public interface for the linter. It currently
-supports parsing code (but not interpret it).
+This code is fully compatible with [atom-linter](https://atomlinter.github.io/).
+The script `sqflint.py` is the public interface for the [linter-sqf](https://github.com/LordGolias/linter-sqf).
 
 ## Features
 
