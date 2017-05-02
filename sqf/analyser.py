@@ -63,7 +63,7 @@ def check_statement(tokens, exceptions):
         if len(tokens) > 2 and tokens[2] != Keyword(":"):
             exception = SQFParserError(tokens[2].position, "'case' 3rd part must be ':'")
             exceptions.append(exception)
-        if len(tokens) > 3 and type(tokens[3]) != Code:
+        if len(tokens) > 3 and type(tokens[3]) not in (Code, Variable):
             exception = SQFParserError(tokens[3].position, "'case' 4th part must be code")
             exceptions.append(exception)
         if len(tokens) != 4:
@@ -76,7 +76,7 @@ def check_statement(tokens, exceptions):
             tp1 = tokens[i + 1]
 
             if t in (KeywordControl('default'), KeywordControl('while')):
-                if type(first_base_token(tp1)) != Code:
+                if type(first_base_token(tp1)) not in (Code, Variable):
                     exception = SQFParserError(tp1.position,
                                                "'%s' must be followed by a code statement" % t.value)
                     exceptions.append(exception)

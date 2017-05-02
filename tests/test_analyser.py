@@ -146,6 +146,11 @@ class SwitchTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 25), errors[0].position)
 
+    def test_case_with_variable_code(self):
+        code = 'switch (_x) do {case 1: _y}'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 0)
+
     def test_default(self):
         code = 'default {[]};'
         errors = analyze(parse(code))
