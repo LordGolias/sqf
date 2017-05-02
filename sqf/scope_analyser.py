@@ -218,7 +218,7 @@ class ScopeAnalyzer(BaseInterpreter):
                 try:
                     outcome = case_found.execute(values, self)
                 except Exception:
-                    self.exception(SQFSyntaxError(statement.position, 'failed executing statement'))
+                    pass
         elif len(values) == 2 and values[0] == Keyword('params'):
             self._add_params(values)
         elif len(values) == 3 and values[1] == Keyword('params'):
