@@ -22,7 +22,7 @@ class Sim(TestCase):
         sim.clients[id].execute('"x" addPublicVariableEventHandler {y = _this select 1};')
 
         self.assertEqual(N(123), sim._clients[id]._interpreter['x'])
-        self.assertEqual(Nothing, sim._clients[id]._interpreter['y'])
+        self.assertEqual(Nothing(), sim._clients[id]._interpreter['y'])
 
     def test_publicVariableOther(self):
         sim = Simulation()
@@ -32,7 +32,7 @@ class Sim(TestCase):
         # to server
         sim.clients[id0].execute('x = 2; publicVariableServer "x";')
         self.assertEqual(N(2), sim.server._interpreter['x'])
-        self.assertEqual(Nothing, sim.clients[id1]._interpreter['x'])
+        self.assertEqual(Nothing(), sim.clients[id1]._interpreter['x'])
 
         # to client but not the server
         sim.clients[id0].execute('x = 3; 1 publicVariableClient "x";')
@@ -44,14 +44,12 @@ class Sim(TestCase):
 
         id0 = sim.add_client(Client(sim))
         # client
-        sim.clients[id0].execute('_x = isServer; _y = isClient;')
+        sim.clients[id0].execute('_x = isServer;')
         self.assertEqual(Boolean(False), sim.clients[id0]._interpreter['_x'])
-        self.assertEqual(Boolean(True), sim.clients[id0]._interpreter['_y'])
 
         # server
-        sim.server.execute('_x = isServer; _y = isClient;')
+        sim.server.execute('_x = isServer;')
         self.assertEqual(Boolean(True), sim.server._interpreter['_x'])
-        self.assertEqual(Boolean(False), sim.server._interpreter['_y'])
 
         sim.server.execute('_x = isDedicated;')
         self.assertEqual(Boolean(True), sim.server._interpreter['_x'])

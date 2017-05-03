@@ -1,92 +1,70 @@
-from sqf.base_type import BaseType
+from sqf.types import Keyword
+from sqf.expressions import BinaryExpression, UnaryExpression
+from sqf.database import EXPRESSIONS
 
-
-class Keyword(BaseType):
-    def __init__(self, token):
-        super().__init__()
-        self._token = token
-        self._unique_token = token.lower()
-
-    @property
-    def value(self):
-        return self._token
-
-    def __str__(self):
-        return self._token
-
-    def __repr__(self):
-        return 'K<%s>' % self._token
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self._unique_token == other._unique_token
-        else:
-            return False
-
-    def __hash__(self):
-        return hash(str(self.__class__) + self._unique_token)
-
-
-class KeywordControl(Keyword):
-    def __repr__(self):
-        return 'KC<%s>' % self._token
-
-
-class KeywordConstant(Keyword):
-    def __repr__(self):
-        return 'Kc<%s>' % self._token
-
-
-KEYWORDS = {
-    'if', 'then', 'else', 'do', 'while', 'for', 'to', 'from', 'step', 'foreach',
-    '(', ')', '[', ']', '{', '}',
-    ',', ';', 'nil',
-    'case', 'switch', 'default',
-    'private',
-    '=', '+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor',
-    'toArray', 'toString',
-    'setVariable', 'getVariable',
-    'resize', 'count', 'set', 'in', 'select', 'find', 'append', 'pushBack', 'pushBackUnique', 'reverse',
-    'call', 'spawn', 'SPAWN',
-    '&&', 'and', '||', 'or',
-    'isEqualTo', '==', '!=', '>', '<', '>=', '<=', '!', 'not', '>>',
-    'isNull', 'isNil',
-    'units',
-    'createMarker', 'getmarkerpos',
-    'publicVariable', 'publicVariableServer', 'publicVariableClient',
-    'addPublicVariableEventHandler', 'isServer', 'isClient', 'isDedicated',
-}
-
+# keywords that are not commands, but part of the language
+KEYWORDS = {'(', ')', '[', ']', '{', '}',',', '=', ';'}
 KEYWORDS = KEYWORDS.union({'#define','#include', '\\'})
 
-from sqf.keywords_db import DB, DB_constants, DB_controls
+NULARY_OPERATORS = set()
+UNARY_OPERATORS = set()
+BINARY_OPERATORS = set()
 
-KEYWORDS = KEYWORDS.union(DB)
-del DB
+for expression in EXPRESSIONS:
+    if isinstance(expression, BinaryExpression):
+        op = expression.types_or_values[1]
+        BINARY_OPERATORS.add(op.value.lower())
+    elif isinstance(expression, UnaryExpression):
+        op = expression.types_or_values[0]
+        UNARY_OPERATORS.add(op.value.lower())
+    else:
+        op = expression.types_or_values[0]
+        NULARY_OPERATORS.add(op)
+
+    KEYWORDS.add(op.value.lower())
 
 
-class Namespace(Keyword):
-    pass
+OP_ARITHMETIC = [Keyword(s) for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')]
 
+OP_LOGICAL = [Keyword(s) for s in ('&&', 'and', '||', 'or')]
 
-NAMESPACES = set(['missionNamespace','profileNamespace','uiNamespace','parsingNamespace'])
-NAMESPACES = set([x.lower() for x in NAMESPACES])
+OP_COMPARISON = [Keyword(s) for s in ('==', 'isequalto', '!=', '<', '>', '<=', '>=', '>>')]
 
-KEYWORDS = set([x.lower() for x in KEYWORDS])
+NAMESPACES = {'missionnamespace', 'profilenamespace', 'uinamespace', 'parsingnamespace'}
 
-# operators by precedence. This is is used to build the tree
-ORDERED_OPERATORS = [
-    Keyword('='), Keyword('private')] + \
-    list(reversed([KeywordControl('while'), KeywordControl('switch'), KeywordControl('for'), KeywordControl('from'), KeywordControl('to'), KeywordControl('step'), KeywordControl('do')])) + \
-    list(reversed([KeywordControl('try'), KeywordControl('catch')])) + \
-    list(reversed([KeywordControl('if'), KeywordControl('else'), KeywordControl('then')])) + \
-    list(reversed([KeywordControl('case'), KeywordControl(':')])) + \
-    [Keyword(x) for x in ['floor', '-', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!', 'getVariable']]
+# namespaces are parsed as such
+KEYWORDS = KEYWORDS - NAMESPACES
 
-KEYWORDS_CONTROLS = set(DB_controls)
-KEYWORDS_CONTROLS = set([x.lower() for x in KEYWORDS_CONTROLS])
-del DB_controls
+# operators by precedence. This is is used to build the lexical tree
+ORDERED_OPERATORS = {
+    -1: {'='},
+    0: {'private'},
+    1: {'||', 'or'},
+    2: {'&&', 'and'},
+    3: set(x.value for x in OP_COMPARISON),
+    4.1: {'do'},
+    4.2: {'catch', ':', 'then', 'exitwith', 'throw'},
+    4.27: {'step', 'else'},
+    4.28: {'to'},
+    4.29: {'from'},
+    4.3: {'if', 'try', 'case', 'while', 'switch', 'for'},
+    6: {'+', 'str', 'hintC', 'hint', 'lbsetcursel', 'floor', 'ceil', 'round', 'random', 'max', 'min', '-'},
+    6.1: {'count'},
+    7: {'*', '/', '%', 'mod', 'atan2'},
+    8: {'^'},
+}
 
-KEYWORDS_CONSTANTS = set(DB_constants)
-KEYWORDS_CONSTANTS = set([x.lower() for x in KEYWORDS_CONSTANTS])
-del DB_constants
+# all assigned
+OTHERS = set()
+for x in ORDERED_OPERATORS:
+    OTHERS = OTHERS.union(ORDERED_OPERATORS[x])
+
+# assign precedence to the remaining operators
+NULARY_OPERATORS = NULARY_OPERATORS - OTHERS
+UNARY_OPERATORS = UNARY_OPERATORS - OTHERS
+# some ops are both binary and unary: make then unary for precedence
+BINARY_OPERATORS = BINARY_OPERATORS - OTHERS - UNARY_OPERATORS
+
+ORDERED_OPERATORS[5] = BINARY_OPERATORS
+ORDERED_OPERATORS[9] = UNARY_OPERATORS
+ORDERED_OPERATORS[10] = NULARY_OPERATORS

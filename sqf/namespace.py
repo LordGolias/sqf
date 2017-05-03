@@ -13,22 +13,25 @@ class Scope:
         self.values = {key.lower(): values[key] for key in values}
         self.level = level
 
-    def __contains__(self, other):
-        return other.lower() in self.values
+    def __contains__(self, name):
+        return name.lower() in self.values
 
     def __getitem__(self, name):
         if name.lower() in self.values:
             return self.values[name.lower()]
         else:
-            return Nothing
+            return Nothing()
 
-    def __setitem__(self, item, value):
-        self.values[item.lower()] = value
+    def __setitem__(self, name, value):
+        self.values[name.lower()] = value
 
 
 class Namespace:
     def __init__(self, all_vars=None):
         self._stack = [Scope(0, all_vars)]
+
+    def __getitem__(self, name):
+        return self.get_scope(name)[name]
 
     @property
     def current_scope(self):

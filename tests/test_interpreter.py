@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from sqf.exceptions import SQFSyntaxError
+from sqf.exceptions import SQFParserError
 from sqf.types import String, Number, Array, Boolean, Nothing, Number as N
 from sqf.interpreter import interpret
 
@@ -11,16 +11,26 @@ class TestInterpreter(TestCase):
         test = '_y = 2; _x = (_y == 3);'
         interpreter, outcome = interpret(test)
         self.assertEqual(Boolean(False), interpreter['_x'])
-        self.assertEqual(Nothing, outcome)
+        self.assertEqual(Nothing(), outcome)
 
     def test_negative(self):
         test = '_x = -2;'
         interpreter, outcome = interpret(test)
         self.assertEqual(Number(-2), interpreter['_x'])
-        self.assertEqual(Nothing, outcome)
+        self.assertEqual(Nothing(), outcome)
+
+    def test_precedence(self):
+        test = '1 - 1 - 1'
+        interpreter, outcome = interpret(test)
+        self.assertEqual(Number(-1), outcome)
+
+    def test_precedence2(self):
+        test = '3 * 2 + 1'
+        interpreter, outcome = interpret(test)
+        self.assertEqual(Number(7), outcome)
 
     def test_var_not_defined(self):
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             interpret('_y == 3;')
 
     def test_one_statement2(self):
@@ -29,18 +39,18 @@ class TestInterpreter(TestCase):
         self.assertEqual(Boolean(False), outcome)
 
     def test_cant_compare_booleans(self):
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             interpret('true == false;')
 
     def test_wrong_type_arithmetic(self):
         interpret('_x = true;')
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             interpret('_x = true; _x + 2;')
 
     def test_code_dont_execute(self):
         interpreter, outcome = interpret('_x = true; {_x = false};')
         self.assertEqual(Boolean(True), interpreter['_x'])
-        self.assertEqual(Nothing, outcome)
+        self.assertEqual(Nothing(), outcome)
 
     def test_one_statement1(self):
         test = '_y = 2; (_y == 3)'
@@ -48,15 +58,15 @@ class TestInterpreter(TestCase):
         self.assertEqual(Boolean(False), outcome)
 
     def test_assign_to_statement(self):
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             interpret('(_y) = 2;')
 
     def test_floor(self):
         _, outcome = interpret('floor 5.25')
         self.assertEqual(Number(5), outcome)
 
-        _, outcome = interpret('floor -5.25')
-        self.assertEqual(Number(-6), outcome)
+        _, outcome = interpret('2 + floor -5.25')
+        self.assertEqual(Number(-4), outcome)
 
     def test_leq(self):
         _, outcome = interpret('_x = 10; _x <= 10')
@@ -101,7 +111,7 @@ class TestInterpretArray(TestCase):
 
     def test_append(self):
         interpreter, outcome = interpret('_x = [1,2]; _x append [3,4]')
-        self.assertEqual(Nothing, outcome)
+        self.assertEqual(Nothing(), outcome)
         self.assertEqual(Array([N(1), N(2), N(3), N(4)]), interpreter['_x'])
 
     def test_subtract(self):
@@ -177,7 +187,7 @@ class TestInterpretArray(TestCase):
 
     def test_reverse(self):
         interpreter, outcome = interpret('_x = [1, 2]; reverse _x')
-        self.assertEqual(Nothing, outcome)
+        self.assertEqual(Nothing(), outcome)
         self.assertEqual(Array([N(2), N(1)]), interpreter['_x'])
 
     def test_reference(self):
@@ -214,7 +224,7 @@ class IfThen(TestCase):
         self.assertEqual(N(2), interpreter['_x'])
 
         interpreter, outcome = interpret('_x = 1; if (false) then {_x = 2}')
-        self.assertEqual(Nothing, outcome)
+        self.assertEqual(Nothing(), outcome)
         self.assertEqual(N(1), interpreter['_x'])
 
     def test_then_array(self):
@@ -236,10 +246,10 @@ class IfThen(TestCase):
         self.assertEqual(N(3), interpreter['_x'])
 
     def test_exceptions(self):
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             interpret('if (false) then (_x = 2) else {_x = 3}')
 
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             interpret('if (1) then {_x = 2} else {_x = 3}')
 
 
@@ -255,8 +265,6 @@ class Loops(TestCase):
         self.assertEqual(N(20), outcome)
 
     def test_forspec_exit_with_bool(self):
-        test = 'a = 0; b = true; for [{_i = 0},{_i < 10 && b},{_i = _i + 1}] do {a = a + 1; if (a >= 7) then {b = false}}'
-
         test = '''
         a = 0;
         b = true;
@@ -294,7 +302,7 @@ class Loops(TestCase):
 
         # do not overwrite globals
         interpreter, _ = interpret('for "x" from 0 to 0 do {};')
-        self.assertEqual(Nothing, interpreter['x'])
+        self.assertEqual(Nothing(), interpreter['x'])
 
         # nested
         test = '_array = []; for "_i" from 0 to 1 do {for "_i" from 0 to 1 do {_array pushBack _i;}; _array pushBack _i;};'
@@ -334,13 +342,14 @@ class Switch(TestCase):
         self.assertEqual(String('"3"'), interpret(code % '"3"')[1])
 
     def test_syntax_error(self):
-        with self.assertRaises(SQFSyntaxError) as cm:
+        with self.assertRaises(SQFParserError) as cm:
             interpret('switch (0) do {case (1), {"one"};}')
         self.assertEqual((1, 25), cm.exception.position)
 
-        with self.assertRaises(SQFSyntaxError) as cm:
+        # 2 defaults error
+        with self.assertRaises(SQFParserError) as cm:
             interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
-        self.assertEqual((1, 15), cm.exception.position)
+        self.assertEqual((1, 14), cm.exception.position)
 
 
 class Scopes(TestCase):
@@ -348,18 +357,18 @@ class Scopes(TestCase):
     def test_assign(self):
         interpreter, outcome = interpret('x = 2; _x = 1;')
 
-        self.assertEqual(N(1), interpreter.values['_x'])
-        self.assertEqual(N(2), interpreter.values['x'])
+        self.assertEqual(N(1), interpreter['_x'])
+        self.assertEqual(N(2), interpreter['x'])
 
     def test_one_scope(self):
         interpreter, outcome = interpret('_x = 1;')
-        self.assertEqual(N(1), interpreter.values['_x'])
+        self.assertEqual(N(1), interpreter['_x'])
 
         interpreter, outcome = interpret('_x = 1; if true then {_x}')
         self.assertEqual(N(1), outcome)
 
         interpreter, outcome = interpret('_x = 1; if (true) then {private "_x"; _x}')
-        self.assertEqual(Nothing, outcome)
+        self.assertEqual(Nothing(), outcome)
 
         interpreter, outcome = interpret('_x = 1; if (true) then {private "_x"; _x = 2}')
         self.assertEqual(N(2), outcome)
@@ -371,7 +380,7 @@ class Scopes(TestCase):
         self.assertEqual(N(2), interpreter['_x'])
 
     def test_private_global_error(self):
-        with self.assertRaises(SQFSyntaxError):
+        with self.assertRaises(SQFParserError):
             interpret('private "x"')
 
     def test_function(self):
@@ -389,12 +398,12 @@ class Namespaces(TestCase):
     def test_setvariable(self):
         interpreter, outcome = interpret('missionNamespace setVariable ["_x", 2];')
 
-        self.assertEqual(N(2), interpreter.namespaces['missionNamespace'].current_scope['_x'])
+        self.assertEqual(N(2), interpreter.namespace('missionNamespace')['_x'])
 
         interpreter, outcome = interpret('uiNamespace setVariable ["_x", 2];')
-        self.assertEqual(N(2), interpreter.namespaces['uiNamespace'].current_scope['_x'])
-        self.assertEqual(Nothing, interpreter.namespaces['missionNamespace'].current_scope['_x'])
-        self.assertEqual(Nothing, interpreter.values['_x'])
+        self.assertEqual(N(2), interpreter.namespace('uiNamespace')['_x'])
+        self.assertEqual(Nothing(), interpreter.namespace('missionNamespace')['_x'])
+        self.assertEqual(Nothing(), interpreter['_x'])
 
     def test_getvariable(self):
         interpreter, outcome = interpret('uiNamespace setVariable ["_x", 2]; uiNamespace getVariable "_x"')
@@ -415,7 +424,7 @@ class Operators(TestCase):
 
     def test_resize_array(self):
         interpreter = interpret('_x = [1,2]; _x resize 4')[0]
-        self.assertEqual(Array([N(1), N(2), Nothing, Nothing]), interpreter['_x'])
+        self.assertEqual(Array([N(1), N(2), Nothing(), Nothing()]), interpreter['_x'])
 
         interpreter = interpret('_x = [1,2,3,4]; _x resize 2')[0]
         self.assertEqual(Array([N(1), N(2)]), interpreter['_x'])

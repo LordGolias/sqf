@@ -2,11 +2,8 @@ import sqf.base_type
 from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import SQFParenthesisError, SQFParserError
-from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String
-from sqf.keywords import ORDERED_OPERATORS, KEYWORDS, Keyword, \
-    KEYWORDS_CONTROLS, KeywordControl, \
-    KEYWORDS_CONSTANTS, KeywordConstant, \
-    NAMESPACES, Namespace
+from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace
+from sqf.keywords import ORDERED_OPERATORS, KEYWORDS, NAMESPACES
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parse_exp import parse_exp
 
@@ -41,10 +38,6 @@ def identify_token(token):
         pass
     if token.lower() in NAMESPACES:
         return Namespace(token)
-    elif token.lower() in KEYWORDS_CONTROLS:
-        return KeywordControl(token)
-    elif token.lower() in KEYWORDS_CONSTANTS:
-        return KeywordConstant(token)
     elif token.lower() in KEYWORDS:
         return Keyword(token)
     else:
@@ -136,7 +129,8 @@ def _analyse_tokens(tokens):
         ending = tokens[-1].value
         del tokens[-1]
 
-    statement = parse_exp(tokens, ORDERED_OPERATORS, Statement)
+    statement = parse_exp(tokens, ORDERED_OPERATORS, container=Statement, add_condition=
+        lambda x: x or (isinstance(x, (Statement, Code)) and x.parenthesis is not None))
     if isinstance(statement, Statement):
         statement._ending = ending
     else:
@@ -237,13 +231,14 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
             # repeat the loop for this token.
             lvls[token.value] += 1
-            expression, size = parse_block(all_tokens, lambda x: Statement(x), lambda x, _: [Statement(x)], i, lvls, stop_statement)
+            expression, size = parse_block(all_tokens, analyse_tokens, analyse_array, i, lvls, stop_statement)
             lvls[token.value] -= 1
 
             statements.append(expression)
             i += size - 1
         elif type(token) == EndOfLine and (lvls['#define'] != 0 or lvls['#include'] != 0):
-            statements.append(analyse_tokens(tokens))
+            if tokens:
+                statements.append(analyse_tokens(tokens))
 
             return Statement(statements), i - start
         else:
@@ -262,4 +257,9 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
 def parse(script):
     tokens = parse_strings(parse_comments(tokenize(script)), identify_token)
-    return parse_block(tokens, _analyse_tokens, _analyse_array_tokens)[0]
+
+    result = parse_block(tokens, _analyse_tokens, _analyse_array_tokens)[0]
+
+    result.set_position((1, 1))
+
+    return result

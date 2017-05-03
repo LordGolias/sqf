@@ -1,18 +1,35 @@
-def partition(exp, op):
+
+def _normalize(item):
+    return str(item).lower()
+
+
+def partition(exp, ops):
+    """
+    Splits `exp` by the last occurrence of `op` in a list of 3 elements.
+    """
     # one is always found because of the condition used in parse_exp
-    index = next(index for index, value in enumerate(exp) if value == op)
+    if len(ops) == 1:
+        index = next(reversed(list(index for index, value in enumerate(exp) if _normalize(value) in ops)))
+    else:
+        index = next(index for index, value in enumerate(exp) if _normalize(value) in ops)
     return [exp[:index], exp[index], exp[index+1:]]
 
 
-def parse_exp(exp, operators, container=list):
+def parse_exp(exp, priorities, container=list, add_condition=lambda x: x):
+    """
+    Recursively splits `exp` by a list of ordered operators. `add_condition` is the condition to
+    add the result to the container.
+    """
     result = exp
-    for op in operators:
-        if op in exp and exp != op:
+    for priority in sorted(priorities.keys()):
+        ops = priorities[priority]
+        common_ops = set(_normalize(op) for op in exp if _normalize(op) in ops)
+        if common_ops and len(exp) > 1:
             result = []
-            for i in partition(exp, op):
+            for i in partition(exp, common_ops):
                 if isinstance(i, list):
-                    sub_result = parse_exp(i, operators, container)
-                    if sub_result:  # only put in result non-empty stuff
+                    sub_result = parse_exp(i, priorities, container, add_condition)
+                    if add_condition(sub_result):  # only put in result non-empty stuff
                         result.append(sub_result)
                 else:
                     result.append(i)

@@ -1,10 +1,12 @@
-from sqf.base_type import BaseType
-from sqf.types import Code, String, Number, Array, Type, Variable, Boolean
+from sqf.types import Code, String, Number, Array, Type, Variable
 
 
-class InterpreterType(BaseType):
+class InterpreterType(Type):
     # type that is used by the interpreter (e.g. While type)
-    pass
+    def __init__(self, token=None):
+        assert (token is None or isinstance(token, Type))
+        super().__init__()
+        self.token = token
 
 
 class PrivateType(InterpreterType):
@@ -13,77 +15,92 @@ class PrivateType(InterpreterType):
     """
     def __init__(self, variable):
         assert(isinstance(variable, Variable))
-        super().__init__()
-        self.variable = variable
+        super().__init__(variable)
+
+    @property
+    def variable(self):
+        return self.token
 
 
 class WhileType(InterpreterType):
     def __init__(self, condition):
-        assert(isinstance(condition, Code))
-        super().__init__()
-        self.condition = condition
+        assert(condition is None or isinstance(condition, Code))
+        if condition is None:
+            condition = Code([])
+        super().__init__(condition)
+
+    @property
+    def condition(self):
+        return self.token
 
 
 class ForType(InterpreterType):
-    def __init__(self, variable):
-        assert (isinstance(variable, String))
-        super().__init__()
-        self.variable = variable
+    def __init__(self, variable=None, from_=None, to=None, step=None):
+        if from_ is None:
+            from_ = Number()
+        if to is None:
+            to = Number()
+        if step is None:
+            step = Number(1)
+        assert (variable is None or isinstance(variable, String))
+        assert (isinstance(from_, Type))
+        assert (isinstance(to, Type))
+        assert (isinstance(step, Type))
+        super().__init__(variable)
+        self.from_ = from_
+        self.to = to
+        self.step = step
+
+    @property
+    def variable(self):
+        return self.token
 
 
 class ForSpecType(InterpreterType):
     def __init__(self, array):
-        assert (isinstance(array, Array))
-        super().__init__()
-        self.array = array
+        assert (array is None or isinstance(array, Array))
+        super().__init__(array)
 
-
-class ForFromType(ForType):
-    def __init__(self, variable, from_):
-        assert (isinstance(from_, Type))
-        super().__init__(variable)
-        self.from_ = from_
-
-
-class ForFromToStepType(ForFromType):
-    def __init__(self, variable, from_, to, step=Number(1)):
-        assert (isinstance(to, Type))
-        assert (isinstance(step, Type))
-        super().__init__(variable, from_)
-        self.to = to
-        self.step = step
+    @property
+    def array(self):
+        return self.token
 
 
 class SwitchType(InterpreterType):
     def __init__(self, result):
-        assert (isinstance(result, Type))
-        super().__init__()
-        self.result = result
+        super().__init__(result)
+
+    @property
+    def result(self):
+        return self.token
 
 
 class IfType(InterpreterType):
-    def __init__(self, condition):
-        assert (isinstance(condition, Type))
-        super().__init__()
-        self.condition = condition
+    def __init__(self, condition=None):
+        super().__init__(condition)
+
+    @property
+    def condition(self):
+        return self.token
 
 
 class ElseType(InterpreterType):
-    def __init__(self, then, else_):
-        super().__init__()
-        self.then = then
+    def __init__(self, then=None, else_=None):
+        super().__init__(then)
+        assert (then is None or isinstance(then, Code))
+        assert (else_ is None or isinstance(else_, Code))
         self.else_ = else_
+
+    @property
+    def then(self):
+        return self.token
 
 
 class TryType(InterpreterType):
-    def __init__(self, code):
-        assert (isinstance(code, Type))
-        super().__init__()
-        self.code = code
+    def __init__(self, code=None):
+        assert (code is None or isinstance(code, Code))
+        super().__init__(code)
 
-
-class CaseType(InterpreterType):
-    def __init__(self, condition):
-        assert (isinstance(condition, Type))
-        super().__init__()
-        self.condition = condition
+    @property
+    def code(self):
+        return self.token

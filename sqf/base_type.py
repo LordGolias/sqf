@@ -16,6 +16,18 @@ def get_coord(string):
     line = len(lines)
     column = len(lines[-1]) + 1
     return line, column
+assert(get_coord('aa') == (1, 3))
+
+
+def get_diff(string):
+    lines = string.split('\n')
+    line = len(lines) - 1
+    column = len(lines[-1])
+    return line, column
+assert(get_diff('') == (0, 0))
+assert(get_diff('aa') == (0, 2))
+assert(get_diff('aa\n') == (1, 0))
+assert(get_diff('aa\na') == (1, 1))
 
 
 class BaseType:
@@ -25,16 +37,11 @@ class BaseType:
     It also defines the __eq__
     """
     def __init__(self):
-        self._parent = None
-        self._parent_index = None
-
-    def set_parent(self, parent, index):
-        self._parent = parent
-        self._parent_index = index
+        self._position = None
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return equal_dicts(self.__dict__, other.__dict__, ('_parent', '_parent_index'))
+            return equal_dicts(self.__dict__, other.__dict__, ('_parent', '_parent_index', '_position'))
         else:
             return False
 
@@ -43,9 +50,18 @@ class BaseType:
 
     @property
     def position(self):
-        if self._parent is None:
-            return 1, 1
-        return get_coord(self._parent.string_up_to(self._parent_index))
+        if self._position is None:
+            raise Exception(self, type(self))
+        return self._position
+
+    def set_position(self, position):
+        assert(isinstance(position, tuple))
+        assert (len(position) == 2)
+        self._position = position
+
+    @position.setter
+    def position(self, self_position):
+        self.set_position(self_position)
 
 
 class ParserType(BaseType):
@@ -65,7 +81,6 @@ class BaseTypeContainer(BaseType):
         super().__init__()
         for i, s in enumerate(tokens):
             assert(isinstance(s, BaseType))
-            s.set_parent(self, i)
         self._tokens = tokens
 
         self._update_base_tokens()
@@ -81,18 +96,39 @@ class BaseTypeContainer(BaseType):
     def _is_base_token(token):
         raise NotImplementedError
 
-    def _as_str(self, func=str, up_to=None):
+    def _as_str(self, func=str):
         raise NotImplementedError
+
+    def _column_delta(self, place='begin'):
+        """
+        Returns how much the column advances `place=` "begin" or "middle".
+        """
+        raise NotImplementedError
+
+    def set_position(self, position):
+        self._position = position
+        position = (position[0], position[1] + self._column_delta())
+        for token in self._tokens:
+            token.set_position(position)
+
+            token_delta = get_diff(str(token))
+
+            if token_delta[0] == 0:
+                initial_column = position[1]
+            else:
+                initial_column = 1
+
+            position = (
+                position[0] + token_delta[0],
+                initial_column + token_delta[1] + self._column_delta('middle'))
+
+    @BaseType.position.setter
+    def position(self, position):
+        super().set_position(position)
 
     @property
     def base_tokens(self):
         return self._base_tokens
-
-    def string_up_to(self, index):
-        string = ''
-        if self._parent is not None:
-            string += self._parent.string_up_to(self._parent_index)
-        return string + self._as_str(up_to=index)
 
     def __str__(self):
         return self._as_str()

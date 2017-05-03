@@ -1,6 +1,5 @@
 from sqf.exceptions import SQFError
 from sqf.parser_types import ParserType
-from sqf.keywords import Keyword
 from sqf.base_type import BaseType, BaseTypeContainer
 
 
@@ -25,11 +24,13 @@ class ConstantValue(Type):
 
 
 class Boolean(ConstantValue):
-    def __init__(self, value):
-        assert (value is True or value is False)
+    def __init__(self, value=None):
+        assert (value in (None,True,False))
         super().__init__(value)
 
     def __str__(self):
+        if self._value is None:
+            return 'undefined'
         if self._value:
             return 'true'
         else:
@@ -41,14 +42,20 @@ class Boolean(ConstantValue):
 
 class String(ConstantValue):
 
-    def __init__(self, value):
-        assert(isinstance(value, str))
-        assert(value[0] == value[-1])
-        assert (value[0] in ["'", '"'])
-        self.container = value[0]
-        super().__init__(value[1:-1])
+    def __init__(self, value=None):
+        self.container = None
+        if value is not None:
+            assert(isinstance(value, str))
+            assert(value[0] == value[-1])
+            assert (value[0] in ["'", '"'])
+            self.container = value[0]
+            super().__init__(value[1:-1])
+        else:
+            super().__init__(value)
 
     def __str__(self):
+        if self.value is None:
+            return "undefined"
         return "%s%s%s" % (self.container, self.value, self.container)
 
     def __repr__(self):
@@ -56,20 +63,29 @@ class String(ConstantValue):
 
 
 class Nothing(ConstantValue):
+    """
+    A type of unknown type
+    """
     def __str__(self):
         return 'Nothing'
 
     def __repr__(self):
         return '<%s>' % self
-Nothing = Nothing()
+
+    def __hash__(self):
+        # this is needed because Nothing is an instance (so isinstance(Nothing, Type) == True)
+        # and Types are used in hashin
+        return hash(self.__class__)
 
 
 class Number(ConstantValue):
-    def __init__(self, value):
-        assert(isinstance(value, (int, float)))
+    def __init__(self, value=None):
+        assert(value is None or isinstance(value, (int, float)))
         super().__init__(value)
 
     def __str__(self):
+        if self.value is None:
+            return "undefined"
         if isinstance(self._value, int):
             return '%d' % self._value
         # todo: use a better representation of float
@@ -80,11 +96,16 @@ class Number(ConstantValue):
 
 
 class Array(Type, BaseTypeContainer):
-    def __init__(self, tokens):
+    def __init__(self, tokens=None):
         Type.__init__(self)
-        assert(all(not isinstance(t, ParserType) for t in tokens))
-        if Keyword(',') in tokens:
-            raise SQFError('Keyword "," cannot be an item of an Array')
+        if tokens is not None:
+            assert(all(not isinstance(t, ParserType) for t in tokens))
+            if Keyword(',') in tokens:
+                raise SQFError('Keyword "," cannot be an item of an Array')
+            self._undefined = False
+        else:
+            self._undefined = True
+            tokens = []
         BaseTypeContainer.__init__(self, tokens)
 
     def __repr__(self):
@@ -95,39 +116,35 @@ class Array(Type, BaseTypeContainer):
         # An array only holds relevant statements (or it is syntatically incorrect).
         return True
 
+    def _column_delta(self, place='begin'):
+        if place == 'begin':
+            return 1  # [
+        if place == 'middle':
+            return 1  # ,
+
     def _as_str(self, func=str, up_to=None):
-        if up_to is None:
-            return '[%s]' % ','.join(func(item) for item in self._tokens)
-
-        assert (up_to < len(self._tokens))
-        inside = ''
-        for i, item in enumerate(self._tokens):
-            comma = ''
-            if i != 0:
-                comma = ','
-
-            if i == up_to:
-                if i != 0:
-                    inside += comma
-                break
-            inside += comma + func(item)
-        return '[' + inside
+        if self._undefined:
+            return '[undefined]'
+        return '[%s]' % ','.join(func(item) for item in self._tokens)
 
     def __len__(self):
         return len(self._tokens)
 
     def __getitem__(self, other):
+        if self._undefined:
+            return Nothing()
         return self._tokens[other]
 
     @property
     def value(self):
+        if self._undefined:
+            return None
         return self._tokens
 
     def extend(self, index):
-        new_tokens = [Nothing] * (index - len(self._tokens) + 1)
+        new_tokens = [Nothing()] * (index - len(self._tokens) + 1)
         self._tokens += new_tokens
         self._update_base_tokens()
-        return Nothing
 
     def append(self, token):
         self._tokens.append(token)
@@ -139,17 +156,14 @@ class Array(Type, BaseTypeContainer):
         else:
             self._tokens = self._tokens[:count]
         self._update_base_tokens()
-        return Nothing
 
     def reverse(self):
         self._tokens.reverse()
         self._update_base_tokens()
-        return Nothing
 
     def add(self, other):
         self._tokens += other
         self._update_base_tokens()
-        return Nothing
 
     def set(self, rhs_v):
         # https://community.bistudio.com/wiki/set
@@ -161,7 +175,6 @@ class Array(Type, BaseTypeContainer):
             self.extend(index)
         self._tokens[index] = value
         self._update_base_tokens()
-        return Nothing
 
 
 class Variable(Type):
@@ -193,10 +206,10 @@ class _Statement(BaseTypeContainer):
         for i, s in enumerate(tokens):
             assert(isinstance(s, (Type, Keyword, Statement, ParserType)))
 
-        super().__init__(tokens)
-
         self._parenthesis = parenthesis
         self._ending = ending
+
+        super().__init__(tokens)
 
     @staticmethod
     def _is_base_token(token):
@@ -214,24 +227,20 @@ class _Statement(BaseTypeContainer):
     def __getitem__(self, other):
         return self._tokens[other]
 
-    def _as_str(self, func=str, up_to=None):
-        if up_to is None:
-            up_to = len(self._tokens)
+    def _column_delta(self, place='begin'):
+        if place == 'begin':
+            if self.parenthesis is not None:
+                return 1
+        return 0
 
-        as_str = ''
-        for i, s in enumerate(self._tokens):
-            if i == up_to:
-                break
-            as_str += '%s' % func(s)
+    def _as_str(self, func=str):
+        if self._parenthesis:
+            str_format = '{left}%s{right}'.format(left=self._parenthesis[0], right=self._parenthesis[1])
+        else:
+            str_format = '%s'
+        str_format += self.ending
 
-        if self._parenthesis is not None:
-            if up_to == len(self._tokens):
-                as_str = '%s%s%s' % (self._parenthesis[0], as_str, self._parenthesis[1])
-            else:
-                as_str = '%s%s' % (self._parenthesis[0], as_str)
-        if up_to == len(self._tokens):
-            as_str += self.ending
-        return as_str
+        return str_format % (''.join(func(item) for item in self._tokens))
 
     @property
     def parenthesis(self):
@@ -263,3 +272,92 @@ class Code(_Statement, Type):
 
     def __repr__(self):
         return '%s' % self._as_str(repr)
+
+
+class Keyword(BaseType):
+    def __init__(self, token):
+        assert isinstance(token, str)
+        super().__init__()
+        self._token = token
+        self._unique_token = self._token.lower()
+
+    @property
+    def value(self):
+        return self._token
+
+    @property
+    def unique_token(self):
+        return self._unique_token
+
+    def __str__(self):
+        return self._token
+
+    def __repr__(self):
+        return 'K<%s>' % self._token
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._unique_token == other._unique_token
+        else:
+            return False
+
+    def __hash__(self):
+        return hash(str(self.__class__) + self.unique_token)
+
+
+class Namespace(Type):
+    def __init__(self, token):
+        assert isinstance(token, str)
+        super().__init__()
+        self._token = token
+        self._unique_token = token.lower()
+
+    @property
+    def value(self):
+        return self._token
+
+    def __repr__(self):
+        return 'NS<%s>' % self._token
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._unique_token == other._unique_token
+        else:
+            return False
+
+
+class Config(Type):
+
+    def __init__(self, value=None):
+        super().__init__()
+        self._value = value
+
+    @property
+    def value(self):
+        return self._value
+
+
+class Object(Type):
+
+    def __init__(self, value=None):
+        super().__init__()
+        self._value = value
+
+    @property
+    def value(self):
+        return self._value
+
+
+class File(Code):
+    """
+    Like code, but without parenthesis
+    """
+    def __init__(self, tokens):
+        super().__init__(tokens)
+        self._parenthesis = None
+
+    def __repr__(self):
+        return 'F<%s>' % self._as_str(repr)
+
+#
+# TYPES = [Boolean, String, Number, Array, Code, Namespace, Object]

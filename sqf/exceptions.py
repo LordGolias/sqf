@@ -9,7 +9,7 @@ class SQFParserException(SQFError):
     def __init__(self, position, message):
         assert(isinstance(position, tuple))
         self.position = position
-        self.message = message.replace("\n", "\\n").replace("\t", "\\t")
+        self.message = message.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
 
 
 class SQFParserError(SQFParserException):
@@ -33,11 +33,6 @@ class SQFWarning(SQFParserException):
         super().__init__(position, "warning:%s" % message)
 
 
-class SQFSyntaxError(SQFParserException):
-    """
-    Raised by the interpreter
-    """
-    pass
 
 
 class ExecutionError(SQFError):
