@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from sqf.expressions import parse_switch
-from sqf.types import Number, String, Boolean, Code, Statement, Variable
+from sqf.types import Number, String, Boolean, Code, Statement, Variable, Nothing
 from sqf.parser import parse
 from sqf.scope_analyser import interpret
 
@@ -241,18 +241,6 @@ class ScopeAnalyserTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_error_in_case(self):
-        code = 'switch (a) do {case "blue": {hint _x}; case "red": {false}}'
-        analyser = interpret(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-    def test_case_by_variable(self):
-        code = 'switch (a) do {case "blue": x; case "red": {false}}'
-        analyser = interpret(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
     def test_get_variable_default(self):
         code = 'private _x = missionNamespace getVariable ["x", 2];'
         analyser = interpret(parse(code))
@@ -332,6 +320,7 @@ class ParseSwitchTest(TestCase):
         analyser = interpret(parse(""))
         result = parse('{case "blue": {true}; case "red": {false}}')
         conditions = parse_switch(analyser, result[0][0])
+        self.assertEqual(len(analyser.exceptions), 0)
         self.assertEqual(conditions[0], (String('"blue"'), Code([Statement([Boolean(True)])])))
         self.assertEqual(conditions[1], (String('"red"'), Code([Statement([Boolean(False)])])))
 
@@ -361,6 +350,18 @@ class ParseSwitchTest(TestCase):
         self.assertEqual(len(analyser.exceptions), 1)
         self.assertEqual((1, 23), analyser.exceptions[0].position)
 
+    def test_case_by_variable(self):
+        code = 'switch (a) do {case "blue": x; case "red": {false}}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_error_in_case(self):
+        code = 'switch (a) do {case "blue": {hint _x}; case "red": {false}}'
+        analyser = interpret(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
     def test_case_with_variable_code(self):
         code = 'switch (x) do {case 1: _y}'
         analyser = interpret(parse(code))
@@ -376,3 +377,17 @@ class ParseSwitchTest(TestCase):
         analyser = interpret(parse(code))
         self.assertEqual(len(analyser.exceptions), 1)
         self.assertEqual((1, 24), analyser.exceptions[0].position)
+
+    def test_default_not_code(self):
+        code = '{default "1"}'
+        analyser = interpret(parse(""))
+        result = parse(code)
+        parse_switch(analyser, result[0][0])
+        self.assertEqual(len(analyser.exceptions), 1)
+
+    def test_case_with_expression(self):
+        code = '{case isClass(x): {x};}'
+        analyser = interpret(parse(""))
+        result = parse(code)
+        conditions = parse_switch(analyser, result[0][0])
+        self.assertEqual(conditions, [(Nothing, Code([Statement([Variable('x')])]))])

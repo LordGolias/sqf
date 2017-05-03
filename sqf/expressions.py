@@ -3,7 +3,8 @@ import math
 from sqf.types import Number, Array, Code, Type, Boolean, String, Nothing, Variable
 from sqf.keywords import Keyword, KeywordControl, Namespace
 from sqf.interpreter_types import WhileType, \
-    ForType, ForFromType, ForFromToStepType, ForSpecType, SwitchType, IfType, ElseType, TryType
+    ForType, ForFromType, ForFromToStepType, ForSpecType, SwitchType, IfType, ElseType, TryType, \
+    CaseType
 from sqf.exceptions import ExecutionError, SQFSyntaxError
 
 
@@ -257,42 +258,58 @@ class SwitchExpression(UnaryExpression, InterpreterExpression):
                          lambda v, i: SwitchType(v))
 
 
+class CaseExpression(UnaryExpression, InterpreterExpression):
+    def __init__(self):
+        super().__init__(KeywordControl('case'), Type,
+                         lambda v, i: CaseType(v))
+
+
 def parse_switch(interpreter, code):
     conditions = []
     default_used = False
 
     for statement in code.base_tokens:
         base_tokens = statement.base_tokens
-        if not base_tokens:
-            pass
-        elif base_tokens[0] == KeywordControl('default'):
+
+        # evaluate all the base_tokens, trying to obtain their values
+        values = []
+        for token in base_tokens:
+            v = interpreter.value(token)
+            values.append(v)
+
+        if CaseExpression().is_match(values):
+            values = [CaseExpression().execute(values, interpreter)]
+
+        if values[0] == KeywordControl('default'):
             if default_used:
                 interpreter.exception(SQFSyntaxError(code.position, 'Switch code contains more than 1 `default`'))
             default_used = True
-            if len(base_tokens) == 2:
+            if len(values) == 2:
                 if isinstance(base_tokens[1], (Variable, Code)):
-                    conditions.append(('default', base_tokens[1]))
+                    conditions.append(('default', values[1]))
                 else:
                     interpreter.exception(
                         SQFSyntaxError(base_tokens[1].position, '"default" 2nd argument must be code'))
             else:
                 interpreter.exception(
                     SQFSyntaxError(base_tokens[1].position, '"default" must contain 2 clauses'))
-        elif base_tokens[0] == KeywordControl('case'):
-            if len(base_tokens) == 2:
-                condition_statement = base_tokens[1]
-                conditions.append((condition_statement, None))
-            elif len(base_tokens) == 4:
-                if base_tokens[2] == Keyword(':'):
-                    condition_statement = base_tokens[1]
-                    outcome_statement = base_tokens[3]
-                    conditions.append((condition_statement, outcome_statement))
+        elif type(values[0]) == CaseType:
+            case_condition = values[0].condition
+            if len(values) == 1:
+                conditions.append((case_condition, None))
+            elif len(values) == 3:
+                if values[1] == KeywordControl(':'):
+                    outcome_statement = values[2]
+                    conditions.append((case_condition, outcome_statement))
                 else:
                     interpreter.exception(
-                        SQFSyntaxError(base_tokens[2].position, '"case" second argument must be ":"'))
+                        SQFSyntaxError(base_tokens[1].position, '"case" second argument must be ":"'))
             else:
                 interpreter.exception(
                     SQFSyntaxError(statement.position, '"case" must be a 2 or 4 statement'))
+        elif values[0] == KeywordControl('case'):
+            interpreter.exception(
+                SQFSyntaxError(statement.position, 'keyword "case" must be followed by an argument'))
         else:
             interpreter.exception(SQFSyntaxError(statement.position, 'Switch code can only start with "case" or "default"'))
 
@@ -457,6 +474,8 @@ def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
 
 
 EXPRESSIONS = [
+    CaseExpression(),
+
     TryExpression(),
     TryCatchExpression(),
 

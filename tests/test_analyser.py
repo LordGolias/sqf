@@ -114,6 +114,17 @@ class AnalyserTestCase(TestCase):
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 0)
 
+    def test_defines(self):
+        # ignore "macros" (not correct since CHECK may not be defined, bot for that we need a pre-processor)
+        code = 'CHECK(_x)'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 0)
+
+    def test_array(self):
+        code = '[{3 2},0,0];'
+        errors = analyze(parse(code))
+        self.assertEqual(len(errors), 1)
+
 
 class SwitchTestCase(TestCase):
 
@@ -132,14 +143,3 @@ class SwitchTestCase(TestCase):
         errors = analyze(parse(code))
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 13), errors[0].position)
-
-    def test_defines(self):
-        # ignore "macros" (not correct since CHECK may not be defined, bot for that we need a pre-processor)
-        code = 'CHECK(_x)'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 0)
-
-    def test_array(self):
-        code = '[{3 2},0,0];'
-        errors = analyze(parse(code))
-        self.assertEqual(len(errors), 1)

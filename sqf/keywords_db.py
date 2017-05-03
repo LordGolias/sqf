@@ -2,7 +2,7 @@ DB = "abs|accTime|acos|action|actionIDs|actionKeys|actionKeysImages|actionKeysIm
 
 DB += '|lbSetPictureRight|lbSetPictureRightColor|lbSetTextRight|lbPictureRight|lbSetColorRight'
 
-DB_controls = "if|then|else|exitWith|while|do|for|from|to|with|switch|case|default|breakOut|breakTo|forEach|step|try|catch"
+DB_controls = "if|then|else|exitWith|while|do|for|from|to|with|switch|case|:|default|breakOut|breakTo|forEach|step|try|catch"
 
 DB_constants = "controlNull|displayNull|grpNull|locationNull|netObjNull|objNull|scriptNull|taskNull|teamMemberNull|west|east|resistance|civilian|independent|blufor|opfor"
 

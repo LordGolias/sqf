@@ -483,6 +483,25 @@ class ParseCode(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
+    def test_parse_case(self):
+        code = '{case 1: {true}}'
+        expected = \
+            Statement([
+                Statement([
+                    Code([
+                        Statement([
+                            Statement([
+                                KeywordControl('case'),
+                                Statement([Space(), N(1)]),
+                            ]),
+                            KeywordControl(':'),
+                            Statement([Space(), Code([Statement([Boolean(True)])])])
+                        ])
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
 
 class ParseArray(ParserTestCase):
 

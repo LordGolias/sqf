@@ -40,7 +40,7 @@ class KeywordConstant(Keyword):
 KEYWORDS = {
     'if', 'then', 'else', 'do', 'while', 'for', 'to', 'from', 'step', 'foreach',
     '(', ')', '[', ']', '{', '}',
-    ',', ':', ';', 'nil',
+    ',', ';', 'nil',
     'case', 'switch', 'default',
     'private',
     '=', '+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor',
@@ -80,6 +80,7 @@ ORDERED_OPERATORS = [
     list(reversed([KeywordControl('while'), KeywordControl('switch'), KeywordControl('for'), KeywordControl('from'), KeywordControl('to'), KeywordControl('step'), KeywordControl('do')])) + \
     list(reversed([KeywordControl('try'), KeywordControl('catch')])) + \
     list(reversed([KeywordControl('if'), KeywordControl('else'), KeywordControl('then')])) + \
+    list(reversed([KeywordControl('case'), KeywordControl(':')])) + \
     [Keyword(x) for x in ['floor', '-', 'count', '>', 'units', 'SPAWN', 'spawn', '&&', '!', 'getVariable']]
 
 KEYWORDS_CONTROLS = set(DB_controls)

@@ -80,3 +80,10 @@ class TryType(InterpreterType):
         assert (isinstance(code, Type))
         super().__init__()
         self.code = code
+
+
+class CaseType(InterpreterType):
+    def __init__(self, condition):
+        assert (isinstance(condition, Type))
+        super().__init__()
+        self.condition = condition
