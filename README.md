@@ -57,10 +57,9 @@ without having to run the game.
 
 ## Requirements and installation
 
-This code is written in Python 3 and has no dependencies.
-You can install it by going to its directory and running:
+This code is written in Python 3 and has no dependencies. You can install it using 
 
-    pip install .
+    pip3 install sqflint
 
 ## Tests and coverage
 
