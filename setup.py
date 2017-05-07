@@ -5,7 +5,7 @@ setup(
     version='0.1.0',
     author='Lord Golias',
     author_email='lord.golias1@gmail.com',
-    description='A SQF (Arma) linter',
+    description='Parser, static analyzer and interpreter of SQF (Arma)',
     url='https://github.com/LordGolias/sqf',
     license='BSD',
     packages=['sqf'],
@@ -19,6 +19,9 @@ setup(
         ],
     },
     classifiers=[
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
+        'Programming Language :: Python :: 3',
+        'License :: OSI Approved :: BSD License',
     ],
 )
