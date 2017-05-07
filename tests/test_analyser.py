@@ -217,6 +217,11 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 6)
 
+        code = 'for [{},{}] do {}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
     def test_for_code(self):
         code = 'private _x = {hint str _y}; for "_i" from 0 to 10 do _x'
         analyser = analyze(parse(code))
@@ -433,6 +438,63 @@ class GeneralTestCase(TestCase):
         self.assertEqual(len(errors), 0)
 
         code = 'x lbSetCurSel -1'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_select_array_past_size(self):
+        code = '[1,2] select 10'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+        code = '[1,2] select [10,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_getset_variable_undefined(self):
+        code = 'missionNamespace getVariable x'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'missionNamespace getVariable [x,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'x = str y; missionNamespace getVariable x'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'missionNamespace getVariable [1,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+        code = 'missionNamespace getVariable [1]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+        code = 'missionNamespace setVariable [x,2,3,4]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+        code = 'missionNamespace setVariable [1,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+        code = 'missionNamespace setVariable [x,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'missionNamespace setVariable x'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)

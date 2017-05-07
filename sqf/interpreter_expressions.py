@@ -2,7 +2,7 @@ import math
 
 from sqf.types import Keyword, Namespace, Number, Array, Code, Type, Boolean, String, Nothing, Variable
 from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType
-from sqf.exceptions import ExecutionError, SQFParserError
+from sqf.exceptions import SQFParserError
 from sqf.keywords import OP_ARITHMETIC, OP_COMPARISON, OP_LOGICAL
 from sqf.expressions import BinaryExpression, UnaryExpression
 
@@ -95,10 +95,17 @@ class WhileDoExpression(BinaryExpression):
                          lambda lhs, rhs, i: _while_loop(i, lhs.condition, rhs))
 
 
+def _forspecs_type(array, interpreter):
+    if len(array) != 3:
+        interpreter.exception(SQFParserError(
+            array.position, 'for-then array must contain 3 elements (contains %d)' % len(array)))
+        return None
+    return array
+
+
 class ForSpecExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(Keyword('for'), Array, ForSpecType,
-                         lambda v, i: v, [lambda values: len(values[1]) == 3])
+        super().__init__(Keyword('for'), Array, ForSpecType, _forspecs_type)
 
 
 def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
@@ -338,6 +345,19 @@ class TryCatchExpression(BinaryExpression):
                          lambda lhs, rhs, i: _try_catch(i, lhs.code, rhs))
 
 
+def _select(lhs, rhs, interpreter):
+    if lhs.value is None or rhs.value is None:
+        return Nothing()
+
+    index = int(round(rhs.value))
+    try:
+        return lhs[index]
+    except IndexError:
+        interpreter.exception(SQFParserError(
+            lhs.position, 'selecting element %d of array of size %d' % (index, len(lhs))))
+        return Nothing()
+
+
 def _select_array(lhs, rhs, interpreter):
     if lhs.value is None or rhs.value is None:
         return []
@@ -379,19 +399,29 @@ def _pushBackUnique(lhs_v, rhs_v):
 
 def _setVariable(lhs_v, rhs_v, interpreter):
     if lhs_v.value is None or rhs_v.value is None:
-        return None
+        return
     namespace_name = lhs_v.value
+    assert(isinstance(rhs_v, Array))
+
+    if len(rhs_v) not in [2, 3]:
+        interpreter.exception(SQFParserError(
+            lhs_v.position, 'setVariable requires array of 2-3 elements (has %d)' % (len(rhs_v))))
+        return
 
     # get the variable name
+    if not isinstance(rhs_v.value[0], (String, Nothing)):
+        interpreter.exception(SQFParserError(
+            lhs_v.position, 'setVariable array first element must be a string (is %s)' % type(rhs_v.value[0]).__name__))
+        return
+
     variable_name = rhs_v.value[0].value
     # get the value
     rhs_assignment = rhs_v.value[1]
     if variable_name is None:
-        return None
+        return
 
     scope = interpreter.get_scope(variable_name, namespace_name)
     scope[variable_name] = rhs_assignment
-    return None
 
 
 def _getVariableString(lhs_v, rhs_v, interpreter):
@@ -405,6 +435,18 @@ def _getVariableString(lhs_v, rhs_v, interpreter):
 def _getVariableArray(lhs_v, rhs_v, interpreter):
     if lhs_v.value is None or rhs_v.value is None or rhs_v.value[0].value is None:
         return Nothing()
+    # get the variable name
+    if len(rhs_v) != 2:
+        interpreter.exception(SQFParserError(
+            lhs_v.position, 'getVariable requires array of 2 elements (has %d)' % (len(rhs_v))))
+        return Nothing()
+
+    if not isinstance(rhs_v.value[0], (String, Nothing)):
+        interpreter.exception(SQFParserError(
+            lhs_v.position,
+            'getVariable array first element must be a string (is %s)' % type(rhs_v.value[0]).__name__))
+        return Nothing()
+
     variable = Variable(rhs_v.value[0].value)
     variable.position = rhs_v.value[0].position
     outcome = interpreter.value(variable, lhs_v.value)
@@ -414,21 +456,15 @@ def _getVariableArray(lhs_v, rhs_v, interpreter):
 
 
 def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
-    if interpreter.simulation:
-        interpreter.client.add_listening(lhs_v.value, rhs_v)
-    else:
-        raise ExecutionError('"addPublicVariableEventHandler" called without a client')
+    interpreter.client.add_listening(lhs_v.value, rhs_v)
 
 
 class Action:
-    def __init__(self, action, default_nothing=False):
+    def __init__(self, action):
         self.action = action
-        self.default_nothing = default_nothing
 
     def __call__(self, *args):
         result = None
-        if self.default_nothing:
-            result = Nothing()
         # interpreter = args[-1]
         all_args = args[:-1]
 
@@ -488,11 +524,9 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('count'), Array, Number, Action(lambda x: len(x.value))),
     BinaryExpression(Type, Keyword('in'), Array, Boolean, Action(lambda x, array: x in array.value)),
 
-    BinaryExpression(Array, Keyword('select'), Number, None,
-                     Action(lambda lhs, rhs: lhs[int(round(rhs.value))], default_nothing=True)),
-    BinaryExpression(Array, Keyword('select'), Boolean, None,
-                     Action(lambda lhs, rhs: lhs[int(round(rhs.value))], default_nothing=True)),
-    BinaryExpression(Array, Keyword('select'), Array, Array, lambda lhs_v, rhs_v, i: _select_array(lhs_v, rhs_v, i)),
+    BinaryExpression(Array, Keyword('select'), Number, None, _select),
+    BinaryExpression(Array, Keyword('select'), Boolean, None, _select),
+    BinaryExpression(Array, Keyword('select'), Array, Array, _select_array),
 
     BinaryExpression(Array, Keyword('find'), Type, Number, Action(_find)),
     BinaryExpression(String, Keyword('find'), String, Number,
@@ -511,14 +545,10 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('call'), Code, None, lambda rhs_v, i: i.execute_code(rhs_v)),
     BinaryExpression(Array, Keyword('call'), Code, None, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, params=lhs_v)),
 
-    BinaryExpression(Namespace, Keyword('setVariable'), Array, Nothing, _setVariable,
-                     tests=[lambda values: len(values[2].value) in [2,3],
-                            lambda values: type(values[2].value[0]) == String]),
+    BinaryExpression(Namespace, Keyword('setVariable'), Array, Nothing, _setVariable),
 
     BinaryExpression(Namespace, Keyword('getVariable'), String, None, _getVariableString),
-    BinaryExpression(Namespace, Keyword('getVariable'), Array, None, _getVariableArray, tests=[
-        lambda values: len(values[2].value) == 2,
-        lambda values: type(values[2].value[0]) == String]),
+    BinaryExpression(Namespace, Keyword('getVariable'), Array, None, _getVariableArray),
 
     BinaryExpression(String, Keyword('addPublicVariableEventHandler'), Code, None, _addPublicVariableEventHandler),
 

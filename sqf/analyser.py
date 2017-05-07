@@ -236,8 +236,9 @@ class Analyzer(BaseInterpreter):
             elif type(case_found) == ForFromToDoExpression:
                 outcome = self.execute_code(values[2], extra_scope={values[0].variable.value: Number(0)})
             elif type(case_found) == ForSpecDoExpression:
-                for code in [values[0].array[0], values[0].array[1], values[0].array[2], values[2]]:
-                    outcome = self.execute_code(code)
+                if values[0].array is not None:
+                    for code in [values[0].array[0], values[0].array[1], values[0].array[2], values[2]]:
+                        outcome = self.execute_code(code)
             elif type(case_found) == WhileDoExpression:
                 self.execute_code(values[0].condition)
                 outcome = self.execute_code(values[2])

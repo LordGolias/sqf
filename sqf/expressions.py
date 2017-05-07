@@ -65,22 +65,10 @@ class Expression:
 
 
 class UnaryExpression(Expression):
-    def __init__(self, op, rhs_type, return_type, action, tests=None):
+    def __init__(self, op, rhs_type, return_type, action):
         assert (isinstance(op, Keyword))
-        if tests is None:
-            tests = []
-        self.action = action
-        self.tests = tests
         super().__init__([op, rhs_type], return_type)
-
-    def is_match(self, values, exact=True):
-        if super().is_match(values, exact):
-            for test in self.tests:
-                if not test(values):
-                    return False
-            return True
-        else:
-            return False
+        self.action = action
 
     def execute(self, values, interpreter):
         result = self.action(values[1], interpreter)
@@ -92,23 +80,10 @@ class UnaryExpression(Expression):
 
 
 class BinaryExpression(Expression):
-    def __init__(self, lhs_type, op, rhs_type, return_type, action, tests=None):
+    def __init__(self, lhs_type, op, rhs_type, return_type, action):
         assert(isinstance(op, Keyword))
         super().__init__([lhs_type, op, rhs_type], return_type)
-        if tests is None:
-            tests = []
-
         self.action = action
-        self.tests = tests
-
-    def is_match(self, values, exact=True):
-        if super().is_match(values, exact):
-            for test in self.tests:
-                if not test(values):
-                    return False
-            return True
-        else:
-            return False
 
     def execute(self, values, interpreter):
         result = self.action(values[0], values[2], interpreter)

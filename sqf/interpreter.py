@@ -2,7 +2,7 @@ from sqf.types import Statement, Code, Number, Boolean, Nothing, Variable, Array
 from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
 from sqf.parser import parse
-from sqf.exceptions import ExecutionError, SQFParserError
+from sqf.exceptions import SQFParserError
 from sqf.interpreter_expressions import EXPRESSIONS
 from sqf.base_interpreter import BaseInterpreter
 
@@ -17,14 +17,10 @@ class Interpreter(BaseInterpreter):
 
     @property
     def simulation(self):
-        if self._simulation is None:
-            raise ExecutionError('Trying to access simulation without a simulation assigned')
         return self._simulation
 
     @property
     def client(self):
-        if self._client is None:
-            raise ExecutionError('Trying to access client without a client')
         return self._client
 
     @client.setter
@@ -44,8 +40,6 @@ class Interpreter(BaseInterpreter):
             result = Array([self.execute_token(s)[1] for s in token.value if s])
         elif token == Keyword('isServer'):
             result = Boolean(self.client.is_server)
-        elif token == Keyword('isClient'):
-            result = Boolean(self.client.is_client)
         elif token == Keyword('isDedicated'):
             result = Boolean(self.client.is_dedicated)
         else:
@@ -59,8 +53,6 @@ class Interpreter(BaseInterpreter):
 
         outcome = Nothing()
         _outcome = outcome
-        if not statement.base_tokens:
-            return outcome
 
         # evaluate the types of all tokens
         base_tokens = statement.base_tokens

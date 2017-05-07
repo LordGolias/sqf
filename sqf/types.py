@@ -72,11 +72,6 @@ class Nothing(ConstantValue):
     def __repr__(self):
         return '<%s>' % self
 
-    def __hash__(self):
-        # this is needed because Nothing is an instance (so isinstance(Nothing, Type) == True)
-        # and Types are used in hashin
-        return hash(self.__class__)
-
 
 class Number(ConstantValue):
     def __init__(self, value=None):
@@ -131,8 +126,7 @@ class Array(Type, BaseTypeContainer):
         return len(self._tokens)
 
     def __getitem__(self, other):
-        if self._undefined:
-            return Nothing()
+        assert(not self._undefined)
         return self._tokens[other]
 
     @property
@@ -358,6 +352,3 @@ class File(Code):
 
     def __repr__(self):
         return 'F<%s>' % self._as_str(repr)
-
-#
-# TYPES = [Boolean, String, Number, Array, Code, Namespace, Object]
