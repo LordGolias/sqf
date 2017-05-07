@@ -561,6 +561,12 @@ class Preprocessor(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 1), errors[0].position)
 
+    def test_macros(self):
+        code = 'x call EFUNC(api,setMultiPushToTalkAssignment)'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class Arrays(TestCase):
 

@@ -203,6 +203,10 @@ class Analyzer(BaseInterpreter):
         # A variable can only be evaluated if we need its value, so we will not call its value until the very end.
         elif len(base_tokens) == 1 and type(base_tokens[0]) in (Variable, Array):
             return self.execute_token(base_tokens[0])
+        # global variables with a parenthesis statement are assumed to be a define and thus syntactically correct
+        elif len(base_tokens) == 2 and type(base_tokens[0]) == Variable and base_tokens[0].is_global and \
+            type(base_tokens[1]) == Statement and base_tokens[1].parenthesis:
+            return outcome
 
         # evaluate all the base_tokens, trying to obtain their values
         values = []
