@@ -3,7 +3,7 @@ from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import SQFParenthesisError, SQFParserError
 from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace
-from sqf.keywords import ORDERED_OPERATORS, KEYWORDS, NAMESPACES
+from sqf.keywords import ORDERED_OPERATORS, KEYWORDS, NAMESPACES, PREPROCESSORS
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parse_exp import parse_exp
 
@@ -163,7 +163,8 @@ def _analyse_array_tokens(tokens, tokens_until):
 
 def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls=None, stop_statement='both'):
     if not initial_lvls:
-        initial_lvls = {'[]': 0, '()': 0, '{}': 0, '#define': 0, '#include': 0}
+        initial_lvls = {'[]': 0, '()': 0, '{}': 0}
+        initial_lvls.update({x: 0 for x in PREPROCESSORS})
     lvls = initial_lvls.copy()
 
     statements = []
@@ -221,9 +222,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
             tokens.append(token)
             statements.append(analyse_tokens(tokens))
             tokens = []
-
-        elif (token == Keyword('#define') and lvls['#define'] == 0) or \
-                (token == Keyword('#include') and lvls['#include'] == 0):
+        elif isinstance(token, Keyword) and token.value in PREPROCESSORS and lvls[token.value] == 0:
             if tokens:
                 # a pre-processor starts a new statement
                 statements.append(analyse_tokens(tokens))
@@ -236,7 +235,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
             statements.append(expression)
             i += size - 1
-        elif type(token) == EndOfLine and (lvls['#define'] != 0 or lvls['#include'] != 0):
+        elif type(token) == EndOfLine and any(lvls[x] != 0 for x in PREPROCESSORS):
             if tokens:
                 statements.append(analyse_tokens(tokens))
 
@@ -246,7 +245,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
         i += 1
 
     for lvl_type in lvls:
-        if lvls[lvl_type] != 0 and lvl_type not in ('#define', '#include'):
+        if lvls[lvl_type] != 0 and lvl_type not in PREPROCESSORS:
             raise SQFParenthesisError(get_coord(all_tokens[:start - 1]), 'Parenthesis "%s" not closed' % lvl_type[0])
 
     if tokens:

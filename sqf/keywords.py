@@ -3,8 +3,12 @@ from sqf.expressions import BinaryExpression, UnaryExpression
 from sqf.database import EXPRESSIONS
 
 # keywords that are not commands, but part of the language
-KEYWORDS = {'(', ')', '[', ']', '{', '}',',', '=', ';'}
-KEYWORDS = KEYWORDS.union({'#define','#include', '\\'})
+KEYWORDS = {'(', ')', '[', ']', '{', '}',',', '=', ';', '\\'}
+
+PREPROCESSORS = {'#ifdef', '#ifndef', '#else', '#endif', '#define', '#undef', '#include'}
+
+KEYWORDS = KEYWORDS.union(PREPROCESSORS)
+
 
 NULARY_OPERATORS = set()
 UNARY_OPERATORS = set()

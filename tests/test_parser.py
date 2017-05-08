@@ -327,35 +327,6 @@ class ParseCode(ParserTestCase):
         
         self.assertEqualStatement(expected, result, code)
 
-    def test_define(self):
-        code = "#define CHECK \\\n1"
-        result = parse(code)
-        expected = \
-            Statement([
-                Statement([
-                    Statement([
-                        Keyword('#define'), Space(), V('CHECK'), Space(), BrokenEndOfLine(), N(1)
-            ])])])
-
-        self.assertEqualStatement(expected, result, code)
-
-    def test_include(self):
-        code = '#include "macros.hpp"\n_x = 1'
-        result = parse(code)
-        expected = \
-            Statement([
-                Statement([
-                    Statement([
-                        Keyword('#include'), Space(), String('"macros.hpp"')
-                ])]),
-                Statement([
-                    Statement([
-                        EndOfLine('\n'), V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
-                ])
-            ])
-
-        self.assertEqualStatement(expected, result, code)
-
     def test_signed_precedence(self):
         code = "_x = -1"
         result = parse(code)
@@ -455,20 +426,6 @@ class ParseCode(ParserTestCase):
                 Statement([
                     N(1)], ending=','),
                 Statement([N(2)])
-            ])
-        self.assertEqualStatement(expected, parse(code), code)
-
-    def test_define1(self):
-        code = '#define a ();\n'
-        expected = \
-            Statement([
-                Statement([
-                    Statement([
-                        Keyword('#define'), Space(), V('a'), Space(),
-                        Statement([], parenthesis=True),
-                    ], ending=';'),
-                ]),
-                Statement([EndOfLine('\n')])
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
@@ -873,7 +830,33 @@ class ParseStrings(ParserTestCase):
 
 class ParsePreprocessor(ParserTestCase):
 
-    def test_define(self):
+    def test_define_with_line_break(self):
+        code = "#define CHECK \\\n1"
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#define'), Space(), V('CHECK'), Space(), BrokenEndOfLine(), N(1)
+            ])])])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_define_minimal(self):
+        code = '#define a ();\n'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#define'), Space(), V('a'), Space(),
+                        Statement([], parenthesis=True),
+                    ], ending=';'),
+                ]),
+                Statement([EndOfLine('\n')])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_define_with_argument_and_line_break(self):
         code = "#define a(_x) \\\n(_x==2)"
         result = parse(code)
         expected = \
@@ -897,3 +880,47 @@ class ParsePreprocessor(ParserTestCase):
         code = "a\n// 1.\n#define a\n"
         result = parse(code)
         self.assertEqual(str(result), code)
+
+    def test_include(self):
+        code = '#include "macros.hpp"\n_x = 1'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#include'), Space(), String('"macros.hpp"')
+                ])]),
+                Statement([
+                    Statement([
+                        EndOfLine('\n'), V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
+                ])
+            ])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_ifdef(self):
+        code = '#ifdef A'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#ifdef'), Space(), V('A')
+                    ])
+                ])
+            ])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_endif(self):
+        code = '#endif\n'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([Keyword('#endif')])
+                ]),
+                Statement([EndOfLine('\n')])
+            ])
+
+        self.assertEqualStatement(expected, result, code)

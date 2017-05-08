@@ -567,6 +567,12 @@ class Preprocessor(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_ifdef_endif(self):
+        code = '#ifdef A\nA = 1;#endif'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class Arrays(TestCase):
 

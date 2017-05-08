@@ -122,7 +122,8 @@ class Analyzer(BaseInterpreter):
         was_executed = False
         if isinstance(code, ExecutedCode):
             was_executed = True
-            self._executed_codes.remove(code)
+            if code in self._executed_codes:
+                self._executed_codes.remove(code)
             code = code.original
 
         outcome = super().execute_code(code, params, extra_scope)
@@ -151,6 +152,8 @@ class Analyzer(BaseInterpreter):
             return outcome
 
         # operations that cannot evaluate the value of all base_tokens
+        if base_tokens[0] in (Keyword('#ifdef'), Keyword('#endif')):
+            return outcome
         if base_tokens[0] == Keyword('#define'):
             if len(base_tokens) == 1:
                 exception = SQFParserError(base_tokens[0].position, "Wrong syntax for #define")
@@ -329,7 +332,7 @@ class Analyzer(BaseInterpreter):
             self.exception(SQFParserError(tokens[0].position, message))
         else:
             self.exception(
-                SQFParserError(tokens[0].position, '"%s" is syntactically incorrect (missing ;?)' % statement))
+                SQFParserError(tokens[0].position, 'statement is syntactically incorrect (missing ;?)'))
 
         if statement.ending:
             outcome = Nothing()
