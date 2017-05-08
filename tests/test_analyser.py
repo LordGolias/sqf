@@ -624,6 +624,25 @@ class Preprocessor(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_define_usage(self):
+        code = "#define __CHECK_CATEGORY 2\nx = __CHECK_CATEGORY"
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(analyser['x'], Number(2))
+
+    def test_define_with_args_usage(self):
+        code = "#define __CHECK_CATEGORY(_x) (_x)\n"
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_define_with_define(self):
+        code = "#define PASS(x) PUSH(x,y)\n"
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class Arrays(TestCase):
 

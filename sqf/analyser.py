@@ -49,6 +49,7 @@ class Analyzer(BaseInterpreter):
         # These two are markers indicating that the code was
         self.privates = []
         self._executed_codes = []
+        self.defines = {}
 
     def exception(self, exception):
         self.exceptions.append(exception)
@@ -94,6 +95,9 @@ class Analyzer(BaseInterpreter):
             # store it here
         elif isinstance(token, Array) and token.value is not None:
             result = Array([self.execute_token(s) for s in token.value])
+            result.position = token.position
+        elif str(token) in self.defines:
+            result = self.execute_token(self.defines[str(token)])
             result.position = token.position
         else:
             result = token
@@ -155,9 +159,19 @@ class Analyzer(BaseInterpreter):
         if base_tokens[0] in (Keyword('#ifdef'), Keyword('#endif')):
             return outcome
         if base_tokens[0] == Keyword('#define'):
-            if len(base_tokens) == 1:
-                exception = SQFParserError(base_tokens[0].position, "Wrong syntax for #define")
+            if len(base_tokens) < 2:
+                exception = SQFParserError(base_tokens[0].position, "#define must have at least one argument")
                 self.exception(exception)
+            elif len(base_tokens) == 2: # e.g. #define a 2
+                value = Nothing()
+                value.position = base_tokens[1].position
+                self.defines[str(base_tokens[1])] = value
+            elif len(base_tokens) == 3:  # e.g. #define a(_x) (_x)
+                self.defines[str(base_tokens[1])] = base_tokens[2]
+            else:  # e.g. #define a(_x) b(_x)
+                define_statement = Statement(statement.base_tokens[3:])
+                define_statement.position = base_tokens[3].position
+                self.defines[str(base_tokens[1])] = define_statement
             return outcome
         elif base_tokens[0] == Keyword("#include"):
             if len(base_tokens) != 2 or type(base_tokens[1]) != String:
@@ -206,9 +220,13 @@ class Analyzer(BaseInterpreter):
         # A variable can only be evaluated if we need its value, so we will not call its value until the very end.
         elif len(base_tokens) == 1 and type(base_tokens[0]) in (Variable, Array):
             return self.execute_token(base_tokens[0])
-        # global variables with a parenthesis statement are assumed to be a define and thus syntactically correct
-        elif len(base_tokens) == 2 and type(base_tokens[0]) == Variable and base_tokens[0].is_global and \
-            type(base_tokens[1]) == Statement and base_tokens[1].parenthesis:
+        # heuristic for defines (that are thus syntactically correct):
+        #   - global variable followed by a parenthesis statement
+        #   - first token is a define
+        elif len(base_tokens) == 2 and (
+                            type(base_tokens[0]) == Variable and base_tokens[0].is_global or
+                            str(base_tokens[0]) in self.defines) and \
+                type(base_tokens[1]) == Statement and base_tokens[1].parenthesis:
             return outcome
 
         # evaluate all the base_tokens, trying to obtain their values
