@@ -61,14 +61,25 @@ class ArithmeticExpression(BinaryExpression):
 
 
 class LogicalExpression(BinaryExpression):
-    def __init__(self, op):
+    def __init__(self, op, rhs_type):
         assert (op in OP_LOGICAL)
-        super().__init__(Boolean, op, Boolean, Boolean, self._action)
+        assert (rhs_type in (Boolean, Code))
+        super().__init__(Boolean, op, rhs_type, Boolean, self._action)
 
-    def _action(self, lhs, rhs, _):
+    def _action(self, lhs, rhs, interpreter):
         if lhs.value is None or rhs.value is None:
             return None
-        return OP_OPERATIONS[self.keyword](lhs.value, rhs.value)
+        if isinstance(rhs, Code):
+            result = interpreter.execute_code(rhs)
+            if type(result) not in (Boolean, Nothing):
+                interpreter.exception(SQFParserError(rhs.position, 'code return must be a Boolean (returns %s)' % type(result).__name__))
+                return None
+        else:
+            result = rhs
+
+        if result.value is None:
+            return None
+        return OP_OPERATIONS[self.keyword](lhs.value, result.value)
 
 
 def _while_loop(interpreter, condition_code, do_code):
@@ -565,4 +576,5 @@ for op in OP_COMPARISON:
 for op in OP_ARITHMETIC:
     EXPRESSIONS.append(ArithmeticExpression(op))
 for op in OP_LOGICAL:
-    EXPRESSIONS.append(LogicalExpression(op))
+    for rhs_type in (Boolean, Code):
+        EXPRESSIONS.append(LogicalExpression(op, rhs_type))

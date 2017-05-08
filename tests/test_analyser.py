@@ -361,7 +361,7 @@ class GeneralTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0].message,
                          'error:Binary operator "+" arguments must be '
-                         '[(String,String),(Number,Number),(Array,Array)] '
+                         '[(Array,Array),(String,String),(Number,Number)] '
                          '(lhs is Number, rhs is String)')
 
     def test_call_invalidates_array_variables(self):
@@ -509,6 +509,33 @@ class GeneralTestCase(TestCase):
     @expectedFailure
     def test_precedence_fail(self):
         code = 'x % floor x'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_logical_with_code(self):
+        code = 'x = true || {false}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(analyser['x'], Boolean(True))
+
+    def test_logical_with_code_in_loop(self):
+        code = 'x = {true && {_x == 1}} forEach [1,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(analyser['x'], Boolean(True))
+
+    def test_logical_with_code_returns_number(self):
+        code = '{true || {_x}} forEach [1,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].message, 'error:code return must be a Boolean (returns Number)')
+
+    def test_logical_with_nothing(self):
+        code = '{true || x} forEach [1,2]'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)

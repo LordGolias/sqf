@@ -31,6 +31,9 @@ class ExecutedCode(Code):
         self.outcome = outcome
         self.exceptions = exceptions
 
+    def value(self):
+        return self.original.value
+
     def __repr__(self):
         return 'E%s' % self._as_str(repr)
 
