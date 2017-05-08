@@ -1,10 +1,13 @@
 import math
 
+from sqf.common_expressions import TryCatchExpression, ForEachExpression, \
+    WhileDoExpression, ForFromToDoExpression, ForSpecDoExpression, SwitchDoExpression, \
+    IfThenSpecExpression, IfThenElseExpression, IfThenExpression, IfThenExitWithExpression, CaseExpression
 from sqf.types import Keyword, Namespace, Number, Array, Code, Type, Boolean, String, Nothing, Variable
-from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType
 from sqf.exceptions import SQFParserError
 from sqf.keywords import OP_ARITHMETIC, OP_COMPARISON, OP_LOGICAL
 from sqf.expressions import BinaryExpression, UnaryExpression
+from sqf.interpreter_types import SwitchType
 
 
 OP_OPERATIONS = {
@@ -43,8 +46,6 @@ class ComparisonExpression(BinaryExpression):
         super().__init__(lhs_rhs_type, op, lhs_rhs_type, Boolean, self._action)
 
     def _action(self, lhs, rhs, _):
-        if lhs.value is None or rhs.value is None:
-            return None
         return OP_OPERATIONS[self.keyword](lhs.value, rhs.value)
 
 
@@ -55,8 +56,6 @@ class ArithmeticExpression(BinaryExpression):
         super().__init__(Number, op, Number, Number, self._action)
 
     def _action(self, lhs, rhs, _):
-        if lhs.value is None or rhs.value is None:
-            return None
         return OP_OPERATIONS[self.keyword](lhs.value, rhs.value)
 
 
@@ -67,8 +66,6 @@ class LogicalExpression(BinaryExpression):
         super().__init__(Boolean, op, rhs_type, Boolean, self._action)
 
     def _action(self, lhs, rhs, interpreter):
-        if lhs.value is None or not isinstance(rhs, Code) and rhs.value is None:
-            return None
         if isinstance(rhs, Code):
             result = interpreter.execute_code(rhs)
             if type(result) not in (Boolean, Nothing):
@@ -77,129 +74,139 @@ class LogicalExpression(BinaryExpression):
         else:
             result = rhs
 
-        if result.value is None:
-            return None
         return OP_OPERATIONS[self.keyword](lhs.value, result.value)
 
 
-def _while_loop(interpreter, condition_code, do_code):
-    outcome = Nothing()
-    while True:
-        condition_outcome = interpreter.execute_code(condition_code)
-        if condition_outcome.value is False:
-            break
-        outcome = interpreter.execute_code(do_code)
-    return outcome
+class Action:
+    def __init__(self, action):
+        self.action = action
+
+    def __call__(self, *args):
+        result = None
+        # interpreter = args[-1]
+        all_args = args[:-1]
+        return self.action(*all_args)
 
 
-class WhileExpression(UnaryExpression):
-    """
-    Catches `While {}` expression and stores it as a WhileType
-    """
-    def __init__(self):
-        super().__init__(Keyword('while'), Code, WhileType, lambda v, i: v)
-
-
-class WhileDoExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(WhileType, Keyword('do'), Code, None,
-                         lambda lhs, rhs, i: _while_loop(i, lhs.condition, rhs))
-
-
-def _forspecs_type(array, interpreter):
-    if len(array) != 3:
+def _select(lhs, rhs, interpreter):
+    index = int(round(rhs.value))
+    try:
+        return lhs[index]
+    except IndexError:
         interpreter.exception(SQFParserError(
-            array.position, 'for-then array must contain 3 elements (contains %d)' % len(array)))
-        return None
-    return array
+            lhs.position, 'selecting element %d of array of size %d' % (index, len(lhs))))
 
 
-class ForSpecExpression(UnaryExpression):
-    def __init__(self):
-        super().__init__(Keyword('for'), Array, ForSpecType, _forspecs_type)
+def _select_array(lhs, rhs, interpreter):
+    start = rhs.value[0].value
+    count = rhs.value[1].value
+
+    if start > len(lhs.value):
+        interpreter.exception(SQFParserError(lhs.position, 'Selecting element past size'))
+
+    return lhs.value[start:start + count]
 
 
-def _forspecs_loop(interpreter, start_code, stop_code, increment_code, do_code):
-    outcome = Nothing()
-    outcome.position = start_code.position
+def _subtract_arrays(lhs, rhs):
+    rhs_set = set([rhs_i.value for rhs_i in rhs.value])
+    return [lhs_i for lhs_i in lhs if lhs_i.value not in rhs_set]
 
-    interpreter.execute_code(start_code)
-    while True:
-        condition_outcome = interpreter.execute_code(stop_code)
-        if condition_outcome.value is False:
-            break
 
-        outcome = interpreter.execute_code(do_code)
-        interpreter.execute_code(increment_code)
+def _find(lhs_v, rhs_v):
+    try:
+        index = next(i for i, v in enumerate(lhs_v.value) if v == rhs_v)
+    except StopIteration:
+        index = -1
+    return index
+
+
+def _pushBack(lhs_v, rhs_v):
+    lhs_v.append(rhs_v)
+    return len(lhs_v.value) - 1
+
+
+def _pushBackUnique(lhs_v, rhs_v):
+    if rhs_v in lhs_v.value:
+        return -1
+    else:
+        lhs_v.append(rhs_v)
+        return len(lhs_v.value) - 1
+
+
+def _setVariable(lhs_v, rhs_v, interpreter):
+    namespace_name = lhs_v.value
+    assert(isinstance(rhs_v, Array))
+
+    if len(rhs_v) not in [2, 3]:
+        interpreter.exception(SQFParserError(
+            rhs_v.position, 'setVariable requires array of 2-3 elements (has %d)' % (len(rhs_v))))
+
+    # get the variable name
+    if not isinstance(rhs_v.value[0], (String, Nothing)):
+        interpreter.exception(SQFParserError(
+            rhs_v.value[0].position, 'setVariable array first element must be a string (is %s)' % type(rhs_v.value[0]).__name__))
+
+    variable_name = rhs_v.value[0].value
+    # get the value
+    rhs_assignment = rhs_v.value[1]
+
+    scope = interpreter.get_scope(variable_name, namespace_name)
+    scope[variable_name] = rhs_assignment
+
+
+def _getVariableString(lhs_v, rhs_v, interpreter):
+    variable = Variable(rhs_v.value)
+    variable.position = rhs_v.position
+    return interpreter.value(variable, lhs_v.value)
+
+
+def _getVariableArray(lhs_v, rhs_v, interpreter):
+    # get the variable name
+    if len(rhs_v) != 2:
+        interpreter.exception(SQFParserError(
+            rhs_v.position, 'getVariable requires array of 2 elements (has %d)' % (len(rhs_v))))
+
+    if not isinstance(rhs_v.value[0], (String, Nothing)):
+        interpreter.exception(SQFParserError(
+            rhs_v.value[0].position, 'getVariable array first element must be a string (is %s)' % type(rhs_v.value[0]).__name__))
+
+    variable = Variable(rhs_v.value[0].value)
+    variable.position = rhs_v.value[0].position
+    outcome = interpreter.value(variable, lhs_v.value)
+    if outcome == Nothing():
+        outcome = rhs_v.value[1]
     return outcome
 
 
-class ForSpecDoExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(ForSpecType, Keyword('do'), Code, None,
-                         lambda lhs, rhs, i: _forspecs_loop(i, lhs.array[0], lhs.array[1], lhs.array[2], rhs))
+def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
+    interpreter.client.add_listening(lhs_v.value, rhs_v)
 
 
-class ForExpression(UnaryExpression):
-    def __init__(self):
-        super().__init__(Keyword('for'), String, ForType, lambda rhs, i: rhs)
+def _if_then_else_code(interpreter, condition, then, else_=None):
+    """
+    The equivalent Python code for a if-then-else SQF statement
+    """
+    assert(isinstance(condition, bool) and isinstance(then, Code))
+    if condition:
+        result = interpreter.execute_code(then)
+    else:
+        if else_ is not None:
+            result = interpreter.execute_code(else_)
+        else:
+            result = Nothing()
+    return result
 
 
-class ForFromExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(ForType, Keyword('from'), Number, ForType,
-                         lambda lhs, rhs, i: (lhs.variable, rhs))
+def _if_then_else(if_instance, then_or_else, interpreter):
+    condition = if_instance.condition.value
+    if isinstance(then_or_else, Code):
+        then = then_or_else
+        else_ = None
+    else:
+        then = then_or_else.then
+        else_ = then_or_else.else_
 
-
-class ForFromToExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(ForType, Keyword('to'), Number, ForType,
-                         lambda lhs, rhs, i: (lhs.variable, lhs.from_, rhs))
-
-
-class ForFromToStepExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(ForType, Keyword('step'), Number, ForType,
-                         lambda lhs, rhs, i: (lhs.variable, lhs.from_, lhs.to, rhs))
-
-
-def _forvar_loop(interpreter, token_name, start, stop, step, code):
-    outcome = Nothing()
-    outcome.position = code.position
-
-    for i in range(start, stop + 1, step):
-        outcome = interpreter.execute_code(code, extra_scope={token_name: Number(i)})
-    return outcome
-
-
-class ForFromToDoExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(ForType, Keyword('do'), Code, None,
-                         lambda lhs, rhs, i: _forvar_loop(
-                             i, lhs.variable.value, lhs.from_.value, lhs.to.value, lhs.step.value, rhs))
-
-
-def _foreach_loop(interpreter, code, elements):
-    outcome = Nothing()
-    for i, x in enumerate(elements):
-        outcome = interpreter.execute_code(code, extra_scope={'_x': x, '_forEachIndex': Number(i)})
-    return outcome
-
-
-class ForEachExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(Code, Keyword('forEach'), Array, None,
-                         lambda lhs, rhs, i: _foreach_loop(i, lhs, rhs.value))
-
-
-class SwitchExpression(UnaryExpression):
-    def __init__(self):
-        super().__init__(Keyword('switch'), Type, SwitchType, lambda v, i: v)
-
-
-class CaseExpression(UnaryExpression):
-    def __init__(self):
-        super().__init__(Keyword('case'), Type, SwitchType, lambda v, i: v)
+    return _if_then_else_code(interpreter, condition, then, else_)
 
 
 def parse_switch(interpreter, code):
@@ -223,11 +230,8 @@ def parse_switch(interpreter, code):
                 interpreter.exception(SQFParserError(code.position, 'Switch code contains more than 1 `default`'))
             default_used = True
             if len(values) == 2:
-                if isinstance(values[1], (Variable, Code)):
-                    conditions.append(('default', values[1]))
-                else:
-                    interpreter.exception(
-                        SQFParserError(base_tokens[1].position, '"default" 2nd argument must be code'))
+                assert(isinstance(values[1], (Variable, Code)))
+                conditions.append(('default', values[1]))
             else:
                 interpreter.exception(
                     SQFParserError(base_tokens[1].position, '"default" must contain 2 clauses'))
@@ -235,21 +239,13 @@ def parse_switch(interpreter, code):
             case_condition = values[0].result
             if len(values) == 1:
                 conditions.append((case_condition, None))
-            elif len(values) == 3:
-                if values[1] == Keyword(':'):
-                    outcome_statement = values[2]
-                    conditions.append((case_condition, outcome_statement))
-                else:
-                    interpreter.exception(
-                        SQFParserError(base_tokens[1].position, '"case" second argument must be ":"'))
             else:
-                interpreter.exception(
-                    SQFParserError(statement.position, '"case" must be a 2 or 4 statement'))
-        elif values[0] == Keyword('case'):
-            interpreter.exception(
-                SQFParserError(statement.position, 'keyword "case" must be followed by an argument'))
+                assert(len(values) == 3 and values[1] == Keyword(':'))
+                outcome_statement = values[2]
+                conditions.append((case_condition, outcome_statement))
         else:
-            interpreter.exception(SQFParserError(statement.position, 'Switch code can only start with "case" or "default"'))
+            interpreter.exception(SQFParserError(
+                statement.position, 'Switch code can only start with "case" or "default"'))
 
     return conditions
 
@@ -287,234 +283,75 @@ def execute_switch(interpreter, result, conditions):
     return final_outcome
 
 
-class SwitchDoExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(SwitchType, Keyword('do'), Code, None,
-                         lambda lhs, rhs, i: execute_switch(i, lhs.result, parse_switch(i, rhs)))
-
-
-class IfExpression(UnaryExpression):
-    def __init__(self):
-        super().__init__(Keyword('if'), Boolean, IfType, lambda v, i: v)
-
-
-def _if_then_else(interpreter, condition, then, else_=None):
-    if condition:
-        result = interpreter.execute_code(then)
-    else:
-        if else_ is not None:
-            result = interpreter.execute_code(else_)
-        else:
-            result = Nothing()
-    return result
-
-
-class IfThenExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(IfType, Keyword('then'), Code, None,
-                         lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs))
-
-
-class ElseExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(Code, Keyword('else'), Code, ElseType, lambda lhs, rhs, i: (lhs, rhs))
-
-
-class IfThenElseExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(IfType, Keyword('then'), ElseType, None,
-                         lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs.then, rhs.else_))
-
-
-class IfThenSpecExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(IfType, Keyword('then'), Array, None,
-                         lambda lhs, rhs, i: _if_then_else(i, lhs.condition.value, rhs.value[0], rhs.value[1]))
-
-
-class IfThenExitWithExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(IfType, Keyword('exitwith'), Code, Nothing,
-                         lambda lhs, rhs, i: None)  # todo: implement this in the interpreter
-
-
-def _try_catch(interpreter, try_code, catch_code):
-    result = interpreter.execute_code(try_code)
-    # todo: find a way to execute catch_code on error
-    interpreter.execute_code(catch_code, extra_scope={'_exception': Nothing()})
-    return result
-
-
-class TryExpression(UnaryExpression):
-    def __init__(self):
-        super().__init__(Keyword('try'), Code, TryType, lambda v, i: v)
-
-
-class TryCatchExpression(BinaryExpression):
-    def __init__(self):
-        super().__init__(TryType, Keyword('catch'), Code, None,
-                         lambda lhs, rhs, i: _try_catch(i, lhs.code, rhs))
-
-
-def _select(lhs, rhs, interpreter):
-    if lhs.value is None or rhs.value is None:
-        return Nothing()
-
-    index = int(round(rhs.value))
-    try:
-        return lhs[index]
-    except IndexError:
-        interpreter.exception(SQFParserError(
-            lhs.position, 'selecting element %d of array of size %d' % (index, len(lhs))))
-        return Nothing()
-
-
-def _select_array(lhs, rhs, interpreter):
-    if lhs.value is None or rhs.value is None:
-        return []
-    start = rhs.value[0].value
-    count = rhs.value[1].value
-
-    if start > len(lhs.value):
-        interpreter.exception(SQFParserError(lhs.position, 'Selecting element past size'))
-        return []
-
-    return lhs.value[start:start + count]
-
-
-def _subtract_arrays(lhs, rhs):
-    rhs_set = set([rhs_i.value for rhs_i in rhs.value])
-    return [lhs_i for lhs_i in lhs if lhs_i.value not in rhs_set]
-
-
-def _find(lhs_v, rhs_v):
-    try:
-        index = next(i for i, v in enumerate(lhs_v.value) if v == rhs_v)
-    except StopIteration:
-        index = -1
-    return index
-
-
-def _pushBack(lhs_v, rhs_v):
-    lhs_v.append(rhs_v)
-    return len(lhs_v.value) - 1
-
-
-def _pushBackUnique(lhs_v, rhs_v):
-    if rhs_v in lhs_v.value:
-        return -1
-    else:
-        lhs_v.append(rhs_v)
-        return len(lhs_v.value) - 1
-
-
-def _setVariable(lhs_v, rhs_v, interpreter):
-    if lhs_v.value is None or rhs_v.value is None:
-        return
-    namespace_name = lhs_v.value
-    assert(isinstance(rhs_v, Array))
-
-    if len(rhs_v) not in [2, 3]:
-        interpreter.exception(SQFParserError(
-            lhs_v.position, 'setVariable requires array of 2-3 elements (has %d)' % (len(rhs_v))))
-        return
-
-    # get the variable name
-    if not isinstance(rhs_v.value[0], (String, Nothing)):
-        interpreter.exception(SQFParserError(
-            lhs_v.position, 'setVariable array first element must be a string (is %s)' % type(rhs_v.value[0]).__name__))
-        return
-
-    variable_name = rhs_v.value[0].value
-    # get the value
-    rhs_assignment = rhs_v.value[1]
-    if variable_name is None:
-        return
-
-    scope = interpreter.get_scope(variable_name, namespace_name)
-    scope[variable_name] = rhs_assignment
-
-
-def _getVariableString(lhs_v, rhs_v, interpreter):
-    if lhs_v.value is None or rhs_v.value is None:
-        return Nothing()
-    variable = Variable(rhs_v.value)
-    variable.position = rhs_v.position
-    return interpreter.value(variable, lhs_v.value)
-
-
-def _getVariableArray(lhs_v, rhs_v, interpreter):
-    if lhs_v.value is None or rhs_v.value is None or rhs_v.value[0].value is None:
-        return Nothing()
-    # get the variable name
-    if len(rhs_v) != 2:
-        interpreter.exception(SQFParserError(
-            lhs_v.position, 'getVariable requires array of 2 elements (has %d)' % (len(rhs_v))))
-        return Nothing()
-
-    if not isinstance(rhs_v.value[0], (String, Nothing)):
-        interpreter.exception(SQFParserError(
-            lhs_v.position,
-            'getVariable array first element must be a string (is %s)' % type(rhs_v.value[0]).__name__))
-        return Nothing()
-
-    variable = Variable(rhs_v.value[0].value)
-    variable.position = rhs_v.value[0].position
-    outcome = interpreter.value(variable, lhs_v.value)
-    if outcome == Nothing():
-        outcome = rhs_v.value[1]
+def _foreach_loop(interpreter, code, elements):
+    outcome = Nothing()
+    for i, x in enumerate(elements):
+        outcome = interpreter.execute_code(code, extra_scope={'_x': x, '_forEachIndex': Number(i)})
     return outcome
 
 
-def _addPublicVariableEventHandler(lhs_v, rhs_v, interpreter):
-    interpreter.client.add_listening(lhs_v.value, rhs_v)
+def _forvar_loop_code(interpreter, token_name, start, stop, step, code):
+    outcome = Nothing()
+    outcome.position = code.position
+
+    for i in range(start, stop + 1, step):
+        outcome = interpreter.execute_code(code, extra_scope={token_name: Number(i)})
+    return outcome
 
 
-class Action:
-    def __init__(self, action):
-        self.action = action
-
-    def __call__(self, *args):
-        result = None
-        # interpreter = args[-1]
-        all_args = args[:-1]
-
-        can_execute = True
-        for arg in all_args:
-            if arg.value is None or isinstance(arg, Array) and any(x.value is None for x in arg.value):
-                can_execute = False
-                break
-
-        if can_execute:
-            result = self.action(*all_args)
-        return result
+def _forvar_loop(for_instance, code, interpreter):
+    return _forvar_loop_code(interpreter,
+                             for_instance.variable.value,
+                             for_instance.from_.value,
+                             for_instance.to.value, for_instance.step.value, code)
 
 
-EXPRESSIONS = [
-    CaseExpression(),
+def _forspecs_loop_code(interpreter, start_code, stop_code, increment_code, do_code):
+    outcome = Nothing()
+    outcome.position = start_code.position
 
-    TryExpression(),
+    interpreter.execute_code(start_code)
+    while True:
+        condition_outcome = interpreter.execute_code(stop_code)
+        if condition_outcome.value is False:
+            break
+
+        outcome = interpreter.execute_code(do_code)
+        interpreter.execute_code(increment_code)
+    return outcome
+
+
+def _forspecs_loop(forspec_type, do_code, interpreter):
+    if forspec_type.is_undefined:
+        return Nothing()
+
+    return _forspecs_loop_code(interpreter, forspec_type.array[0],
+                               forspec_type.array[1], forspec_type.array[2], do_code)
+
+
+def _while_loop(interpreter, condition_code, do_code):
+    outcome = Nothing()
+    while True:
+        condition_outcome = interpreter.execute_code(condition_code)
+        if condition_outcome.value is False:
+            break
+        outcome = interpreter.execute_code(do_code)
+    return outcome
+
+
+INTERPRETER_EXPRESSIONS = [
     TryCatchExpression(),
 
-    ForEachExpression(),
-    WhileExpression(),
-    WhileDoExpression(),
+    ForEachExpression(lambda lhs, rhs, i: _foreach_loop(i, lhs, rhs.value)),
+    WhileDoExpression(lambda lhs, rhs, i: _while_loop(i, lhs.condition, rhs)),
 
-    ForExpression(),
-    ForFromExpression(),
-    ForFromToExpression(),
-    ForFromToStepExpression(),
-    ForFromToDoExpression(),
-    ForSpecExpression(),
-    ForSpecDoExpression(),
-    SwitchExpression(),
-    SwitchDoExpression(),
+    ForFromToDoExpression(_forvar_loop),
+    ForSpecDoExpression(_forspecs_loop),
+    SwitchDoExpression(lambda lhs, rhs, i: execute_switch(i, lhs.result, parse_switch(i, rhs))),
 
-    IfExpression(),
-    ElseExpression(),
-    IfThenSpecExpression(),
-    IfThenElseExpression(),
-    IfThenExpression(),
+    IfThenSpecExpression(lambda if_type, array, i: _if_then_else_code(i, if_type.condition.value, array.value[0], array.value[1])),
+    IfThenElseExpression(_if_then_else),
+    IfThenExpression(_if_then_else),
     IfThenExitWithExpression(),
 
     # params
@@ -572,9 +409,9 @@ EXPRESSIONS = [
 for op in OP_COMPARISON:
     for lhs_rhs_type in [Number, String]:
         if lhs_rhs_type == Number or lhs_rhs_type == String and op in [Keyword('=='), Keyword('!=')]:
-            EXPRESSIONS.append(ComparisonExpression(op, lhs_rhs_type))
+            INTERPRETER_EXPRESSIONS.append(ComparisonExpression(op, lhs_rhs_type))
 for op in OP_ARITHMETIC:
-    EXPRESSIONS.append(ArithmeticExpression(op))
+    INTERPRETER_EXPRESSIONS.append(ArithmeticExpression(op))
 for op in OP_LOGICAL:
     for rhs_type in (Boolean, Code):
-        EXPRESSIONS.append(LogicalExpression(op, rhs_type))
+        INTERPRETER_EXPRESSIONS.append(LogicalExpression(op, rhs_type))

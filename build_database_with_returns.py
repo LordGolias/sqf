@@ -6,7 +6,7 @@ https://gist.github.com/LordGolias/1289d59b35359fa3714d3666de396ad7
 """
 import json
 
-from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType
+from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType
 from sqf.types import Code, Array, Boolean, Number, Type, Nothing, String, Namespace, Object, Config
 
 
@@ -26,7 +26,7 @@ STRING_TO_TYPE = {
     'TEAM_MEMBER': Object,
     'CONTROL': Object,
     'DISPLAY': Object,
-    'EXCEPTION': Object,
+    'EXCEPTION': TryType,
     'FOR': ForType,
     'IF': IfType,
     'SWITCH': SwitchType,
@@ -45,7 +45,6 @@ STRING_TO_TYPE = {
 # the argument the type is initialized with
 TYPE_TO_INIT_ARGS = {
     Namespace: "missionNamespace",
-    Code: '[]'
 }
 
 
@@ -71,9 +70,9 @@ for operator in data['operators']:
             if return_type_name == 'NaN':
                 continue
             return_type = STRING_TO_TYPE_RETURN[return_type_name]
-            init_code = 'None'
+            init_code = ''
             if return_type in TYPE_TO_INIT_ARGS:
-                init_code = TYPE_TO_INIT_ARGS[return_type]
+                init_code = ', action=lambda lhs, rhs, i: %s' % TYPE_TO_INIT_ARGS[return_type]
 
             for lhs_type_name in case_data['argL']:
                 if lhs_type_name == 'NaN':
@@ -86,7 +85,7 @@ for operator in data['operators']:
                     expression = 'BinaryExpression(' \
                                  '{lhs_type}, ' \
                                  'Keyword(\'{keyword}\'), ' \
-                                 '{rhs_type}, {return_type}, action=lambda lhs, rhs, i: {init_code})'.format(
+                                 '{rhs_type}, {return_type}{init_code})'.format(
                         lhs_type=lhs_type.__name__,
                         keyword=op_name,
                         rhs_type=rhs_type.__name__,
@@ -110,9 +109,9 @@ for function in data['functions']:
                 continue
             return_type = STRING_TO_TYPE_RETURN[return_type_name]
 
-            init_code = 'None'
+            init_code = ''
             if return_type in TYPE_TO_INIT_ARGS:
-                init_code = TYPE_TO_INIT_ARGS[return_type]
+                init_code = ', action=lambda rhs, i: %s' % TYPE_TO_INIT_ARGS[return_type]
 
             for rhs_type_name in case_data['argT']:
                 if rhs_type_name == 'NaN':
@@ -120,7 +119,7 @@ for function in data['functions']:
                 rhs_type = STRING_TO_TYPE[rhs_type_name]
                 expression = 'UnaryExpression(' \
                              'Keyword(\'{keyword}\'), ' \
-                             '{rhs_type}, {return_type}, action=lambda rhs, i: {init_code})'.format(
+                             '{rhs_type}, {return_type}{init_code})'.format(
                     keyword=op_name,
                     rhs_type=rhs_type.__name__,
                     return_type=return_type.__name__,
@@ -137,14 +136,17 @@ for nullop in data['nulars']:
     for return_type_name in case_data['retT']:
         if return_type_name == 'NaN':
             continue
+        if op_name == 'getClientStateNumber':
+            # getClientStateNumber is a SCALAR, not a STRING
+            return_type_name = 'SCALAR'
         return_type = STRING_TO_TYPE_RETURN[return_type_name]
-        init_code = 'None'
+        init_code = ''
         if return_type in TYPE_TO_INIT_ARGS:
-            init_code = TYPE_TO_INIT_ARGS[return_type]
+            init_code = ', action=lambda i: %s' % TYPE_TO_INIT_ARGS[return_type]
 
         expression = 'NullExpression(' \
                      'Keyword(\'{keyword}\'), ' \
-                     '{return_type}, action=lambda i: {init_code})'.format(
+                     '{return_type}{init_code})'.format(
             keyword=op_name, return_type=return_type.__name__, init_code=init_code)
         expressions.append(expression)
 

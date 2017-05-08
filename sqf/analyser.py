@@ -1,21 +1,18 @@
-from sqf.interpreter_expressions import \
-    IfThenExpression, IfThenSpecExpression, IfThenElseExpression, IfThenExitWithExpression, \
-    ForFromToDoExpression, ForSpecDoExpression, \
-    WhileDoExpression, ForEachExpression, SwitchDoExpression, parse_switch
-from sqf.types import Statement, Code, Number, Nothing, Variable, Array, String, Type, File, BaseType
-from sqf.interpreter_types import InterpreterType, PrivateType
+from copy import deepcopy
+
+from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, Number, Object
+from sqf.interpreter_types import InterpreterType, PrivateType, ForType
 from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
 from sqf.exceptions import SQFParserError, SQFWarning
 from sqf.base_interpreter import BaseInterpreter
 from sqf.database import EXPRESSIONS
+from sqf.common_expressions import COMMON_EXPRESSIONS
 from sqf.expressions_cache import values_to_expressions, build_database
 
 
-import sqf.interpreter_expressions
-
-## Replace all expressions in `database` by expressions from `expressions` with the same signature
-for exp in sqf.interpreter_expressions.EXPRESSIONS:
+# Replace all expressions in `database` by expressions from `COMMON_EXPRESSIONS` with the same signature
+for exp in COMMON_EXPRESSIONS:
     if exp in EXPRESSIONS:
         EXPRESSIONS.remove(exp)
     EXPRESSIONS.append(exp)
@@ -35,10 +32,10 @@ class Analyzer(BaseInterpreter):
         super().__init__(all_vars)
         self.exceptions = []
 
-        # These two are markers indicating that the code was
         self.privates = []
-        self._unexecuted_codes = []
-        self._executed_codes = []
+        self.unevaluated_interpreter_tokens = []
+        self._unexecuted_codes = {}
+        self._executed_codes = {}
         self.defines = {}
 
     def exception(self, exception):
@@ -58,7 +55,7 @@ class Analyzer(BaseInterpreter):
 
             result = scope[token.name]
             result.position = token.position
-        elif isinstance(token, Array) and token.value is not None:
+        elif isinstance(token, Array) and not token.is_undefined:
             result = Array([self.value(self.execute_token(s)) for s in token.value])
             result.position = token.position
         else:
@@ -69,8 +66,8 @@ class Analyzer(BaseInterpreter):
                 result = token
             result.position = token.position
 
-        if isinstance(token, Code) and token not in self._unexecuted_codes:
-            self._unexecuted_codes.append(token)
+        if isinstance(result, Code) and str(result) not in self._unexecuted_codes:
+            self._unexecuted_codes[str(result)] = result
 
         return result
 
@@ -99,37 +96,36 @@ class Analyzer(BaseInterpreter):
         """
         Executes a code in a dedicated env and put consequence exceptions in self.
         """
-        assert (code in self._unexecuted_codes)
-        assert (code not in self._executed_codes)
+        assert(str(code) in self._unexecuted_codes)
+
         analyser = Analyzer()
-        analyser._executed_codes = self._executed_codes
+        analyser._namespaces = deepcopy(self._namespaces)
+        analyser._current_namespace = analyser._namespaces['missionnamespace']
 
         file = File(code._tokens)
         file.position = code.position
 
         analyser.execute_code(file)
 
-        self._executed_codes.extend(analyser._executed_codes)
         self.exceptions.extend(analyser.exceptions)
 
     def execute_code(self, code, params=None, extra_scope=None):
-        if code in self._unexecuted_codes:
-            self._unexecuted_codes.remove(code)
-        if code in self._executed_codes:  # execute once only to avoid infinite recursions
-            result = Nothing()
-            result.position = code.position
-            return result
-        self._executed_codes.append(code)
+        if str(code) in self._unexecuted_codes:
+            del self._unexecuted_codes[str(code)]
+        self._executed_codes[str(code)] = code
 
         outcome = super().execute_code(code, params, extra_scope)
 
         # collect `private` statements that have a variable but were not collected by the assignment operator
         if isinstance(code, File):
-            for code in self._unexecuted_codes[:]:
-                self.execute_unexecuted_code(code)
-            if self.privates:
-                for private in self.privates:
-                    self.exception(SQFWarning(private.position, 'private argument must be a string.'))
+            for code in self._unexecuted_codes:
+                self.execute_unexecuted_code(self._unexecuted_codes[code])
+
+            for private in self.privates:
+                self.exception(SQFWarning(private.position, 'private argument must be a string.'))
+
+            for token in self.unevaluated_interpreter_tokens:
+                self.exception(SQFWarning(token.position, 'helper type "%s" not evaluated' % token.__class__.__name__))
 
         return outcome
 
@@ -148,11 +144,11 @@ class Analyzer(BaseInterpreter):
             if len(base_tokens) < 2:
                 exception = SQFParserError(base_tokens[0].position, "#define must have at least one argument")
                 self.exception(exception)
-            elif len(base_tokens) == 2: # e.g. #define a 2
+            elif len(base_tokens) == 2: # e.g. #define a
                 value = Nothing()
                 value.position = base_tokens[1].position
                 self.defines[str(base_tokens[1])] = value
-            elif len(base_tokens) == 3:  # e.g. #define a(_x) (_x)
+            elif len(base_tokens) == 3:  # e.g. #define a 2
                 self.defines[str(base_tokens[1])] = base_tokens[2]
             else:  # e.g. #define a(_x) b(_x)
                 define_statement = Statement(statement.base_tokens[3:])
@@ -197,7 +193,7 @@ class Analyzer(BaseInterpreter):
                 self.exception(SQFParserError(base_tokens[0].position, 'lhs of assignment operator must be a variable'))
             else:
                 scope = self.get_scope(lhs.name)
-                scope[lhs.name] = rhs_v
+                scope[lhs.name] = type(rhs_v)()
 
                 if scope.level == 0 and not lhs.is_global:
                     self.exception(
@@ -236,72 +232,30 @@ class Analyzer(BaseInterpreter):
                 break
 
         if case_found:
-            # evaluate the code of an IfThen expression
-            if type(case_found) == IfThenExpression:
-                outcome = self.execute_code(values[2])
-            elif type(case_found) == IfThenElseExpression:
-                outcome = self.execute_code(values[2].then)
-                self.execute_code(values[2].else_)
-            elif type(case_found) == IfThenSpecExpression:
-                self.execute_code(values[2].value[0])
-                outcome = self.execute_code(values[2].value[1])
-            elif type(case_found) == IfThenExitWithExpression:
-                outcome = self.execute_code(values[2])
-            elif type(case_found) == ForFromToDoExpression:
-                outcome = self.execute_code(values[2], extra_scope={values[0].variable.value: Number(0)})
-            elif type(case_found) == ForSpecDoExpression:
-                if values[0].array is not None:
-                    for code in [values[0].array[0], values[0].array[1], values[2], values[0].array[2]]:
-                        outcome = self.execute_code(code)
-            elif type(case_found) == WhileDoExpression:
-                self.execute_code(values[0].condition)
-                outcome = self.execute_code(values[2])
-            elif type(case_found) == ForEachExpression:
-                # let us execute it for a single element. That element is either the first element
-                # of the list, or Nothing
-                if isinstance(values[2], Array) and values[2].value:
-                    element = values[2].value[0]
-                else:
-                    element = Nothing()
-                outcome = case_found.execute([values[0], values[1], Array([element])], self)
-            elif type(case_found) == SwitchDoExpression:
-                self._executed_codes.append(values[2])
-                self._unexecuted_codes.remove(values[2])
-                conditions = parse_switch(self, values[2])
-                for condition, outcome_statement in conditions:
-                    if condition != 'default':
-                        self.value(condition)
-                    if outcome_statement is not None:
-                        outcome_code = self.value(outcome_statement)
-                        if isinstance(outcome_code, Code):
-                            self.execute_code(outcome_code)
-                        elif outcome_code != Nothing():
-                            self.exception(SQFWarning(outcome_statement.position, "'case' 4th part must be code"))
-            elif type(case_found) == BinaryExpression and \
-                    case_found.keyword == Keyword('call') and \
-                    not case_found.is_match(values):
-                # invalidate type of all arrays (since they are passed by
-                # reference and thus can be modified by the call)
-                if isinstance(tokens[0], Array) and tokens[0].value is not None:
-                    arguments = tokens[0].value
-                else:
-                    arguments = [tokens[0]]
-
-                for argument in arguments:
-                    if isinstance(argument, Variable):
-                        scope = self.get_scope(argument.name)
-                        replace = Nothing()
-                        replace.position = argument.position
-                        scope[argument.name] = replace
-            elif case_found.keyword == Keyword('count') and isinstance(values[0], Code):
-                outcome = self.execute_code(values[0], extra_scope={'_x': Nothing()})
-            elif case_found.keyword == Keyword('select') and isinstance(values[2], Code):
-                outcome = self.execute_code(values[2], extra_scope={'_x': Nothing()})
-            elif case_found.is_match(values) or any(map(lambda x: isinstance(x, InterpreterType), values)):
-                # if exact match or partial match on `InterpreterType`, we run them.
+            # if exact match, we run the expression.
+            if case_found.is_match(values):
                 outcome = case_found.execute(values, self)
             elif len(possible_expressions) == 1 and possible_expressions[0].return_type is not None:
                 outcome = possible_expressions[0].return_type()
+
+            extra_scope = None
+            if case_found.keyword in (Keyword('select'), Keyword('apply'), Keyword('count')):
+                extra_scope = {'_x': Nothing()}
+            elif case_found.keyword == Keyword('foreach'):
+                extra_scope = {'_foreachindex': Number(), '_x': Nothing()}
+            elif case_found.keyword == Keyword('catch'):
+                extra_scope = {'_exception': Object()}
+            elif case_found.keyword == Keyword('do') and type(values[0]) == ForType:
+               extra_scope = {'_i': Number()}
+            for value, t_or_v in zip(values, case_found.types_or_values):
+                # execute all pieces of code
+                if t_or_v == Code and isinstance(value, Code):
+                    self.execute_code(value, extra_scope=extra_scope)
+
+                # remove evaluated interpreter tokens
+                if isinstance(value, InterpreterType) and value in self.unevaluated_interpreter_tokens:
+                    self.unevaluated_interpreter_tokens.remove(value)
+
             assert(isinstance(outcome, Type))
         elif len(values) == 1:
             if not isinstance(values[0], Type):
@@ -345,13 +299,17 @@ class Analyzer(BaseInterpreter):
             self.exception(
                 SQFParserError(tokens[0].position, 'statement is syntactically incorrect (missing ;?)'))
 
-        if statement.ending:
-            outcome = Nothing()
+        if isinstance(outcome, InterpreterType):
+            self.unevaluated_interpreter_tokens.append(outcome)
 
         assert(isinstance(outcome, BaseType))
         # the position of Private is different because it can be passed from analyser to analyser,
         # and we want to keep the position of the outermost analyser.
         if not isinstance(outcome, PrivateType):
+            outcome.position = statement.position
+
+        if statement.ending:
+            outcome = Nothing()
             outcome.position = statement.position
 
         return outcome

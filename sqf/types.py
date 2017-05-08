@@ -7,7 +7,16 @@ class Type(BaseType):
     """
     A type represents a type of variable. Every quantity that has a value is a type.
     """
-    pass
+    @property
+    def is_undefined(self):
+        """
+        Represents whether its value is defined or not.
+        """
+        return self.value is None
+
+    @property
+    def value(self):
+        return None
 
 
 class ConstantValue(Type):
@@ -25,11 +34,11 @@ class ConstantValue(Type):
 
 class Boolean(ConstantValue):
     def __init__(self, value=None):
-        assert (value in (None,True,False))
+        assert (value in (None, True, False))
         super().__init__(value)
 
     def __str__(self):
-        if self._value is None:
+        if self.is_undefined:
             return 'undefined'
         if self._value:
             return 'true'
@@ -54,7 +63,7 @@ class String(ConstantValue):
             super().__init__(value)
 
     def __str__(self):
-        if self.value is None:
+        if self.is_undefined:
             return "undefined"
         return "%s%s%s" % (self.container, self.value, self.container)
 
@@ -79,7 +88,7 @@ class Number(ConstantValue):
         super().__init__(value)
 
     def __str__(self):
-        if self.value is None:
+        if self.is_undefined:
             return "undefined"
         if isinstance(self._value, int):
             return '%d' % self._value
@@ -102,6 +111,10 @@ class Array(Type, BaseTypeContainer):
             self._undefined = True
             tokens = []
         BaseTypeContainer.__init__(self, tokens)
+
+    @property
+    def is_undefined(self):
+        return self._undefined
 
     def __repr__(self):
         return self._as_str(repr)
@@ -131,20 +144,23 @@ class Array(Type, BaseTypeContainer):
 
     @property
     def value(self):
-        if self._undefined:
+        if self.is_undefined:
             return None
         return self._tokens
 
     def extend(self, index):
+        assert(not self.is_undefined)
         new_tokens = [Nothing()] * (index - len(self._tokens) + 1)
         self._tokens += new_tokens
         self._update_base_tokens()
 
     def append(self, token):
+        assert (not self.is_undefined)
         self._tokens.append(token)
         self._update_base_tokens()
 
     def resize(self, count):
+        assert (not self.is_undefined)
         if count > len(self._tokens):
             self.extend(count - 1)
         else:
@@ -152,14 +168,17 @@ class Array(Type, BaseTypeContainer):
         self._update_base_tokens()
 
     def reverse(self):
+        assert (not self.is_undefined)
         self._tokens.reverse()
         self._update_base_tokens()
 
     def add(self, other):
+        assert (not self.is_undefined)
         self._tokens += other
         self._update_base_tokens()
 
     def set(self, rhs_v):
+        assert (not self.is_undefined)
         # https://community.bistudio.com/wiki/set
         assert(isinstance(rhs_v, Array))
         index = rhs_v.value[0].value
@@ -182,6 +201,10 @@ class Variable(Type):
     @property
     def name(self):
         return self._name
+
+    @property
+    def is_undefined(self):
+        return False
 
     @property
     def is_global(self):
@@ -261,8 +284,21 @@ class Code(_Statement, Type):
     """
     The class that holds (non-interpreted) code.
     """
-    def __init__(self, tokens):
-        super().__init__(tokens, parenthesis='{}')
+    def __init__(self, tokens=None):
+        Type.__init__(self)
+        if tokens is not None:
+            assert (all(not isinstance(t, ParserType) for t in tokens))
+            if Keyword(',') in tokens:
+                raise SQFError('Keyword "," cannot be an item of an Array')
+            self._undefined = False
+        else:
+            self._undefined = True
+            tokens = []
+        _Statement.__init__(self, tokens, parenthesis='{}')
+
+    @property
+    def is_undefined(self):
+        return self._undefined
 
     def __repr__(self):
         return '%s' % self._as_str(repr)
@@ -320,26 +356,12 @@ class Namespace(Type):
             return False
 
 
-class Config(Type):
-
-    def __init__(self, value=None):
-        super().__init__()
-        self._value = value
-
-    @property
-    def value(self):
-        return self._value
+class Config(ConstantValue):
+    pass
 
 
-class Object(Type):
-
-    def __init__(self, value=None):
-        super().__init__()
-        self._value = value
-
-    @property
-    def value(self):
-        return self._value
+class Object(ConstantValue):
+    pass
 
 
 class File(Code):

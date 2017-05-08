@@ -1,7 +1,6 @@
 from unittest import TestCase, expectedFailure
 
-from sqf.interpreter_expressions import parse_switch
-from sqf.types import Number, String, Boolean, Code, Statement, Variable, Nothing, Array
+from sqf.types import Number, String, Boolean, Nothing, Array
 from sqf.parser import parse
 from sqf.analyser import analyze, Analyzer
 
@@ -10,12 +9,6 @@ class GeneralTestCase(TestCase):
 
     def test_insensitive_variables(self):
         code = 'private "_x"; a = _X'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_insensitive__foreachindex(self):
-        code = '{_foreachindex, _X} forEach [0]'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
@@ -31,20 +24,13 @@ class GeneralTestCase(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Number(2), analyser['_x'])
+        self.assertEqual(Number(), analyser['_x'])
 
     def test_assign_wrong(self):
         analyser = analyze(parse('1 = 2;'))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 1), errors[0].position)
-
-    def test_private_eq(self):
-        analyser = analyze(parse('private _x = 2; _z = _x + 1;'))
-        errors = analyser.exceptions
-
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(Number(2), analyser['_x'])
 
     def test_private_eq1(self):
         analyser = analyze(parse('private _x = 1 < 2;'))
@@ -150,13 +136,6 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
 
-    def test_defines(self):
-        # ignore "macros" (not correct since CHECK may not be defined, bot for that we need a pre-processor)
-        code = 'CHECK(x)'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
     def test_if_then(self):
         code = 'if (false) then {_damage = 0.95;};'
         analyser = analyze(parse(code))
@@ -181,30 +160,6 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
 
-    def test_for_scope(self):
-        code = 'for "_i" from 0 to 10 do {_i}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_for_scope_statement(self):
-        code = 'for "_i" from 0 to (10 - 1) do {_lamp = _i}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-    def test_for_scope_new(self):
-        code = 'for "_i" from 0 to 10 do {_lamp = _i}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-    def test_for(self):
-        code = 'for "_i" from 0 to 10 do {hint str _i}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
     def test_while(self):
         code = 'while {true} do {_x = 2}'
         analyser = analyze(parse(code))
@@ -217,34 +172,17 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 6)
 
-        code = 'for [{},{}] do {}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
     def test_for_code(self):
         code = 'private _x = {hint str _y}; for "_i" from 0 to 10 do _x'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
 
-    def test_foreach(self):
-        code = '{hint str _x} forEach [1,2]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
     def test_foreach_error(self):
         code = '{hint str _y} forEach [1,2]'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
-
-    def test_foreach_empty(self):
-        code = '{hint str _x} forEach []'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
 
     def test_foreach_variable(self):
         code = '{hint str _y} forEach _d;'
@@ -270,24 +208,11 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_get_variable_default(self):
-        code = 'private _x = missionNamespace getVariable ["x", 2];'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(Number(2), analyser['_x'])
-
     def test_get_variable_unknown_first_element(self):
         code = 'missionNamespace getVariable[format["x_%1",x],[]];'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
-
-    def test_try_catch(self):
-        code = 'try {hint _x} catch {hint _y; hint _exception}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 2)
 
     def test_lowercase(self):
         code = 'mapa = "MapBoard_altis_F" createvehicle [0,0,0];'
@@ -299,14 +224,14 @@ class GeneralTestCase(TestCase):
         code = 'for "_i" from 1 to 10 {y pushBack _i;};'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 2)
+        self.assertEqual(len(errors), 3)
         self.assertEqual((1, 20), errors[0].position)
 
     def test_if_missing_then(self):
         code = 'if (true) {1}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(errors), 2)
         self.assertEqual((1, 4), errors[0].position)
 
     def test_while_no_errors(self):
@@ -359,21 +284,7 @@ class GeneralTestCase(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0].message,
-                         'error:Binary operator "+" arguments must be '
-                         '[(Array,Array),(String,String),(Number,Number)] '
-                         '(lhs is Number, rhs is String)')
-
-    def test_call_invalidates_array_variables(self):
-        code = 'private _x = [1]; [_x] call A; 1 + _x'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
-        code = 'private _x = [1]; _x call A; 1 + _x'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
+        self.assertTrue(errors[0].message.startswith('error:Binary operator "+" arguments must be ['))
 
     def test_error_in(self):
         code = '_door ()'
@@ -442,17 +353,6 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_select_array_past_size(self):
-        code = '[1,2] select 10'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-        code = '[1,2] select [10,2]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
     def test_getset_variable_undefined(self):
         code = 'missionNamespace getVariable x'
         analyser = analyze(parse(code))
@@ -469,26 +369,6 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-        code = 'missionNamespace getVariable [1,2]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-        code = 'missionNamespace getVariable [1]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-        code = 'missionNamespace setVariable [x,2,3,4]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-        code = 'missionNamespace setVariable [1,2]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
         code = 'missionNamespace setVariable [x,2]'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
@@ -499,13 +379,6 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_call_return(self):
-        code = 'x = 2 call {_this};'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(analyser['x'], Number(2))
-
     @expectedFailure
     def test_precedence_fail(self):
         code = 'x % floor x'
@@ -513,63 +386,15 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_logical_with_code(self):
-        code = 'x = true || {false}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(analyser['x'], Boolean(True))
-
-    def test_logical_with_code_in_loop(self):
-        code = 'x = {true && {_x == 1}} forEach [1,2]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(analyser['x'], Boolean(True))
-
-    def test_logical_with_code_returns_number(self):
-        code = '{true || {_x}} forEach [1,2]'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0].message, 'error:code return must be a Boolean (returns Number)')
-
     def test_logical_with_nothing(self):
         code = '{true || x} forEach [1,2]'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_lazy_code(self):
-        code = '{_x == 2} count x'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
-        code = 'x select {_x == 2}'
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_lazy_code_with_errors(self):
-        code = 'x select {_x == _y}' # _y is undefined
-        analyser = analyze(parse(code))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-    def test_call_withing(self):
-        analyser = analyze(parse('x = 0; call {call {x = x + 1; call {x = x + 2}}}'))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(analyser['x'], Number(3))
-
     def test_call_recursive(self):
         code = '''x = {call x}; call x'''
         analyze(parse(code))
-        # try:
-        #     analyze(parse(code))
-        # except RecursionError:
-        #     self.fail('analyzer ended in recursive loop')
 
 
 class Preprocessor(TestCase):
@@ -643,7 +468,7 @@ class Preprocessor(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(analyser['x'], Number(2))
+        self.assertEqual(analyser['x'], Number())
 
     def test_define_with_args_usage(self):
         code = "#define __CHECK_CATEGORY(_x) (_x)\n"
@@ -653,6 +478,20 @@ class Preprocessor(TestCase):
 
     def test_define_with_define(self):
         code = "#define PASS(x) PUSH(x,y)\n"
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_defines(self):
+        # ignore "macros" (not correct since CHECK may not be defined, but for that we need a pre-processor)
+        code = 'CHECK(x)'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_define_correct(self):
+        # ignore "macros" (not correct since CHECK may not be defined, bot for that we need a pre-processor)
+        code = '#define A'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
@@ -707,69 +546,27 @@ class Arrays(TestCase):
         self.assertEqual(len(analyser.exceptions), 0)
 
 
-class ParseSwitch(TestCase):
-
-    def assertEqualConditions(self, expected, result):
-        self.assertEqual(len(expected), len(result))
-        for ex, re in zip(expected, result):
-            self.assertEqual(ex[0], re[0])
-            self.assertEqual(ex[1], re[1])
-
-    def test_parse_switch_code(self):
-        analyser = analyze(parse(""))
-        result = parse('{case "blue": {true}; case "red": {false}}')
-        conditions = parse_switch(analyser, result[0][0])
-
-        expected = ((String('"blue"'), Code([Statement([Boolean(True)])])),
-                    (String('"red"'), Code([Statement([Boolean(False)])])))
-
-        self.assertEqual(len(analyser.exceptions), 0)
-        self.assertEqualConditions(expected, conditions)
-
-    def test_parse_with_next(self):
-        analyser = analyze(parse(""))
-        result = parse('{case "blue"; case "red": {false}; default {false}}')
-        conditions = parse_switch(analyser, result[0][0])
-
-        expected = (
-            (String('"blue"'), None),
-            (String('"red"'), Code([Statement([Boolean(False)])])),
-            ('default', Code([Statement([Boolean(False)])]))
-        )
-        self.assertEqual(len(analyser.exceptions), 0)
-        self.assertEqualConditions(expected, conditions)
-
-    def test_case_with_expression(self):
-        code = '{case isClass(x): {x};}'
-        analyser = analyze(parse(""))
-        result = parse(code)
-        conditions = parse_switch(analyser, result[0][0])
-
-        expected = (
-            (Boolean(), Code([Statement([Variable('x')])])),
-        )
-
-        self.assertEqual(len(analyser.exceptions), 0)
-        self.assertEqualConditions(expected, conditions)
+class Switch(TestCase):
 
     def test_case_not_code(self):
         code = 'switch (x) do {case 1: 2}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 23), errors[0].position)
+        self.assertEqual(len(errors), 2)
+        self.assertEqual((1, 16), errors[0].position)
 
     def test_incomplete_case(self):
         code = 'switch (x) do {case 1: }'
         analyser = analyze(parse(code))
-        self.assertEqual(len(analyser.exceptions), 1)
+        self.assertEqual(len(analyser.exceptions), 2)
         self.assertEqual((1, 16), analyser.exceptions[0].position)
+        self.assertEqual((1, 16), analyser.exceptions[1].position)
 
     def test_no_double_colon(self):
         code = 'switch (0) do {case 1, {"one"};}'
         analyser = analyze(parse(code))
         self.assertEqual(len(analyser.exceptions), 1)
-        self.assertEqual((1, 23), analyser.exceptions[0].position)
+        self.assertEqual((1, 16), analyser.exceptions[0].position)
 
     def test_case_by_variable(self):
         code = 'switch (a) do {case "blue": x; case "red": {false}}'
@@ -800,13 +597,6 @@ class ParseSwitch(TestCase):
         self.assertEqual(len(errors), 2)
         self.assertEqual((1, 16), errors[0].position)
 
-    def test_default_not_code(self):
-        code = '{default "1"}'
-        analyser = analyze(parse(""))
-        result = parse(code)
-        parse_switch(analyser, result[0][0])
-        self.assertEqual(len(analyser.exceptions), 1)
-
     def test_switch_statement_without_parenthesis(self):
         code = 'switch 1 do {case 1: {"one"};}'
         analyser = analyze(parse(code))
@@ -823,7 +613,7 @@ class ParseSwitch(TestCase):
         code = 'switch (1) {case 1: {"one"};}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(errors), 2)
         self.assertEqual((1, 8), errors[0].position)
 
 
@@ -863,11 +653,11 @@ class NestedCode(TestCase):
         self.assertEqual((2, 11), errors[0].position)
 
     def test_code_with_if(self):
-        code = "x = {\ncall {if _x;}\n}"
+        code = "x = {\ncall {if x;}\n}"
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
-        self.assertEqual((2, 10), errors[0].position)
+        self.assertEqual((2, 7), errors[0].position)
 
     def test_private(self):
         code = 'private _x = 2; while {_x < 1} do {}'
@@ -878,6 +668,11 @@ class NestedCode(TestCase):
     def test_private_in_exitwith(self):
         code = 'private _x = 2; if (true) exitWith {x = _x}'
         analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_call_within(self):
+        analyser = analyze(parse('x = 0; call {call {x = x + 1; call {x = x + 2}}}'))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
@@ -900,22 +695,7 @@ class Params(TestCase):
         analyser = analyze(parse('params [["_x", 0], "_y"]'))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Number(0), analyser['_x'])
-
-    def test_params_array_wrong(self):
-        analyser = analyze(parse('params [["_x"], "_y"]'))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-    def test_params_wrong_array_element(self):
-        analyser = analyze(parse('params [1]'))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-
-    def test_params_wrong_argument(self):
-        analyser = analyze(parse('params {1}'))
-        errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
+        self.assertEqual(Nothing(), analyser['_x'])
 
     def test_params_with_prefix(self):
         analyser = analyze(parse('[] params ["_x"]'))
@@ -933,9 +713,96 @@ class Params(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_params_array_wrong(self):
+        analyser = analyze(parse('params [["_x"], "_y"]'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_params_wrong_array_element(self):
+        analyser = analyze(parse('params [1]'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_params_wrong_argument(self):
+        analyser = analyze(parse('params {1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+
+class SpecialContext(TestCase):
+    def test_insensitive__foreachindex(self):
+        code = '{_foreachindex} forEach [0]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_try_catch(self):
+        code = 'try {hint _x} catch {hint _y; hint str _exception}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 2)
+
+    def test_for_scope(self):
+        code = 'for "_i" from 0 to 10 do {_i}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_for_scope_new(self):
+        code = 'for "_i" from 0 to 10 do {_lamp = _i}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_foreach(self):
+        code = '{hint str _x} forEach [1,2]'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_select_count_apply(self):
+        code = '{_x == 2} count x'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'x select {_x == 2}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'x apply {_x == 2}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'x select {_x == _y}' # _y is undefined
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_code_not_executed_in_loop(self):
+        code = '{if ((_x select 0) == r && {(_x select 1) == r}) exitWith {};} forEach t;'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = '(allVariables _this) select {!(isNil {_this getVariable _x})};'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_issue5(self):
+        code = 'private _view = cameraView;if (!isNull objectParent player && {_view == "GUNNER"}) then {};'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class UndefinedValues(TestCase):
-
+    """
+    Test what happens when a value is not defined.
+    """
     def test_number(self):
         code = "y = 2 + x"
         analyzer = Analyzer()
@@ -971,16 +838,69 @@ class UndefinedValues(TestCase):
 
     def test_array(self):
         code = "y = x select 2"
+
         analyzer = Analyzer()
         scope = analyzer.get_scope('x')
         scope['x'] = Array()
 
         analyze(parse(code), analyzer)
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
+        self.assertEqual(len(analyzer.exceptions), 0)
         self.assertEqual(analyzer['y'], Nothing())
 
     def test_array2(self):
         analyser = analyze(parse('allPlayers select [1,2];'))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
+
+    def test_if(self):
+        # undefined -> do neither and invalidate any assigment
+        analyser = analyze(parse('x=2; if (y) then {x=1} else {x=2}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(), analyser['x'])
+
+        # undefined -> test then
+        analyser = analyze(parse('if (y) then {!1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+        # undefined -> test both
+        analyser = analyze(parse('if (y) then {!1} else {!2}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 2)
+
+    def test_while(self):
+        # undefined -> do not iterate
+        analyser = analyze(parse('while {x != 0} do {x = 1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(), analyser['x'])
+
+        # undefined -> test
+        analyser = analyze(parse('while {x != 0} do {! 1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_for(self):
+        # undefined -> do not execute
+        analyser = analyze(parse('x = 0; for "_i" from 0 to y do {x = x + 1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(), analyser['x'])
+
+        # undefined -> test
+        analyser = analyze(parse('x = 0; for "_i" from 0 to y do {!1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_forspecs(self):
+        # undefined -> do not execute
+        analyser = analyze(parse('y = 0; for [{x = 1},{x <= z},{x = x + 1}] do {y = y + 1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(), analyser['y'])
+
+        # undefined -> test
+        analyser = analyze(parse('y = 0; for [{x = 1},{x <= z},{x = x + 1}] do {!1}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)

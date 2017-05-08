@@ -41,6 +41,9 @@ class BaseInterpreter:
     def __contains__(self, name):
         return name in self.get_scope(name)
 
+    def _add_params(self, token):
+        self.add_privates([token[0]])
+
     def add_params(self, base_token):
         if isinstance(base_token, Array):
             for token in base_token:
@@ -50,10 +53,7 @@ class BaseInterpreter:
                     self.add_privates([token])
                 elif isinstance(token, Array):
                     if len(token) in (2, 3, 4):
-                        self.add_privates([token[0]])
-                        lhs = token[0].value
-                        scope = self.get_scope(lhs)
-                        scope[lhs] = token[1]
+                        self._add_params(token)
                     else:
                         self.exception(
                             SQFParserError(base_token.position, '`params` array element must have 2-4 elements'))

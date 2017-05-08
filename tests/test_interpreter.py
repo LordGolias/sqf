@@ -96,6 +96,24 @@ class TestInterpreter(TestCase):
         self.assertEqual(N(2), interpreter['_x'])
         self.assertEqual(N(3), interpreter['_y'])
 
+    def test_get_variable(self):
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('missionnamespace getVariable ["x"]')
+        self.assertEqual((1, 33), cm.exception.position)
+
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('missionnamespace getVariable [1, 2]')
+        self.assertEqual((1, 35), cm.exception.position)
+
+    def test_set_variable(self):
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('missionnamespace setVariable ["x"]')
+        self.assertEqual((1, 33), cm.exception.position)
+
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('missionnamespace setVariable [1, 2]')
+        self.assertEqual((1, 35), cm.exception.position)
+
 
 class TestInterpretArray(TestCase):
 
@@ -164,6 +182,12 @@ class TestInterpretArray(TestCase):
         _, outcome = interpret('[1, 2, 3] select [1, 10]')
         self.assertEqual(Array([N(2), N(3)]), outcome)
 
+        with self.assertRaises(SQFParserError):
+            _, outcome = interpret('[1, 2, 3] select [4, 10]')
+
+        with self.assertRaises(SQFParserError):
+            _, outcome = interpret('[1, 2, 3] select 10')
+
     def test_find(self):
         _, outcome = interpret('[1, 2] find 2')
         self.assertEqual(N(1), outcome)
@@ -198,6 +222,11 @@ class TestInterpretArray(TestCase):
 
         interpreter, _ = interpret('_x = [1, 2]; _y = _x; reverse _x;')
         self.assertEqual(Array([N(2), N(1)]), interpreter['_y'])
+
+    def test_params(self):
+        # tests that changing _x affects _y when _y = _x.
+        interpreter, _ = interpret('params [["_x", 2]]')
+        self.assertEqual(Number(2), interpreter['_x'])
 
 
 class TestInterpretString(TestCase):
@@ -309,6 +338,11 @@ class Loops(TestCase):
         interpreter, _ = interpret(test)
         self.assertEqual(Array([N(0), N(1), N(0), N(0), N(1), N(1)]), interpreter['_array'])
 
+    def test_foreach(self):
+        test = 'y = 0; {y = y + _x + _foreachindex} forEach [1,2]'
+        interpreter, _ = interpret(test)
+        self.assertEqual(N(1 + 0 + 2 + 1), interpreter['y'])
+
 
 class Switch(TestCase):
 
@@ -342,14 +376,35 @@ class Switch(TestCase):
         self.assertEqual(String('"3"'), interpret(code % '"3"')[1])
 
     def test_syntax_error(self):
-        with self.assertRaises(SQFParserError) as cm:
-            interpret('switch (0) do {case (1), {"one"};}')
-        self.assertEqual((1, 25), cm.exception.position)
-
         # 2 defaults error
         with self.assertRaises(SQFParserError) as cm:
             interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
-        self.assertEqual((1, 14), cm.exception.position)
+            self.assertEqual((1, 14), cm.exception.position)
+
+        # more than one code
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('switch (0) do {case 1: {}')
+        self.assertEqual((1, 15), cm.exception.position)
+
+        # more than one code
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('switch (0) do {1 + 1}')
+        self.assertEqual((1, 16), cm.exception.position)
+
+        # case without arguments
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('switch (0) do {case;')
+        self.assertEqual((1, 15), cm.exception.position)
+
+        # case without arguments
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('switch (0) do {1}')
+        self.assertEqual((1, 16), cm.exception.position)
+
+        # default without argument
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('switch (0) do {default: {}}')
+        self.assertEqual((1, 23), cm.exception.position)
 
 
 class Scopes(TestCase):

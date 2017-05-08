@@ -3,8 +3,16 @@ from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
 from sqf.parser import parse
 from sqf.exceptions import SQFParserError
-from sqf.interpreter_expressions import EXPRESSIONS
+from sqf.common_expressions import COMMON_EXPRESSIONS as EXPRESSIONS
+from sqf.interpreter_expressions import INTERPRETER_EXPRESSIONS
 from sqf.base_interpreter import BaseInterpreter
+
+
+# Replace all expressions in `database` by expressions from `COMMON_EXPRESSIONS` with the same signature
+for exp in INTERPRETER_EXPRESSIONS:
+    if exp in EXPRESSIONS:
+        EXPRESSIONS.remove(exp)
+    EXPRESSIONS.append(exp)
 
 
 class Interpreter(BaseInterpreter):
@@ -27,6 +35,12 @@ class Interpreter(BaseInterpreter):
     def client(self, client):
         self._client = client
         self._simulation = client.simulation
+
+    def _add_params(self, token):
+        super()._add_params(token)
+        lhs = token[0].value
+        scope = self.get_scope(lhs)
+        scope[lhs] = token[1]
 
     def execute_token(self, token):
         """
@@ -139,6 +153,7 @@ class Interpreter(BaseInterpreter):
 
         if statement.ending:
             outcome = _outcome
+        assert(type(outcome) == Nothing or not outcome.is_undefined)
         return outcome
 
 

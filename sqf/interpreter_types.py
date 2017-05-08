@@ -1,12 +1,16 @@
-from sqf.types import Code, String, Number, Array, Type, Variable
+from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Nothing
 
 
 class InterpreterType(Type):
     # type that is used by the interpreter (e.g. While type)
-    def __init__(self, token=None):
-        assert (token is None or isinstance(token, Type))
+    def __init__(self, token):
+        assert (isinstance(token, Type))
         super().__init__()
         self.token = token
+
+    @property
+    def is_undefined(self):
+        return self.token.is_undefined
 
 
 class PrivateType(InterpreterType):
@@ -24,9 +28,7 @@ class PrivateType(InterpreterType):
 
 class WhileType(InterpreterType):
     def __init__(self, condition):
-        assert(condition is None or isinstance(condition, Code))
-        if condition is None:
-            condition = Code([])
+        assert(isinstance(condition, Code))
         super().__init__(condition)
 
     @property
@@ -36,15 +38,13 @@ class WhileType(InterpreterType):
 
 class ForType(InterpreterType):
     def __init__(self, variable=None, from_=None, to=None, step=None):
-        if from_ is None:
-            from_ = Number()
-        if to is None:
-            to = Number()
         if step is None:
             step = Number(1)
+        if variable is None:
+            variable = String()
         assert (variable is None or isinstance(variable, String))
-        assert (isinstance(from_, Type))
-        assert (isinstance(to, Type))
+        assert (from_ is None or isinstance(from_, Type))
+        assert (to is None or isinstance(to, Type))
         assert (isinstance(step, Type))
         super().__init__(variable)
         self.from_ = from_
@@ -55,10 +55,16 @@ class ForType(InterpreterType):
     def variable(self):
         return self.token
 
+    @property
+    def is_undefined(self):
+        return self.variable.is_undefined or \
+               self.from_ is not None and self.from_.is_undefined or \
+               self.to is not None and self.to.is_undefined
+
 
 class ForSpecType(InterpreterType):
     def __init__(self, array):
-        assert (array is None or isinstance(array, Array))
+        assert (isinstance(array, Array))
         super().__init__(array)
 
     @property
@@ -77,6 +83,8 @@ class SwitchType(InterpreterType):
 
 class IfType(InterpreterType):
     def __init__(self, condition=None):
+        if condition is None:
+            condition = Boolean()
         super().__init__(condition)
 
     @property
@@ -85,22 +93,22 @@ class IfType(InterpreterType):
 
 
 class ElseType(InterpreterType):
-    def __init__(self, then=None, else_=None):
+    def __init__(self, then, else_):
         super().__init__(then)
-        assert (then is None or isinstance(then, Code))
-        assert (else_ is None or isinstance(else_, Code))
+        assert (isinstance(then, Code))
+        assert (isinstance(else_, Code))
         self.else_ = else_
 
     @property
     def then(self):
         return self.token
 
+    @property
+    def is_undefined(self):
+        return self.else_.is_undefined or self.then.is_undefined
+
 
 class TryType(InterpreterType):
-    def __init__(self, code=None):
-        assert (code is None or isinstance(code, Code))
+    def __init__(self, code):
+        assert (isinstance(code, Code))
         super().__init__(code)
-
-    @property
-    def code(self):
-        return self.token

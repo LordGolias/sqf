@@ -65,9 +65,13 @@ class Expression:
 
 
 class UnaryExpression(Expression):
-    def __init__(self, op, rhs_type, return_type, action):
+    def __init__(self, op, rhs_type, return_type, action=None):
         assert (isinstance(op, Keyword))
         super().__init__([op, rhs_type], return_type)
+        if action is None and return_type is None:
+            action = lambda rhs, i: Nothing()
+        elif action is None:
+            action = lambda rhs, i: None
         self.action = action
 
     def execute(self, values, interpreter):
@@ -80,9 +84,13 @@ class UnaryExpression(Expression):
 
 
 class BinaryExpression(Expression):
-    def __init__(self, lhs_type, op, rhs_type, return_type, action):
+    def __init__(self, lhs_type, op, rhs_type, return_type, action=None):
         assert(isinstance(op, Keyword))
         super().__init__([lhs_type, op, rhs_type], return_type)
+        if action is None and return_type is None:
+            action = lambda lhs, rhs, i: Nothing()
+        elif action is None:
+            action = lambda lhs, rhs, i: None
         self.action = action
 
     def execute(self, values, interpreter):
@@ -95,11 +103,13 @@ class BinaryExpression(Expression):
 
 
 class NullExpression(Expression):
-    def __init__(self, op, return_type, action):
+    def __init__(self, op, return_type, action=None):
         assert(isinstance(op, Keyword))
-
-        self.action = action
+        assert(return_type is not None)
         super().__init__([op], return_type)
+        if action is None:
+            action = lambda i: None
+        self.action = action
 
     def execute(self, values, interpreter):
         result = self.action(interpreter)
