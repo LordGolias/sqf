@@ -543,7 +543,7 @@ EXPRESSIONS = [
 
     # code and namespaces
     UnaryExpression(Keyword('call'), Code, None, lambda rhs_v, i: i.execute_code(rhs_v)),
-    BinaryExpression(Array, Keyword('call'), Code, None, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, params=lhs_v)),
+    BinaryExpression(Type, Keyword('call'), Code, None, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, params=lhs_v)),
 
     BinaryExpression(Namespace, Keyword('setVariable'), Array, Nothing, _setVariable),
 

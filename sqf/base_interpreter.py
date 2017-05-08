@@ -125,7 +125,7 @@ class BaseInterpreter:
         outcome = Nothing()
         outcome.position = code.position
         for statement in code.base_tokens:
-            outcome = self.execute_single(statement)
+            outcome = self.value(self.execute_single(statement))
         if not isinstance(code, File):  # so we have access to its scope
             self.del_scope()
         return outcome

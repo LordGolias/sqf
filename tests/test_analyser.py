@@ -75,7 +75,7 @@ class GeneralTestCase(TestCase):
         # private argument must be a string
         analyser = analyze(parse('private {_x};'))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(errors), 2)
 
     def test_private_no_errors(self):
         code = "private _posicion = x call AS_fnc_location_position;"
@@ -498,6 +498,13 @@ class GeneralTestCase(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
+
+    def test_call_return(self):
+        code = 'x = 2 call {_this};'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(analyser['x'], Number(2))
 
     @expectedFailure
     def test_precedence_fail(self):
