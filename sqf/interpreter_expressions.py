@@ -67,7 +67,7 @@ class LogicalExpression(BinaryExpression):
         super().__init__(Boolean, op, rhs_type, Boolean, self._action)
 
     def _action(self, lhs, rhs, interpreter):
-        if lhs.value is None or rhs.value is None:
+        if lhs.value is None or not isinstance(rhs, Code) and rhs.value is None:
             return None
         if isinstance(rhs, Code):
             result = interpreter.execute_code(rhs)

@@ -540,6 +540,23 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_lazy_code(self):
+        code = '{_x == 2} count x'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'x select {_x == 2}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_lazy_code_with_errors(self):
+        code = 'x select {_x == _y}' # _y is undefined
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 1)
+
 
 class Preprocessor(TestCase):
 

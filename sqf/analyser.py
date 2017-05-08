@@ -31,9 +31,6 @@ class ExecutedCode(Code):
         self.outcome = outcome
         self.exceptions = exceptions
 
-    def value(self):
-        return self.original.value
-
     def __repr__(self):
         return 'E%s' % self._as_str(repr)
 
@@ -289,6 +286,10 @@ class Analyzer(BaseInterpreter):
                         replace = Nothing()
                         replace.position = argument.position
                         scope[argument.name] = replace
+            elif case_found.keyword == Keyword('count') and isinstance(values[0], Code):
+                outcome = self.execute_code(values[0], extra_scope={'_x': Nothing()})
+            elif case_found.keyword == Keyword('select') and isinstance(values[2], Code):
+                outcome = self.execute_code(values[2], extra_scope={'_x': Nothing()})
             elif case_found.is_match(values) or any(map(lambda x: isinstance(x, InterpreterType), values)):
                 # if exact match or partial match on `InterpreterType`, we run them.
                 outcome = case_found.execute(values, self)
