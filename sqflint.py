@@ -20,14 +20,13 @@ def analyze(code, writer=sys.stdout):
 
 def _main():
     parser = argparse.ArgumentParser(description="Static Analyser of SQF code")
-    parser.add_argument('filename', nargs='?', type=argparse.FileType('r'), default=None,
+    parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=None,
                         help='The full path of the file to be analyzed')
 
     args = parser.parse_args()
 
-    if args.filename is not None:
-        with open(args.filename) as file:
-            code = file.read()
+    if args.file is not None:
+        code = args.file.read()
     else:
         code = sys.stdin.read()
 
