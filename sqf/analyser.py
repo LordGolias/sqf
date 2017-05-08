@@ -4,7 +4,7 @@ from sqf.interpreter_expressions import \
     WhileDoExpression, ForEachExpression, SwitchDoExpression, parse_switch
 from sqf.types import Statement, Code, Number, Nothing, Variable, Array, String, Type, File, BaseType
 from sqf.interpreter_types import InterpreterType, PrivateType
-from sqf.keywords import Keyword
+from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
 from sqf.exceptions import SQFParserError, SQFWarning
 from sqf.base_interpreter import BaseInterpreter
@@ -144,8 +144,6 @@ class Analyzer(BaseInterpreter):
             return outcome
 
         # operations that cannot evaluate the value of all base_tokens
-        if base_tokens[0] in (Keyword('#ifdef'), Keyword('#endif')):
-            return outcome
         if base_tokens[0] == Keyword('#define'):
             if len(base_tokens) < 2:
                 exception = SQFParserError(base_tokens[0].position, "#define must have at least one argument")
@@ -165,6 +163,9 @@ class Analyzer(BaseInterpreter):
             if len(base_tokens) != 2 or type(base_tokens[1]) != String:
                 exception = SQFParserError(base_tokens[0].position, "Wrong syntax for #include")
                 self.exception(exception)
+            return outcome
+        elif isinstance(base_tokens[0], Keyword) and base_tokens[0].value in PREPROCESSORS:
+            # remaining preprocessors are ignored
             return outcome
         elif len(base_tokens) == 2 and base_tokens[0] == Keyword('private'):
             # the rhs may be a variable, so we cannot get the value
