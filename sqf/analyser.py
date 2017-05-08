@@ -24,17 +24,6 @@ for exp in sqf.interpreter_expressions.EXPRESSIONS:
 EXPRESSIONS_MAP = build_database(EXPRESSIONS)
 
 
-class ExecutedCode(Code):
-    def __init__(self, code, outcome, exceptions):
-        super().__init__(code._tokens)
-        self.original = code
-        self.outcome = outcome
-        self.exceptions = exceptions
-
-    def __repr__(self):
-        return 'E%s' % self._as_str(repr)
-
-
 class Analyzer(BaseInterpreter):
     """
     The Analyzer. This is sesentially an interpreter that
@@ -48,6 +37,7 @@ class Analyzer(BaseInterpreter):
 
         # These two are markers indicating that the code was
         self.privates = []
+        self._unexecuted_codes = []
         self._executed_codes = []
         self.defines = {}
 
@@ -71,9 +61,6 @@ class Analyzer(BaseInterpreter):
         elif isinstance(token, Array) and token.value is not None:
             result = Array([self.value(self.execute_token(s)) for s in token.value])
             result.position = token.position
-        elif isinstance(token, Code):
-            result = self.execute_code_lazy(token)
-            result.position = token.position
         else:
             null_expressions = values_to_expressions([token], EXPRESSIONS_MAP, EXPRESSIONS)
             if null_expressions:
@@ -81,6 +68,9 @@ class Analyzer(BaseInterpreter):
             else:
                 result = token
             result.position = token.position
+
+        if isinstance(token, Code) and token not in self._unexecuted_codes:
+            self._unexecuted_codes.append(token)
 
         return result
 
@@ -105,43 +95,41 @@ class Analyzer(BaseInterpreter):
 
         return result
 
-    def execute_code_lazy(self, code, params=None, extra_scope=None):
+    def execute_unexecuted_code(self, code):
         """
-        Executes a code and returns an `ExecutedCode` object whose exceptions are
-        added to the main analyzer if it is not executed again.
+        Executes a code in a dedicated env and put consequence exceptions in self.
         """
-        assert (isinstance(code, Code))
-        if code in self._executed_codes:
-            return code
-        else:
-            analyser = Analyzer()
-            outcome = analyser.execute_code(code, params, extra_scope)
-            outcome = ExecutedCode(code, outcome, analyser.exceptions)
-            outcome.position = code.position
+        assert (code in self._unexecuted_codes)
+        assert (code not in self._executed_codes)
+        analyser = Analyzer()
+        analyser._executed_codes = self._executed_codes
 
-            self._executed_codes.append(outcome)
-            return outcome
+        file = File(code._tokens)
+        file.position = code.position
+
+        analyser.execute_code(file)
+
+        self._executed_codes.extend(analyser._executed_codes)
+        self.exceptions.extend(analyser.exceptions)
 
     def execute_code(self, code, params=None, extra_scope=None):
-        was_executed = False
-        if isinstance(code, ExecutedCode):
-            was_executed = True
-            if code in self._executed_codes:
-                self._executed_codes.remove(code)
-            code = code.original
+        if code in self._unexecuted_codes:
+            self._unexecuted_codes.remove(code)
+        if code in self._executed_codes:  # execute once only to avoid infinite recursions
+            result = Nothing()
+            result.position = code.position
+            return result
+        self._executed_codes.append(code)
 
         outcome = super().execute_code(code, params, extra_scope)
 
-        if not was_executed:
-            # collect `private` statements that have a variable but were not collected by the assignment operator
+        # collect `private` statements that have a variable but were not collected by the assignment operator
+        if isinstance(code, File):
+            for code in self._unexecuted_codes[:]:
+                self.execute_unexecuted_code(code)
             if self.privates:
                 for private in self.privates:
                     self.exception(SQFWarning(private.position, 'private argument must be a string.'))
-
-            # collect all exceptions from code that was executed by a different analyzer and was not run again
-            if self._executed_codes:
-                for exe_code in self._executed_codes:
-                    self.exceptions.extend(exe_code.exceptions)
 
         return outcome
 
@@ -262,7 +250,7 @@ class Analyzer(BaseInterpreter):
                 outcome = self.execute_code(values[2], extra_scope={values[0].variable.value: Number(0)})
             elif type(case_found) == ForSpecDoExpression:
                 if values[0].array is not None:
-                    for code in [values[0].array[0], values[0].array[1], values[0].array[2], values[2]]:
+                    for code in [values[0].array[0], values[0].array[1], values[2], values[0].array[2]]:
                         outcome = self.execute_code(code)
             elif type(case_found) == WhileDoExpression:
                 self.execute_code(values[0].condition)
@@ -276,8 +264,8 @@ class Analyzer(BaseInterpreter):
                     element = Nothing()
                 outcome = case_found.execute([values[0], values[1], Array([element])], self)
             elif type(case_found) == SwitchDoExpression:
-                if isinstance(values[2], ExecutedCode):
-                    self._executed_codes.remove(values[2])
+                self._executed_codes.append(values[2])
+                self._unexecuted_codes.remove(values[2])
                 conditions = parse_switch(self, values[2])
                 for condition, outcome_statement in conditions:
                     if condition != 'default':

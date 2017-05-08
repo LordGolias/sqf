@@ -557,6 +557,20 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
 
+    def test_call_withing(self):
+        analyser = analyze(parse('x = 0; call {call {x = x + 1; call {x = x + 2}}}'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(analyser['x'], Number(3))
+
+    def test_call_recursive(self):
+        code = '''x = {call x}; call x'''
+        analyze(parse(code))
+        # try:
+        #     analyze(parse(code))
+        # except RecursionError:
+        #     self.fail('analyzer ended in recursive loop')
+
 
 class Preprocessor(TestCase):
 
@@ -699,10 +713,7 @@ class ParseSwitch(TestCase):
         self.assertEqual(len(expected), len(result))
         for ex, re in zip(expected, result):
             self.assertEqual(ex[0], re[0])
-            if ex[1] is not None:
-                self.assertEqual(ex[1], re[1].original)
-            else:
-                self.assertEqual(ex[1], re[1])
+            self.assertEqual(ex[1], re[1])
 
     def test_parse_switch_code(self):
         analyser = analyze(parse(""))
