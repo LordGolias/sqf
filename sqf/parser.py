@@ -16,7 +16,7 @@ def identify_token(token):
     """
     The function that converts a token from tokenize to a BaseType.
     """
-    if isinstance(token, Comment):
+    if isinstance(token, (Comment, String)):
         return token
     if token == ' ':
         return Space()
@@ -44,17 +44,17 @@ def identify_token(token):
         return Variable(token)
 
 
-def parse_strings(all_tokens, identify_token):
+def parse_strings_and_comments(all_tokens):
     """
     Function that parses the strings of a script, transforming them into `String`.
     """
-    string = ''
-    tokens = []
+    string = ''  # the buffer for the activated mode
+    tokens = []  # the final result
     in_double = False
-    string_mode = None  # [None, "single", "double"]
+    mode = None  # [None, "string_single", "string_double", "comment_line", "comment_bulk"]
 
     for i, token in enumerate(all_tokens):
-        if string_mode == "double":
+        if mode == "string_double":
             string += token
             if token == '"':
                 if in_double:
@@ -63,10 +63,9 @@ def parse_strings(all_tokens, identify_token):
                     in_double = True
                 else:
                     tokens.append(String(string))
-                    string_mode = None
+                    mode = None
                     in_double = False
-
-        elif string_mode == "single":
+        elif mode == "string_single":
             string += token
             if token == "'":
                 if in_double:
@@ -75,50 +74,40 @@ def parse_strings(all_tokens, identify_token):
                     in_double = True
                 else:
                     tokens.append(String(string))
-                    string_mode = None
+                    mode = None
                     in_double = False
-        else:  # string_mode is None:
+        elif mode == "comment_bulk":
+            string += token
+            if token == '*/':
+                mode = None
+                tokens.append(Comment(string))
+                string = ''
+        elif mode == "comment_line":
+            string += token
+            if token == '\n':
+                mode = None
+                tokens.append(Comment(string))
+                string = ''
+        else:  # mode is None
             if token == '"':
                 string = token
-                string_mode = "double"
+                mode = "string_double"
             elif token == "'":
                 string = token
-                string_mode = "single"
+                mode = "string_single"
+            elif token == '/*':
+                string = token
+                mode = "comment_bulk"
+            elif token == '//':
+                string = token
+                mode = "comment_line"
             else:
-                tokens.append(identify_token(token))
+                tokens.append(token)
 
-    if string_mode is not None:
+    if mode in ("comment_line", "comment_bulk"):
+        tokens.append(Comment(string))
+    elif mode is not None:
         raise SQFParserError(get_coord(tokens), 'String is not closed')
-
-    return tokens
-
-
-def parse_comments(all_tokens):
-    tokens = []
-    bulk_comment_mode = False
-    line_comment_mode = False
-    comment = ''
-    for token in all_tokens:
-        if token == '/*' and not line_comment_mode:
-            bulk_comment_mode = True
-        elif token == '//' and not bulk_comment_mode:
-            line_comment_mode = True
-
-        if token == '*/' and bulk_comment_mode:
-            bulk_comment_mode = False
-            tokens.append(Comment(comment + token))
-            comment = ''
-        elif token == '\n' and line_comment_mode:
-            line_comment_mode = False
-            tokens.append(Comment(comment + token))
-            comment = ''
-        elif bulk_comment_mode or line_comment_mode:
-            comment += token
-        else:
-            tokens.append(token)
-
-    if bulk_comment_mode or line_comment_mode:
-        tokens.append(Comment(comment))
 
     return tokens
 
@@ -255,7 +244,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
 
 
 def parse(script):
-    tokens = parse_strings(parse_comments(tokenize(script)), identify_token)
+    tokens = [identify_token(x) for x in parse_strings_and_comments(tokenize(script))]
 
     result = parse_block(tokens, _analyse_tokens, _analyse_array_tokens)[0]
 

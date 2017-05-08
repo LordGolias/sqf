@@ -1,13 +1,13 @@
 from sqf.base_tokenizer import tokenize
 
-from sqf.types import Statement, Number, Boolean, Variable
+from sqf.types import Statement, Number, String, Boolean, Variable
 from sqf.keywords import Keyword
 from sqf.parser_types import Comment, Space, EndOfLine, Tab
-from sqf.parser import parse_strings, parse_comments, parse_block
+from sqf.parser import parse_block, parse_strings_and_comments
 
 
 def identify_token(token):
-    if isinstance(token, Comment):
+    if isinstance(token, (Comment, String)):
         return token
     elif token == ' ':
         return Space()
@@ -32,5 +32,5 @@ def identify_token(token):
 
 
 def parse(script):
-    tokens = parse_strings(parse_comments(tokenize(script)), identify_token)
+    tokens = [identify_token(x) for x in parse_strings_and_comments(tokenize(script))]
     return parse_block(tokens, lambda x: Statement(x), lambda x, _: [Statement(x)], stop_statement='single')[0]

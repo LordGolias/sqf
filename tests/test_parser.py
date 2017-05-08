@@ -6,7 +6,7 @@ from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N, BaseTypeContainer, Keyword
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
-from sqf.parser import parse, parse_strings, identify_token
+from sqf.parser import parse, parse_strings_and_comments, identify_token
 from sqf.base_tokenizer import tokenize
 
 
@@ -119,7 +119,7 @@ class ParseCode(ParserTestCase):
     def test_parse_string(self):
         code = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
                '{"You have no called air support operating currently" SPAWN HINTSAOK;};'
-        result = parse_strings(tokenize(code), identify_token)
+        result = [identify_token(x) for x in parse_strings_and_comments(tokenize(code))]
         self.assertTrue(isinstance(result[13], String))
         self.assertTrue(isinstance(result[24], String))
 
@@ -127,13 +127,13 @@ class ParseCode(ParserTestCase):
 
     def test_parse_double_quote(self):
         code = '_string = "my string ""with"" quotes"'
-        result = parse_strings(tokenize(code), identify_token)
+        result = [identify_token(x) for x in parse_strings_and_comments(tokenize(code))]
         self.assertTrue(isinstance(result[4], String))
         self.assertEqual('my string ""with"" quotes', result[4].value)
 
     def test_parse_empty_string(self):
         code = '_string = ""'
-        result = parse_strings(tokenize(code), identify_token)
+        result = [identify_token(x) for x in parse_strings_and_comments(tokenize(code))]
         self.assertTrue(isinstance(result[4], String))
         self.assertEqual('', result[4].value)
 
@@ -759,6 +759,17 @@ class ParseLineComments(ParserTestCase):
 
         self.assertEqualStatement(expected, result, code)
 
+    def test_comment_with_string(self):
+        code = '//"x"'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Comment('//"x"')
+                ])
+            ])
+        self.assertEqualStatement(expected, result, code)
+
 
 class ParseBlockComments(ParserTestCase):
 
@@ -769,6 +780,16 @@ class ParseBlockComments(ParserTestCase):
             V('_x'),
             Keyword('='),
             Statement([N(2), Comment('/* the two */')])])])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_inline_with_string(self):
+        code = '_x=2/* pieces\' do */'
+        result = parse(code)
+        expected = Statement([Statement([
+            V('_x'),
+            Keyword('='),
+            Statement([N(2), Comment('/* pieces\' do */')])])])
 
         self.assertEqualStatement(expected, result, code)
 
@@ -796,6 +817,17 @@ class ParseBlockComments(ParserTestCase):
                 [Statement([Comment('/* // two four\n */'), EndOfLine('\n'), V('_x')]), Keyword('='), N(3)])
         ])
 
+        self.assertEqualStatement(expected, result, code)
+
+    def test_comment_with_string(self):
+        code = '/*"x"*/'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Comment('/*"x"*/')
+                ])
+            ])
         self.assertEqualStatement(expected, result, code)
 
 
@@ -826,6 +858,17 @@ class ParseStrings(ParserTestCase):
         with self.assertRaises(Exception) as cm:
             parse(code)
         self.assertEqual((1, 4), cm.exception.position)
+
+    def test_string_with_comment(self):
+        code = '"//a"'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    String('"//a"')
+                ])
+            ])
+        self.assertEqualStatement(expected, result, code)
 
 
 class ParsePreprocessor(ParserTestCase):
