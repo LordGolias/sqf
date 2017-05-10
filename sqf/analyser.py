@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, Number, Object
-from sqf.interpreter_types import InterpreterType, PrivateType, ForType
+from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType
 from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
 from sqf.exceptions import SQFParserError, SQFWarning
@@ -307,7 +307,8 @@ class Analyzer(BaseInterpreter):
             self.exception(
                 SQFParserError(tokens[0].position, 'statement is syntactically incorrect (missing ;?)'))
 
-        if isinstance(outcome, InterpreterType):
+        if isinstance(outcome, InterpreterType) and type(outcome) != SwitchType:
+            # switch type can be not evaluated, e.g. for `case A; case B: {}`
             self.unevaluated_interpreter_tokens.append(outcome)
 
         assert(isinstance(outcome, BaseType))

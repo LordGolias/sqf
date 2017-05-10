@@ -557,18 +557,11 @@ class Switch(TestCase):
         code = 'switch (x) do {case 1: 2}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 2)
+        self.assertEqual(len(errors), 1)
         self.assertEqual((1, 16), errors[0].position)
 
     def test_incomplete_case(self):
         code = 'switch (x) do {case 1: }'
-        analyser = analyze(parse(code))
-        self.assertEqual(len(analyser.exceptions), 2)
-        self.assertEqual((1, 16), analyser.exceptions[0].position)
-        self.assertEqual((1, 16), analyser.exceptions[1].position)
-
-    def test_no_double_colon(self):
-        code = 'switch (0) do {case 1, {"one"};}'
         analyser = analyze(parse(code))
         self.assertEqual(len(analyser.exceptions), 1)
         self.assertEqual((1, 16), analyser.exceptions[0].position)
@@ -618,8 +611,14 @@ class Switch(TestCase):
         code = 'switch (1) {case 1: {"one"};}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 2)
+        self.assertEqual(len(errors), 1)
         self.assertEqual((1, 8), errors[0].position)
+
+    def test_switch_alone(self):
+        code = 'switch (x) do {case "ACRE_PRC343";};'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
 
 
 class NestedCode(TestCase):
