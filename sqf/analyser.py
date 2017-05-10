@@ -213,9 +213,11 @@ class Analyzer(BaseInterpreter):
             return self.execute_token(base_tokens[0])
         # heuristic for defines (that are thus syntactically correct):
         #   - global variable followed by a parenthesis statement
+        #   - first token string is all upper
         #   - first token is a define
         elif len(base_tokens) == 2 and (
                             type(base_tokens[0]) == Variable and base_tokens[0].is_global or
+                            str(base_tokens[0]).isupper() or
                             str(base_tokens[0]) in self.defines) and \
                 type(base_tokens[1]) == Statement and base_tokens[1].parenthesis:
             return outcome

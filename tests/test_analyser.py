@@ -496,6 +496,11 @@ class Preprocessor(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_call_within(self):
+        analyser = analyze(parse('LOG("")'))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class Arrays(TestCase):
 
