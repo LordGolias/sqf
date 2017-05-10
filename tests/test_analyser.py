@@ -676,6 +676,17 @@ class NestedCode(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_change_types(self):
+        """
+        When branched code changes variable type, we make it Nothing
+        since we do not know which branch it took.
+        """
+        code = 'x = 1; if (y) then {x = ""};'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyser['x']))
+
 
 class Params(TestCase):
 

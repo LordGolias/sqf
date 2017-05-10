@@ -188,12 +188,18 @@ class Analyzer(BaseInterpreter):
                 lhs = self.get_variable(base_tokens[0])
 
             rhs_v = self.value(base_tokens[2])
+            rhs_t = type(rhs_v)
 
             if not isinstance(lhs, Variable):
                 self.exception(SQFParserError(base_tokens[0].position, 'lhs of assignment operator must be a variable'))
             else:
                 scope = self.get_scope(lhs.name)
-                scope[lhs.name] = type(rhs_v)()
+
+                lhs_t = type(scope[lhs.name])
+                if lhs_t != Nothing and lhs_t != rhs_t:
+                    rhs_t = Nothing
+
+                scope[lhs.name] = rhs_t()
 
                 if scope.level == 0 and not lhs.is_global:
                     self.exception(
