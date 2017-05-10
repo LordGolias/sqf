@@ -967,3 +967,18 @@ class ParsePreprocessor(ParserTestCase):
             ])
 
         self.assertEqualStatement(expected, result, code)
+
+    def test_define_with_keyword(self):
+        # "IN" is a Keyword which would break the statement
+        code = '#define IN 2\n'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#define'), Space(), Keyword('IN'), Space(), N(2),
+                    ]),
+                ]),
+                Statement([EndOfLine('\n')])
+            ])
+        self.assertEqualStatement(expected, result, code)

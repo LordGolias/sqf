@@ -226,7 +226,10 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
             i += size - 1
         elif type(token) == EndOfLine and any(lvls[x] != 0 for x in PREPROCESSORS):
             if tokens:
-                statements.append(analyse_tokens(tokens))
+                if tokens[0] == Keyword('#define'):
+                    statements.append(Statement(tokens))
+                else:
+                    statements.append(analyse_tokens(tokens))
 
             return Statement(statements), i - start
         else:
