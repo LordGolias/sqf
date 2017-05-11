@@ -320,7 +320,7 @@ class GeneralTestCase(TestCase):
         code = 'while ((count x) < y) do {}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(errors), 2)
 
     def test_throw(self):
         analyser = analyze(parse('if () throw false'))
@@ -558,7 +558,7 @@ class Switch(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 16), errors[0].position)
+        self.assertEqual((1, 22), errors[0].position)
 
     def test_incomplete_case(self):
         code = 'switch (x) do {case 1: }'
@@ -657,7 +657,7 @@ class NestedCode(TestCase):
         self.assertEqual((2, 11), errors[0].position)
 
     def test_code_with_if(self):
-        code = "x = {\ncall {if x;}\n}"
+        code = "x = {\ncall {if y;}\n}"
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
@@ -686,6 +686,14 @@ class NestedCode(TestCase):
         since we do not know which branch it took.
         """
         code = 'x = 1; if (y) then {x = ""};'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyser['x']))
+
+    @expectedFailure
+    def test_change_types1(self):
+        code = 'x = 1; if (y) then {x = ""} else {x = "string"};'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)

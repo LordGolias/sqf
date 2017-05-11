@@ -52,7 +52,7 @@ ORDERED_OPERATORS = {
     4.28: {'to'},
     4.29: {'from'},
     4.3: {'if', 'try', 'case', 'while', 'switch', 'for'},
-    6: {'+', 'str', 'hintC', 'hint', 'lbsetcursel', 'floor', 'ceil', 'round', 'random', 'max', 'min', '-'},
+    6: {'+', 'str', 'ctrlSetText', 'hintC', 'hint', 'lbsetcursel', 'floor', 'ceil', 'round', 'random', 'max', 'min', '-'},
     6.1: {'count'},
     7: {'*', '/', '%', 'mod', 'atan2'},
     8: {'^'},

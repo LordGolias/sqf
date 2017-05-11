@@ -302,10 +302,10 @@ class Analyzer(BaseInterpreter):
             else:
                 assert False
 
-            self.exception(SQFParserError(tokens[0].position, message))
+            self.exception(SQFParserError(values[1].position, message))
         else:
             self.exception(
-                SQFParserError(tokens[0].position, 'statement is syntactically incorrect (missing ;?)'))
+                SQFParserError(base_tokens[0].position, 'statement is syntactically incorrect (missing ;?)'))
 
         if isinstance(outcome, InterpreterType) and type(outcome) != SwitchType:
             # switch type can be not evaluated, e.g. for `case A; case B: {}`
