@@ -396,6 +396,19 @@ class GeneralTestCase(TestCase):
         code = '''x = {call x}; call x'''
         analyze(parse(code))
 
+    def test_with_namespace_simple(self):
+        code = 'with uinamespace do {_x; x = 2}'
+        analyser = analyze(parse(code))
+        self.assertEqual(len(analyser.exceptions), 1)
+        self.assertEqual(Nothing, type(analyser['x'])) # missionnamespace is empty
+        self.assertEqual(Number, type(analyser.namespace('uinamespace')['x']))
+
+    def test_with_namespace(self):
+        code = 'with uinamespace do {with missionnamespace do {x = 2}}'
+        analyser = analyze(parse(code))
+        self.assertEqual(Number, type(analyser['x'])) # missionnamespace is empty
+        self.assertEqual(Nothing, type(analyser.namespace('uinamespace')['x']))
+
 
 class Preprocessor(TestCase):
 

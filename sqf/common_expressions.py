@@ -1,5 +1,5 @@
-from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Nothing
-from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType
+from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Nothing, Namespace
+from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType, WithType
 from sqf.exceptions import SQFParserError
 from sqf.expressions import BinaryExpression, UnaryExpression
 
@@ -115,8 +115,23 @@ class TryCatchExpression(BinaryExpression):
         super().__init__(TryType, Keyword('catch'), Code, None, action)
 
 
+class WithExpression(UnaryExpression):
+    def __init__(self):
+        super().__init__(Keyword('with'), Namespace, WithType, lambda v, i: v)
+
+
+class WithDoExpression(BinaryExpression):
+    def __init__(self, action=None):
+        if action is None:
+            action = lambda lhs, rhs, i: i.execute_code(rhs, namespace_name=lhs.namespace.value)
+        super().__init__(WithType, Keyword('do'), Code, None, action)
+
+
 COMMON_EXPRESSIONS = [
     CaseExpression(),
+
+    WithExpression(),
+    WithDoExpression(),
 
     TryExpression(),
     TryCatchExpression(),

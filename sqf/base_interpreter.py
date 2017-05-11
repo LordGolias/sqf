@@ -1,7 +1,7 @@
-from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File
+from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, Namespace
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFParserError
-from sqf.namespace import Namespace
+import sqf.namespace
 
 
 class BaseInterpreter:
@@ -10,13 +10,13 @@ class BaseInterpreter:
     """
     def __init__(self, all_vars=None):
         self._namespaces = {
-            'uinamespace': Namespace(),
-            'parsingnamespace': Namespace(),
-            'missionnamespace': Namespace(all_vars),
-            'profilenamespace': Namespace()
+            'uinamespace': sqf.namespace.Namespace('uinamespace'),
+            'parsingnamespace': sqf.namespace.Namespace('parsingnamespace'),
+            'missionnamespace': sqf.namespace.Namespace('missionnamespace', all_vars),
+            'profilenamespace': sqf.namespace.Namespace('profilenamespace')
         }
 
-        self._current_namespace = self.namespace('missionnamespace')
+        self.current_namespace = self.namespace('missionnamespace')
 
     def exception(self, exception):
         """
@@ -33,7 +33,7 @@ class BaseInterpreter:
 
     @property
     def current_scope(self):
-        return self._current_namespace.current_scope
+        return self.current_namespace.current_scope
 
     def __getitem__(self, name):
         return self.get_scope(name)[name]
@@ -90,16 +90,16 @@ class BaseInterpreter:
 
     def get_scope(self, name, namespace_name=None):
         if namespace_name is None:
-            namespace = self._current_namespace
+            namespace = self.current_namespace
         else:
             namespace = self.namespace(namespace_name)
         return namespace.get_scope(name)
 
     def add_scope(self, values=None):
-        self._current_namespace.add_scope(values)
+        self.current_namespace.add_scope(values)
 
     def del_scope(self):
-        self._current_namespace.del_scope()
+        self.current_namespace.del_scope()
 
     def add_privates(self, variables):
         for variable in variables:
@@ -113,21 +113,36 @@ class BaseInterpreter:
                 self.exception(SQFParserError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % name))
             self.current_scope[name] = Nothing()
 
-    def execute_code(self, code, params=None, extra_scope=None):
+    def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
         assert (isinstance(code, Code))
+
+        # store the old namespace
+        _previous_namespace = self.current_namespace
+
+        # store the executing namespace
+        namespace = self.namespace(namespace_name)
+        # change to the executing namespace
+        self.current_namespace = namespace
+
         if params is None:
             params = Nothing()
             params.position = code.position
         if extra_scope is None:
             extra_scope = {}
         extra_scope['_this'] = params
-        self.add_scope(extra_scope)
+        namespace.add_scope(extra_scope)
+
+        # execute the code
         outcome = Nothing()
         outcome.position = code.position
         for statement in code.base_tokens:
             outcome = self.value(self.execute_single(statement))
+
+        # cleanup
         if not isinstance(code, File):  # so we have access to its scope
-            self.del_scope()
+            # this has to be the executing namespace because "self.current_namespace" may change
+            namespace.del_scope()
+        self.current_namespace = _previous_namespace
         return outcome
 
     def execute_single(self, statement):

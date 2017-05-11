@@ -1,4 +1,4 @@
-from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Nothing
+from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Nothing, Namespace
 
 
 class InterpreterType(Type):
@@ -112,3 +112,13 @@ class TryType(InterpreterType):
     def __init__(self, code):
         assert (isinstance(code, Code))
         super().__init__(code)
+
+
+class WithType(InterpreterType):
+    def __init__(self, namespace):
+        assert (isinstance(namespace, Namespace))
+        super().__init__(namespace)
+
+    @property
+    def namespace(self):
+        return self.token

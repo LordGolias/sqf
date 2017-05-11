@@ -100,7 +100,7 @@ class Analyzer(BaseInterpreter):
 
         analyser = Analyzer()
         analyser._namespaces = deepcopy(self._namespaces)
-        analyser._current_namespace = analyser._namespaces['missionnamespace']
+        analyser.current_namespace = analyser._namespaces['missionnamespace']
 
         file = File(code._tokens)
         file.position = code.position
@@ -109,12 +109,12 @@ class Analyzer(BaseInterpreter):
 
         self.exceptions.extend(analyser.exceptions)
 
-    def execute_code(self, code, params=None, extra_scope=None):
+    def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
         if str(code) in self._unexecuted_codes:
             del self._unexecuted_codes[str(code)]
         self._executed_codes[str(code)] = code
 
-        outcome = super().execute_code(code, params, extra_scope)
+        outcome = super().execute_code(code, params, extra_scope, namespace_name)
 
         # collect `private` statements that have a variable but were not collected by the assignment operator
         if isinstance(code, File):
@@ -257,7 +257,7 @@ class Analyzer(BaseInterpreter):
                extra_scope = {'_i': Number()}
             for value, t_or_v in zip(values, case_found.types_or_values):
                 # execute all pieces of code
-                if t_or_v == Code and isinstance(value, Code):
+                if t_or_v == Code and isinstance(value, Code) and str(value) not in self._executed_codes:
                     self.execute_code(value, extra_scope=extra_scope)
 
                 # remove evaluated interpreter tokens

@@ -27,8 +27,12 @@ class Scope:
 
 
 class Namespace:
-    def __init__(self, all_vars=None):
+    def __init__(self, name, all_vars=None):
         self._stack = [Scope(0, all_vars)]
+        self.name = name
+
+    def __repr__(self):
+        return '<Namespace %s>' % self.name
 
     def __getitem__(self, name):
         return self.get_scope(name)[name]

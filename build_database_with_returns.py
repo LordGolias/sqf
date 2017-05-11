@@ -6,7 +6,7 @@ https://gist.github.com/LordGolias/1289d59b35359fa3714d3666de396ad7
 """
 import json
 
-from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType
+from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType, WithType
 from sqf.types import Code, Array, Boolean, Number, Type, Nothing, String, Namespace, Object, Config
 
 
@@ -31,7 +31,7 @@ STRING_TO_TYPE = {
     'IF': IfType,
     'SWITCH': SwitchType,
     'WHILE': WhileType,
-    'WITH': Object,
+    'WITH': WithType,
     'SIDE': Object,
     'TASK': Object,
     'SCRIPT': Object,
@@ -155,7 +155,7 @@ preamble = r'''# This file is generated automatically by `build_database.py`. Ch
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
 from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, Object, Config
 from sqf.interpreter_types import WhileType, \
-    ForType, SwitchType, IfType, TryType'''
+    ForType, SwitchType, IfType, TryType, WithType'''
 
 
 with open('sqf/database.py', 'w') as f:

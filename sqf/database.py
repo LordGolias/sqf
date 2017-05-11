@@ -2,7 +2,7 @@
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
 from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, Object, Config
 from sqf.interpreter_types import WhileType, \
-    ForType, SwitchType, IfType, TryType
+    ForType, SwitchType, IfType, TryType, WithType
 
 
 EXPRESSIONS = [
@@ -361,7 +361,7 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('distanceSqr'), Array, Number),
     BinaryExpression(Array, Keyword('distanceSqr'), Object, Number),
     BinaryExpression(WhileType, Keyword('do'), Code, Nothing),
-    BinaryExpression(Object, Keyword('do'), Code, Nothing),
+    BinaryExpression(WithType, Keyword('do'), Code, Nothing),
     BinaryExpression(ForType, Keyword('do'), Code, Nothing),
     BinaryExpression(SwitchType, Keyword('do'), Code, Nothing),
     BinaryExpression(Object, Keyword('doArtilleryFire'), Array, Nothing),
@@ -2411,7 +2411,7 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('weightRTD'), Object, Array),
     UnaryExpression(Keyword('while'), Code, WhileType),
     UnaryExpression(Keyword('wingsForcesRTD'), Object, Array),
-    UnaryExpression(Keyword('with'), Namespace, Object),
+    UnaryExpression(Keyword('with'), Namespace, WithType),
     UnaryExpression(Keyword('worldToScreen'), Array, Array),
     NullExpression(Keyword('HUDMovementLevels'), Array),
     NullExpression(Keyword('accTime'), Number),
