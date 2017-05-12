@@ -73,8 +73,9 @@ class ForSpecType(InterpreterType):
 
 
 class SwitchType(InterpreterType):
-    def __init__(self, result):
+    def __init__(self, keyword, result):
         super().__init__(result)
+        self.keyword = keyword
 
     @property
     def result(self):

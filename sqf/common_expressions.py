@@ -62,12 +62,17 @@ class ForEachExpression(BinaryExpression):
 
 class SwitchExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(Keyword('switch'), Type, SwitchType, lambda v, i: v)
+        super().__init__(Keyword('switch'), Type, SwitchType, lambda v, i: (self.keyword, v))
 
 
 class CaseExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(Keyword('case'), Type, SwitchType, lambda v, i: v)
+        super().__init__(Keyword('case'), Type, SwitchType, lambda v, i: (self.keyword, v))
+
+
+class DefaultExpression(UnaryExpression):
+    def __init__(self):
+        super().__init__(Keyword('default'), Type, SwitchType, lambda v, i: (self.keyword, v))
 
 
 class SwitchDoExpression(BinaryExpression):
@@ -129,6 +134,7 @@ class WithDoExpression(BinaryExpression):
 
 COMMON_EXPRESSIONS = [
     CaseExpression(),
+    DefaultExpression(),
 
     WithExpression(),
     WithDoExpression(),

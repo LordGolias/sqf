@@ -149,11 +149,11 @@ class Interpreter(BaseInterpreter):
         elif len(tokens) == 1 and isinstance(tokens[0], (Type, Keyword)):
             outcome = values[0]
         else:
-            raise SQFParserError(statement.position, 'Interpretation of "%s" failed')
+            raise SQFParserError(statement.position, 'Interpretation of "%s" failed' % statement)
 
         if statement.ending:
             outcome = _outcome
-        assert(type(outcome) == Nothing or not outcome.is_undefined)
+        assert(type(outcome) in (Nothing,Keyword) or not outcome.is_undefined)
         return outcome
 
 

@@ -156,8 +156,11 @@ class Analyzer(BaseInterpreter):
                 self.defines[str(base_tokens[1])] = define_statement
             return outcome
         elif base_tokens[0] == Keyword("#include"):
-            if len(base_tokens) != 2 or type(base_tokens[1]) != String:
-                exception = SQFParserError(base_tokens[0].position, "Wrong syntax for #include")
+            if len(base_tokens) != 2:
+                exception = SQFParserError(base_tokens[0].position, "#include requires one argument")
+                self.exception(exception)
+            elif type(self.execute_token(base_tokens[1])) != String:
+                exception = SQFParserError(base_tokens[0].position, "#include first argument must be a string")
                 self.exception(exception)
             return outcome
         elif isinstance(base_tokens[0], Keyword) and base_tokens[0].value in PREPROCESSORS:
@@ -219,7 +222,7 @@ class Analyzer(BaseInterpreter):
                             type(base_tokens[0]) == Variable and base_tokens[0].is_global or
                             str(base_tokens[0]).isupper() or
                             str(base_tokens[0]) in self.defines) and \
-                type(base_tokens[1]) == Statement and base_tokens[1].parenthesis:
+                str(base_tokens[1])[0] == '(':
             return outcome
 
         # evaluate all the base_tokens, trying to obtain their values
@@ -305,9 +308,10 @@ class Analyzer(BaseInterpreter):
             self.exception(SQFParserError(values[1].position, message))
         else:
             self.exception(
-                SQFParserError(base_tokens[0].position, 'statement is syntactically incorrect (missing ;?)'))
+                SQFParserError(base_tokens[-1].position, 'statement is syntactically incorrect (missing ;?)'))
 
-        if isinstance(outcome, InterpreterType) and type(outcome) != SwitchType:
+        if isinstance(outcome, InterpreterType) and \
+            outcome not in self.unevaluated_interpreter_tokens and type(outcome) not in (SwitchType, PrivateType):
             # switch type can be not evaluated, e.g. for `case A; case B: {}`
             self.unevaluated_interpreter_tokens.append(outcome)
 

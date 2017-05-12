@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from sqf.base_type import get_coord
-from sqf.parse_exp import parse_exp, partition
+from sqf.parser_exp import parse_exp
 from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N, BaseTypeContainer, Keyword
@@ -43,60 +43,48 @@ def _get_elements(statement1):
 
 class TestExpParser(TestCase):
 
-    def test_partition(self):
-        res = partition(['_x', '=', '2'], {'='})
-        self.assertEqual([['_x'], '=', ['2']], res)
-
-    def test_binary(self):
-        # a=b
-        test = ['a', '=', 'b']
-        self.assertEqual(['a', '=', 'b'], parse_exp(test, {1: '='}))
+    def test_binary_simple(self):
+        # a+b
+        test = ['a', '+', 'b']
+        self.assertEqual(['a', '+', 'b'], parse_exp(test))
 
         # a=b+c*d
         test = ['a', '=', 'b', '+', 'c', '*', 'd']
-        self.assertEqual(['a', '=', ['b', '+', ['c', '*', 'd']]],
-                         parse_exp(test, {1: '=', 2: '+', 3: '*'}))
+        self.assertEqual(['a', '=', ['b', '+', ['c', '*', 'd']]], parse_exp(test))
 
-    def test_binary_order_matters(self):
         # a+b=c
-        test = ['a', '+', 'b', '=', 'c']
-        self.assertEqual([['a', '+', 'b'], '=', 'c'],
-                         parse_exp(test, {0: {'='}, 1: {'+', '*'}}))
+        test = ['a', '*', 'b', '+', 'c']
+        self.assertEqual([['a', '*', 'b'], '+', 'c'], parse_exp(test))
 
     def test_unary(self):
         # a=!b||c
         test = ['a', '=', '!', 'b', '||', 'c']
-        self.assertEqual(['a', '=', [['!', 'b'], '||', 'c']],
-                         parse_exp(test, {0: {'='}, 1: {'||'}, 2: {'!'}}))
+        self.assertEqual(['a', '=', [['!', 'b'], '||', 'c']], parse_exp(test))
 
     def test_with_statement(self):
-        ops = {1: {'='}, 2: {'+'}, 3: {'*'}}
-
         test = [V('a'), Keyword('+'), V('b'), Keyword('='), V('c')]
         expected = Statement([Statement([V('a'), Keyword('+'), V('b')]), Keyword('='), V('c')])
-        self.assertEqual(expected, parse_exp(test, ops, container=Statement))
+        self.assertEqual(expected, parse_exp(test, container=Statement))
 
     def test_same_priority(self):
-        operators = {1: {'-', 'floor'}}
-
         # floor -x
         test = ['floor', '-', 'x']
-        result = parse_exp(test, operators)
+        result = parse_exp(test)
         self.assertEqual(['floor', ['-', 'x']], result)
 
         # - floor x
         test = ['-', 'floor', 'x']
-        result = parse_exp(test, operators)
+        result = parse_exp(test)
         self.assertEqual(['-', ['floor', 'x']], result)
 
         # x - floor x
         test = ['x', '-', 'floor', 'x']
-        result = parse_exp(test, operators)
+        result = parse_exp(test)
         self.assertEqual(['x', '-', ['floor', 'x']], result)
 
         # 1 - 1 - 1 = -1
         test = ['1', '-', '1', '-', '1']
-        self.assertEqual([['1', '-', '1'], '-', '1'], parse_exp(test, operators))
+        self.assertEqual([['1', '-', '1'], '-', '1'], parse_exp(test))
 
 
 class ParserTestCase(TestCase):
@@ -115,6 +103,12 @@ class ParserTestCase(TestCase):
 
 
 class ParseCode(ParserTestCase):
+
+    def test_with_spaces(self):
+        code = '1 + 1'
+        result = parse(code)
+        expected = Statement([Statement([Statement([N(1), Space()]), Keyword('+'), Statement([Space(), N(1)])])])
+        self.assertEqualStatement(expected, result, code)
 
     def test_parse_string(self):
         code = 'if (_n == 1) then {"Air support called to pull away" SPAWN HINTSAOK;} else ' \
@@ -172,7 +166,7 @@ class ParseCode(ParserTestCase):
         code = '1\r\n2'
         result = parse(code)
         self.assertCorrectPositions(parse(code), code)
-        self.assertEqual(result[0][2].position, (2, 1))
+        self.assertEqual(result[0][1].position, (2, 1))
 
     def test_with_code_in_code(self):
         code = "x = {\ncall {private _x;}\n}"
@@ -281,6 +275,8 @@ class ParseCode(ParserTestCase):
     def test_analyse_expression(self):
         code = '_h = _civs spawn _fPscareC;'
         result = parse(code)
+        # S<S<S<V<_h>' '>K<=>S<S<' 'V<_civs>' '>K<spawn>S<' 'V<_fPscareC>>>;>> !=
+        # S<S<S<V<_h>' '>K<=>S<S<S<' 'V<_civs>>' '>K<spawn>S<' 'V<_fPscareC>>>;>>
         expected = Statement([Statement([
             Statement([V('_h'), Space()]),
             Keyword('='),
@@ -330,12 +326,14 @@ class ParseCode(ParserTestCase):
     def test_signed_precedence(self):
         code = "_x = -1"
         result = parse(code)
+        # S<S<S<V<_x>' '>K<=>S<' 'K<->N1>>> !=
+        # S<S<S<V<_x>' '>K<=>S<' 'S<K<->N1>>>>
         expected = \
             Statement([
                 Statement([
                     Statement([V('_x'), Space()]),
                     Keyword('='),
-                    Statement([Space(), Keyword('-'), N(1)])
+                    Statement([Space(), Statement([Keyword('-'), N(1)])])
                 ])
             ])
         self.assertEqualStatement(expected, result, code)
@@ -611,45 +609,6 @@ class ControlStatements(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_define2(self):
-        code = '#define a (if (true) then { \\\n\t} \\\n);\n'
-        expected = \
-            Statement([
-                Statement([
-                    Statement([
-                        Keyword('#define'), Space(), V('a'), Space(),
-                        Statement([
-                            Statement([
-                                Statement([
-                                    Keyword('if'),
-                                    Statement([
-                                        Space(),
-                                        Statement([
-                                            Statement([
-                                                Boolean(True)
-                                            ])
-                                        ], parenthesis=True),
-                                        Space()
-                                    ]),
-                                ]),
-                                Keyword('then'),
-                                Statement([
-                                    Space(),
-                                    Code([
-                                        Statement([
-                                            Space(), BrokenEndOfLine(), Tab()
-                                        ]),
-                                    ]),
-                                    Space(), BrokenEndOfLine()
-                                ]),
-                            ]),
-                        ], parenthesis=True),
-                    ], ending=';')
-                ]),
-                Statement([EndOfLine('\n')])
-            ])
-        self.assertEqualStatement(expected, parse(code), code)
-
     def test_parse_case(self):
         code = '{case 1: {true}}'
         expected = \
@@ -874,25 +833,36 @@ class ParseStrings(ParserTestCase):
 class ParsePreprocessor(ParserTestCase):
 
     def test_define_with_line_break(self):
+        # S<S<S<S<K<#define>' '>V<CHECK>S<' '<\EOL>N1>>>> !=
+        # S<S<S<K<#define>S<' 'V<CHECK>' '<\EOL>>N1S<>>>>
         code = "#define CHECK \\\n1"
         result = parse(code)
         expected = \
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'), Space(), V('CHECK'), Space(), BrokenEndOfLine(), N(1)
-            ])])])
+                        Keyword('#define'),
+                        Statement([Space(), V('CHECK'), Space(), BrokenEndOfLine()]),
+                        N(1),
+                        Statement([]),
+                    ])
+                ])
+            ])
 
         self.assertEqualStatement(expected, result, code)
 
     def test_define_minimal(self):
+        # S<S<S<K<#define>S<' 'V<a>' '>S<' 'S<()>>S<>;>>S<<EOL>>> !=
+        # S<S<S<K<#define>S<' 'V<a>' '>S<()>S<>;>>S<<EOL>>>
         code = '#define a ();\n'
         expected = \
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'), Space(), V('a'), Space(),
+                        Keyword('#define'),
+                        Statement([Space(), V('a'), Space()]),
                         Statement([], parenthesis=True),
+                        Statement([]),
                     ], ending=';'),
                 ]),
                 Statement([EndOfLine('\n')])
@@ -906,11 +876,14 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'), Space(), V('a'),
+                        Keyword('#define'),
+                        Statement([Space(), V('a')]),
                         Statement([
-                            Statement([V('_x')])
-                        ], parenthesis=True),
-                        Space(), BrokenEndOfLine(),
+                            Statement([
+                                Statement([V('_x')])
+                            ], parenthesis=True),
+                            Space(), BrokenEndOfLine()
+                        ]),
                         Statement([
                             Statement([V('_x'), Keyword('=='), N(2)])
                         ], parenthesis=True)
@@ -931,7 +904,8 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#include'), Space(), String('"macros.hpp"')
+                        Keyword('#include'),
+                        Statement([Space(), String('"macros.hpp"')])
                 ])]),
                 Statement([
                     Statement([
@@ -948,12 +922,57 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#ifdef'), Space(), V('A')
+                        Keyword('#ifdef'),
+                        Statement([Space(), V('A')])
                     ])
                 ])
             ])
-
         self.assertEqualStatement(expected, result, code)
+
+    def test_call(self):
+        code = 'x call FUN(a)'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([V('x'), Space()]),
+                    Keyword('call'),
+                    Statement([
+                        Space(),
+                        Statement([V('FUN'), Statement([Statement([V('a')])], parenthesis=True)])
+                    ]),
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_def(self):
+        code = 'A = 1'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([V('A'), Space()]),
+                    Keyword('='),
+                    Statement([Space(), N(1)]),
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_assign(self):
+        code = 'VAR(a) = 0'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        V('VAR'),
+                        Statement([
+                            Statement([
+                                Statement([V('a')])], parenthesis=True), Space()
+                        ])
+                    ]),
+                    Keyword('='),
+                    Statement([Space(), N(0)]),
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
 
     def test_endif(self):
         code = '#endif\n'
@@ -982,3 +1001,44 @@ class ParsePreprocessor(ParserTestCase):
                 Statement([EndOfLine('\n')])
             ])
         self.assertEqualStatement(expected, result, code)
+
+    def test_define2(self):
+        code = '#define a (if (true) then { \\\n\t} \\\n);\n'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('#define'),
+                        Statement([Space(), V('a'), Space()]),
+                        Statement([
+                            Statement([
+                                Statement([
+                                    Keyword('if'),
+                                    Statement([
+                                        Space(),
+                                        Statement([
+                                            Statement([
+                                                Boolean(True)
+                                            ])
+                                        ], parenthesis=True),
+                                        Space()
+                                    ]),
+                                ]),
+                                Keyword('then'),
+                                Statement([
+                                    Space(),
+                                    Code([
+                                        Statement([
+                                            Space(), BrokenEndOfLine(), Tab()
+                                        ]),
+                                    ]),
+                                    Space(), BrokenEndOfLine()
+                                ]),
+                            ]),
+                        ], parenthesis=True),
+                        Statement([]),
+                    ], ending=';')
+                ]),
+                Statement([EndOfLine('\n')])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)

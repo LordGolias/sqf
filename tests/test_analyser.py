@@ -117,20 +117,16 @@ class GeneralTestCase(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
-        self.assertEqual((1, 4), errors[0].position)
+        self.assertEqual((2, 3), errors[0].position)
 
     def test_statement(self):
         code = 'x=2 y=3;'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 3), errors[0].position)
+        self.assertEqual(len(errors), 2)
+        self.assertEqual((1, 6), errors[0].position)
 
-    @expectedFailure
     def test_missing_op(self):
-        """
-        Still no way to distinguish this from the one below
-        """
         code = 'x 2'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
@@ -225,14 +221,15 @@ class GeneralTestCase(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 3)
-        self.assertEqual((1, 20), errors[0].position)
+        self.assertEqual((1, 23), errors[0].position)
 
     def test_if_missing_then(self):
         code = 'if (true) {1}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
-        self.assertEqual((1, 4), errors[0].position)
+        self.assertEqual((1, 11), errors[0].position)
+        self.assertEqual((1, 1), errors[1].position)
 
     def test_while_no_errors(self):
         code = 'while {count x > 0} do {}'
@@ -379,7 +376,6 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    @expectedFailure
     def test_precedence_fail(self):
         code = 'x % floor x'
         analyser = analyze(parse(code))
@@ -509,11 +505,27 @@ class Preprocessor(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_call_within(self):
+    def test_same_name(self):
         analyser = analyze(parse('LOG("")'))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_assign_to_global(self):
+        code = 'AA(x) = 2'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'AA(x,y) = 2'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_assign_to_global_after_space(self):
+        code = '\n\nGVAR(pipeCode) = "0";'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
 
 class Arrays(TestCase):
 
@@ -577,7 +589,7 @@ class Switch(TestCase):
         code = 'switch (x) do {case 1: }'
         analyser = analyze(parse(code))
         self.assertEqual(len(analyser.exceptions), 1)
-        self.assertEqual((1, 16), analyser.exceptions[0].position)
+        self.assertEqual((1, 22), analyser.exceptions[0].position)
 
     def test_case_by_variable(self):
         code = 'switch (a) do {case "blue": x; case "red": {false}}'
@@ -605,8 +617,8 @@ class Switch(TestCase):
         code = 'switch (x) do {default : {[]}}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 2)
-        self.assertEqual((1, 16), errors[0].position)
+        self.assertEqual(len(errors), 3)
+        self.assertEqual((1, 23), errors[0].position)
 
     def test_switch_statement_without_parenthesis(self):
         code = 'switch 1 do {case 1: {"one"};}'
@@ -625,7 +637,7 @@ class Switch(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 8), errors[0].position)
+        self.assertEqual((1, 12), errors[0].position)
 
     def test_switch_alone(self):
         code = 'switch (x) do {case "ACRE_PRC343";};'
@@ -639,8 +651,8 @@ class NestedCode(TestCase):
         code = "x = {\ncall {x=1 y = 2;}\n}"
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((2, 9), errors[0].position)
+        self.assertEqual(len(errors), 3)
+        self.assertEqual((2, 12), errors[0].position)
 
     def test_array_after_then(self):
         code = 'if (x) then[{},{}];'
@@ -653,7 +665,7 @@ class NestedCode(TestCase):
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
-        self.assertEqual((2, 1), errors[0].position)
+        self.assertEqual((2, 3), errors[0].position)
 
     def test_code_with_private(self):
         code = "x = {\ncall {private _x;}\n}"

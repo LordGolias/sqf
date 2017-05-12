@@ -57,10 +57,6 @@ class TestInterpreter(TestCase):
         interpreter, outcome = interpret(test)
         self.assertEqual(Boolean(False), outcome)
 
-    def test_assign_to_statement(self):
-        with self.assertRaises(SQFParserError):
-            interpret('(_y) = 2;')
-
     def test_floor(self):
         _, outcome = interpret('floor 5.25')
         self.assertEqual(Number(5), outcome)
@@ -404,7 +400,7 @@ class Switch(TestCase):
         # default without argument
         with self.assertRaises(SQFParserError) as cm:
             interpret('switch (0) do {default: {}}')
-        self.assertEqual((1, 23), cm.exception.position)
+        self.assertEqual((1, 16), cm.exception.position)
 
 
 class Scopes(TestCase):

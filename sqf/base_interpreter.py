@@ -1,4 +1,4 @@
-from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, Namespace
+from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFParserError
 import sqf.namespace
@@ -76,10 +76,10 @@ class BaseInterpreter:
 
     def get_variable(self, token):
         if isinstance(token, Statement):
-            return token.base_tokens[0]
+            return self.get_variable(token.base_tokens[0])
         else:
             if not isinstance(token, Variable):
-                self.exception(SQFParserError(token.position, 'This must be a variable'))
+                return Nothing()
             return token
 
     def execute_token(self, token):

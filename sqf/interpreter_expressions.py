@@ -225,27 +225,25 @@ def parse_switch(interpreter, code):
         if CaseExpression().is_match(values):
             values = [CaseExpression().execute(values, interpreter)]
 
-        if values[0] == Keyword('default'):
+        if type(values[0]) != SwitchType:
+            interpreter.exception(SQFParserError(
+                statement.position, 'Switch code can only start with "case" or "default"'))
+
+        if values[0].keyword == Keyword('default'):
             if default_used:
                 interpreter.exception(SQFParserError(code.position, 'Switch code contains more than 1 `default`'))
             default_used = True
-            if len(values) == 2:
-                assert(isinstance(values[1], (Variable, Code)))
-                conditions.append(('default', values[1]))
-            else:
-                interpreter.exception(
-                    SQFParserError(base_tokens[1].position, '"default" must contain 2 clauses'))
-        elif type(values[0]) == SwitchType:
+            assert(isinstance(values[0].result, Code))
+            conditions.append(('default', values[0].result))
+        else:
             case_condition = values[0].result
             if len(values) == 1:
                 conditions.append((case_condition, None))
             else:
-                assert(len(values) == 3 and values[1] == Keyword(':'))
+                assert (len(values) == 3 and values[1] == Keyword(':'))
                 outcome_statement = values[2]
                 conditions.append((case_condition, outcome_statement))
-        else:
-            interpreter.exception(SQFParserError(
-                statement.position, 'Switch code can only start with "case" or "default"'))
+
 
     return conditions
 

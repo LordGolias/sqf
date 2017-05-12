@@ -3,9 +3,9 @@ from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import SQFParenthesisError, SQFParserError
 from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace
-from sqf.keywords import ORDERED_OPERATORS, KEYWORDS, NAMESPACES, PREPROCESSORS
+from sqf.keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
-from sqf.parse_exp import parse_exp
+from sqf.parser_exp import parse_exp
 
 
 def get_coord(tokens):
@@ -118,8 +118,7 @@ def _analyse_tokens(tokens):
         ending = tokens[-1].value
         del tokens[-1]
 
-    statement = parse_exp(tokens, ORDERED_OPERATORS, container=Statement, add_condition=
-        lambda x: x or (isinstance(x, (Statement, Code)) and x.parenthesis is not None))
+    statement = parse_exp(tokens, container=Statement)
     if isinstance(statement, Statement):
         statement._ending = ending
     else:
