@@ -21,6 +21,10 @@ for exp in COMMON_EXPRESSIONS:
 EXPRESSIONS_MAP = build_database(EXPRESSIONS)
 
 
+def code_key(code):
+    return (code.position, str(code))
+
+
 class Analyzer(BaseInterpreter):
     """
     The Analyzer. This is sesentially an interpreter that
@@ -35,7 +39,7 @@ class Analyzer(BaseInterpreter):
         self.privates = []
         self.unevaluated_interpreter_tokens = []
         self._unexecuted_codes = {}
-        self._executed_codes = {}
+        self._executed_codes = set()
         self.defines = {}
 
     def exception(self, exception):
@@ -66,8 +70,8 @@ class Analyzer(BaseInterpreter):
                 result = token
             result.position = token.position
 
-        if isinstance(result, Code) and str(result) not in self._unexecuted_codes:
-            self._unexecuted_codes[str(result)] = result
+        if isinstance(result, Code) and code_key(result) not in self._unexecuted_codes:
+            self._unexecuted_codes[code_key(result)] = result
 
         return result
 
@@ -92,11 +96,11 @@ class Analyzer(BaseInterpreter):
 
         return result
 
-    def execute_unexecuted_code(self, code):
+    def execute_unexecuted_code(self, code_key):
         """
         Executes a code in a dedicated env and put consequence exceptions in self.
         """
-        assert(str(code) in self._unexecuted_codes)
+        code = self._unexecuted_codes[code_key]
 
         analyser = Analyzer()
         analyser._namespaces = deepcopy(self._namespaces)
@@ -110,16 +114,18 @@ class Analyzer(BaseInterpreter):
         self.exceptions.extend(analyser.exceptions)
 
     def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
-        if str(code) in self._unexecuted_codes:
-            del self._unexecuted_codes[str(code)]
-        self._executed_codes[str(code)] = code
+        key = code_key(code)
+
+        if key in self._unexecuted_codes:
+            del self._unexecuted_codes[key]
+        self._executed_codes.add(key)
 
         outcome = super().execute_code(code, params, extra_scope, namespace_name)
 
         # collect `private` statements that have a variable but were not collected by the assignment operator
         if isinstance(code, File):
-            for code in self._unexecuted_codes:
-                self.execute_unexecuted_code(self._unexecuted_codes[code])
+            for key in self._unexecuted_codes:
+                self.execute_unexecuted_code(key)
 
             for private in self.privates:
                 self.exception(SQFWarning(private.position, 'private argument must be a string.'))
@@ -264,7 +270,7 @@ class Analyzer(BaseInterpreter):
                 extra_scope = {values[0].variable.value: Number()}
             for value, t_or_v in zip(values, case_found.types_or_values):
                 # execute all pieces of code
-                if t_or_v == Code and isinstance(value, Code) and str(value) not in self._executed_codes:
+                if t_or_v == Code and isinstance(value, Code) and code_key(value) not in self._executed_codes:
                     self.execute_code(value, extra_scope=extra_scope)
 
                 # remove evaluated interpreter tokens
@@ -323,11 +329,11 @@ class Analyzer(BaseInterpreter):
         # the position of Private is different because it can be passed from analyser to analyser,
         # and we want to keep the position of the outermost analyser.
         if not isinstance(outcome, PrivateType):
-            outcome.position = statement.position
+            outcome.position = base_tokens[0].position
 
         if statement.ending:
             outcome = Nothing()
-            outcome.position = statement.position
+            outcome.position = base_tokens[0].position
 
         return outcome
 

@@ -846,6 +846,12 @@ class SpecialContext(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_double_code(self):
+        code = 'x apply {_x select 0}; y apply {_x select 0}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class UndefinedValues(TestCase):
     """
