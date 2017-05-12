@@ -61,6 +61,12 @@ class ForType(InterpreterType):
                self.from_ is not None and self.from_.is_undefined or \
                self.to is not None and self.to.is_undefined
 
+    def copy(self, other):
+        self.token = other.variable
+        self.from_ = other.from_
+        self.to = other.to
+        self.step = other.step
+
 
 class ForSpecType(InterpreterType):
     def __init__(self, array):

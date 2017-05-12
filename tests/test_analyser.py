@@ -797,10 +797,10 @@ class SpecialContext(TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_for_scope_new(self):
-        code = 'for "_i" from 0 to 10 do {_lamp = _i}'
+        code = 'for "_x" from 0 to 10 do {private _stackEntry = ACRE_STACK_TRACE select _x;}'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
-        self.assertEqual(len(errors), 1)
+        self.assertEqual(len(errors), 0)
 
     def test_foreach(self):
         code = '{hint str _x} forEach [1,2]'
@@ -936,6 +936,7 @@ class UndefinedValues(TestCase):
         self.assertEqual(len(errors), 0)
         self.assertEqual(Number(), analyser['x'])
 
+    def test_for1(self):
         # undefined -> test
         analyser = analyze(parse('x = 0; for "_i" from 0 to y do {!1}'))
         errors = analyser.exceptions

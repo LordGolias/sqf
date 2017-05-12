@@ -246,8 +246,12 @@ class Analyzer(BaseInterpreter):
             # if exact match, we run the expression.
             if case_found.is_match(values):
                 outcome = case_found.execute(values, self)
-            elif len(possible_expressions) == 1 and possible_expressions[0].return_type is not None:
-                outcome = possible_expressions[0].return_type()
+            elif len(possible_expressions) == 1:
+                return_type = possible_expressions[0].return_type
+                if return_type is not None:
+                    outcome = return_type()
+                if return_type == ForType:
+                    outcome.copy(values[0])
 
             extra_scope = None
             if case_found.keyword in (Keyword('select'), Keyword('apply'), Keyword('count')):
@@ -257,7 +261,7 @@ class Analyzer(BaseInterpreter):
             elif case_found.keyword == Keyword('catch'):
                 extra_scope = {'_exception': Object()}
             elif case_found.keyword == Keyword('do') and type(values[0]) == ForType:
-               extra_scope = {'_i': Number()}
+                extra_scope = {values[0].variable.value: Number()}
             for value, t_or_v in zip(values, case_found.types_or_values):
                 # execute all pieces of code
                 if t_or_v == Code and isinstance(value, Code) and str(value) not in self._executed_codes:
