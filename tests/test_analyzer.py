@@ -75,6 +75,13 @@ class GeneralTestCase(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_private_global(self):
+        code = 'private pic = 2'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((1, 9), errors[0].position)
+
     def test__this(self):
         analyzer = analyze(parse('private _nr = _this select 0;'))
         errors = analyzer.exceptions

@@ -202,7 +202,9 @@ class Analyzer(BaseInterpreter):
             elif isinstance(rhs, Array):
                 self.add_privates(self.value(rhs))
             elif isinstance(rhs, Variable):
-                self.add_privates([String('"' + rhs.name + '"')])
+                var = String('"' + rhs.name + '"')
+                var.position = rhs.position
+                self.add_privates([var])
                 outcome = PrivateType(rhs)
                 outcome.position = rhs.position
                 self.privates.append(outcome)
