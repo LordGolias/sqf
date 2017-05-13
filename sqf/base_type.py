@@ -84,7 +84,7 @@ class BaseTypeContainer(BaseType):
         self._tokens = tokens
 
     @staticmethod
-    def _is_base_token(token):
+    def is_base_token(token):
         raise NotImplementedError
 
     def _as_str(self, func=str):
@@ -118,8 +118,12 @@ class BaseTypeContainer(BaseType):
         super().set_position(position)
 
     @property
+    def tokens(self):
+        return self._tokens
+
+    @property
     def base_tokens(self):
-        return [token for token in self._tokens if self._is_base_token(token)]
+        return [token for token in self._tokens if self.is_base_token(token)]
 
     def __str__(self):
         return self._as_str()

@@ -996,3 +996,24 @@ class UndefinedValues(TestCase):
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
+
+
+class SpecialComment(TestCase):
+    def test_string1(self):
+        code = '//IGNORE_PRIVATE_WARNING ["_unit"];\n_unit = 2'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_string2(self):
+        code = '//USES_VARIABLES ["_unit"];\n_unit = 2'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_string2_fail(self):
+        code = '//USES_VARIABLES["_unit"];\n_unit = 2'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 2)
+        self.assertEqual(errors[0].message, 'warning:USES_VARIABLES comment must be `//USES_VARIABLES ["var1",...]`')

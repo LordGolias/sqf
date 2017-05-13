@@ -9,6 +9,8 @@ from sqf.base_interpreter import BaseInterpreter
 from sqf.database import EXPRESSIONS
 from sqf.common_expressions import COMMON_EXPRESSIONS
 from sqf.expressions_cache import values_to_expressions, build_database
+from sqf.parser_types import Comment
+from sqf.parser import parse
 
 
 # Replace all expressions in `database` by expressions from `COMMON_EXPRESSIONS` with the same signature
@@ -40,6 +42,8 @@ class Analyzer(BaseInterpreter):
     * Stores exceptions instead of rising them.
     * Runs code that is declared but not called.
     """
+    COMMENTS_FOR_PRIVATE = {'IGNORE_PRIVATE_WARNING', 'USES_VARIABLES'}
+
     def __init__(self, all_vars=None):
         super().__init__(all_vars)
         self.exceptions = []
@@ -116,6 +120,7 @@ class Analyzer(BaseInterpreter):
         analyzer = Analyzer()
         analyzer.defines = self.defines
         analyzer._namespaces = container.namespaces
+        print()
 
         file = File(container.code._tokens)
         file.position = container.position
@@ -152,7 +157,13 @@ class Analyzer(BaseInterpreter):
         outcome = Nothing()
         outcome.position = statement.position
 
-        base_tokens = statement.base_tokens
+        base_tokens = []
+        for token in statement.tokens:
+            if not statement.is_base_token(token):
+                self.execute_other(token)
+            else:
+                base_tokens.append(token)
+
         if not base_tokens:
             return outcome
 
@@ -354,13 +365,27 @@ class Analyzer(BaseInterpreter):
 
         return outcome
 
+    def execute_other(self, statement):
+        if isinstance(statement, Comment):
+            string = str(statement)[2:]
+            matches = [x for x in self.COMMENTS_FOR_PRIVATE if string.startswith(x)]
+            if matches:
+                length = len(matches[0]) + 1  # +1 for the space
+                try:
+                    parsed_statement = parse(string[length:])
+                    array = parsed_statement[0][0]
+                    assert(isinstance(array, Array))
+                    self.add_privates(self.value(array))
+                except Exception:
+                    self.exception(SQFWarning(statement.position, '{0} comment must be `//{0} ["var1",...]`'.format(matches[0])))
+
 
 def analyze(statement, analyzer=None):
     assert (isinstance(statement, Statement))
     if analyzer is None:
         analyzer = Analyzer()
 
-    file = File(statement._tokens)
+    file = File(statement.tokens)
 
     file.position = (1, 1)
 

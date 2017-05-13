@@ -102,6 +102,9 @@ class BaseInterpreter:
                 self.exception(SQFParserError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % name))
             self.current_scope[name] = Nothing()
 
+    def execute_other(self, statement):
+        pass
+
     def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
         assert (isinstance(code, Code))
 

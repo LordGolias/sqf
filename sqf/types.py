@@ -218,7 +218,7 @@ class _Statement(BaseTypeContainer):
         super().__init__(tokens)
 
     @staticmethod
-    def _is_base_token(token):
+    def is_base_token(token):
         # ignore tokens that are not relevant for the interpreter
         return not (isinstance(token, ParserType) or
                     isinstance(token, _Statement) and not token._parenthesis and not token.base_tokens)
