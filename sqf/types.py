@@ -370,3 +370,7 @@ class File(Code):
 
 class Preprocessor(Keyword):
     pass
+
+
+class Script(ConstantValue):
+    pass

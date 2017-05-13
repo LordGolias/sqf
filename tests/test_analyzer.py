@@ -1,6 +1,6 @@
 from unittest import TestCase, expectedFailure
 
-from sqf.types import Number, String, Boolean, Nothing, Array
+from sqf.types import Number, String, Boolean, Nothing, Array, Script
 from sqf.parser import parse
 from sqf.analyzer import analyze, Analyzer
 
@@ -876,6 +876,12 @@ class SpecialContext(TestCase):
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
+
+    def test_spawn(self):
+        code = '[] spawn {x = _thisScript}'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(type(analyzer['x']), Script)
 
 
 class UndefinedValues(TestCase):

@@ -7,7 +7,7 @@ https://gist.github.com/LordGolias/1289d59b35359fa3714d3666de396ad7
 import json
 
 from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType, WithType
-from sqf.types import Code, Array, Boolean, Number, Type, Nothing, String, Namespace, Object, Config
+from sqf.types import Code, Array, Boolean, Number, Type, Nothing, String, Namespace, Object, Config, Script
 
 
 # The mapping of SQF types to our types
@@ -34,7 +34,7 @@ STRING_TO_TYPE = {
     'WITH': WithType,
     'SIDE': Object,
     'TASK': Object,
-    'SCRIPT': Object,
+    'SCRIPT': Script,
     'NaN': Number,
     'NOTHING': Nothing,
     'NetObject': Object,
@@ -155,7 +155,7 @@ for nullop in data['nulars']:
 
 preamble = r'''# This file is generated automatically by `build_database.py`. Change it there.
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
-from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, Object, Config
+from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, Object, Config, Script
 from sqf.interpreter_types import WhileType, \
     ForType, SwitchType, IfType, TryType, WithType'''
 

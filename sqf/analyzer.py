@@ -1,6 +1,7 @@
 from copy import deepcopy
 
-from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, Number, Object, Preprocessor
+from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, \
+    Number, Object, Preprocessor, Script
 from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType
 from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
@@ -120,7 +121,6 @@ class Analyzer(BaseInterpreter):
         analyzer = Analyzer()
         analyzer.defines = self.defines
         analyzer._namespaces = container.namespaces
-        print()
 
         file = File(container.code._tokens)
         file.position = container.position
@@ -293,6 +293,8 @@ class Analyzer(BaseInterpreter):
                 extra_scope = {'_foreachindex': Number(), '_x': Nothing()}
             elif case_found.keyword == Keyword('catch'):
                 extra_scope = {'_exception': Object()}
+            elif case_found.keyword == Keyword('spawn'):
+                extra_scope = {'_thisScript': Script()}
             elif case_found.keyword == Keyword('do') and type(values[0]) == ForType:
                 extra_scope = {values[0].variable.value: Number()}
             for value, t_or_v in zip(values, case_found.types_or_values):

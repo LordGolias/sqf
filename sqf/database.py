@@ -1,6 +1,6 @@
 # This file is generated automatically by `build_database.py`. Change it there.
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
-from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, Object, Config
+from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, Object, Config, Script
 from sqf.interpreter_types import WhileType, \
     ForType, SwitchType, IfType, TryType, WithType
 
@@ -431,7 +431,7 @@ EXPRESSIONS = [
     BinaryExpression(Type, Keyword('exec'), String, Nothing),
     BinaryExpression(Object, Keyword('execEditorScript'), Array, Nothing),
     BinaryExpression(Type, Keyword('execFSM'), String, Number),
-    BinaryExpression(Type, Keyword('execVM'), String, Object),
+    BinaryExpression(Type, Keyword('execVM'), String, Script),
     BinaryExpression(IfType, Keyword('exitWith'), Code, Nothing),
     BinaryExpression(Number, Keyword('fadeMusic'), Number, Nothing),
     BinaryExpression(Number, Keyword('fadeRadio'), Number, Nothing),
@@ -1127,7 +1127,7 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('sliderSetRange'), Array, Nothing),
     BinaryExpression(Object, Keyword('sliderSetSpeed'), Array, Nothing),
     BinaryExpression(Array, Keyword('sort'), Boolean, Nothing),
-    BinaryExpression(Type, Keyword('spawn'), Code, Object),
+    BinaryExpression(Type, Keyword('spawn'), Code, Script),
     BinaryExpression(String, Keyword('splitString'), String, Array),
     BinaryExpression(ForType, Keyword('step'), Number, ForType),
     BinaryExpression(Object, Keyword('stop'), Boolean, Nothing),
@@ -1540,7 +1540,7 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('everyBackpack'), Object, Array),
     UnaryExpression(Keyword('everyContainer'), Object, Array),
     UnaryExpression(Keyword('execFSM'), String, Number),
-    UnaryExpression(Keyword('execVM'), String, Object),
+    UnaryExpression(Keyword('execVM'), String, Script),
     UnaryExpression(Keyword('exp'), Number, Number),
     UnaryExpression(Keyword('expectedDestination'), Object, Array),
     UnaryExpression(Keyword('exportJIPMessages'), String, Nothing),
@@ -1755,7 +1755,7 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('isNil'), String, Boolean),
     UnaryExpression(Keyword('isNull'), Object, Boolean),
     UnaryExpression(Keyword('isNull'), Object, Boolean),
-    UnaryExpression(Keyword('isNull'), Object, Boolean),
+    UnaryExpression(Keyword('isNull'), Script, Boolean),
     UnaryExpression(Keyword('isNull'), Config, Boolean),
     UnaryExpression(Keyword('isNull'), Object, Boolean),
     UnaryExpression(Keyword('isNull'), Object, Boolean),
@@ -2129,7 +2129,7 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('scoreSide'), Object, Number),
     UnaryExpression(Keyword('screenToWorld'), Array, Array),
     UnaryExpression(Keyword('screenshot'), String, Boolean),
-    UnaryExpression(Keyword('scriptDone'), Object, Boolean),
+    UnaryExpression(Keyword('scriptDone'), Script, Boolean),
     UnaryExpression(Keyword('scriptName'), String, Nothing),
     UnaryExpression(Keyword('scudState'), Object, Number),
     UnaryExpression(Keyword('secondaryWeapon'), Object, String),
@@ -2269,7 +2269,7 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('teamMember'), Object, Object),
     UnaryExpression(Keyword('teamName'), Object, String),
     UnaryExpression(Keyword('teamType'), Object, String),
-    UnaryExpression(Keyword('terminate'), Object, Nothing),
+    UnaryExpression(Keyword('terminate'), Script, Nothing),
     UnaryExpression(Keyword('terrainIntersect'), Array, Boolean),
     UnaryExpression(Keyword('terrainIntersectASL'), Array, Boolean),
     UnaryExpression(Keyword('terrainIntersectAtASL'), Array, Array),
@@ -2602,7 +2602,7 @@ EXPRESSIONS = [
     NullExpression(Keyword('saveJoysticks'), Nothing),
     NullExpression(Keyword('saveProfileNamespace'), Nothing),
     NullExpression(Keyword('savingEnabled'), Boolean),
-    NullExpression(Keyword('scriptNull'), Object),
+    NullExpression(Keyword('scriptNull'), Script),
     NullExpression(Keyword('selectNoPlayer'), Nothing),
     NullExpression(Keyword('serverName'), String),
     NullExpression(Keyword('serverTime'), Number),
