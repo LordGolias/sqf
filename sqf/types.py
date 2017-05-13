@@ -119,11 +119,6 @@ class Array(Type, BaseTypeContainer):
     def __repr__(self):
         return self._as_str(repr)
 
-    @staticmethod
-    def _is_base_token(token):
-        # An array only holds relevant statements (or it is syntatically incorrect).
-        return True
-
     def _column_delta(self, place='begin'):
         if place == 'begin':
             return 1  # [

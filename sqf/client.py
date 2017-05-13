@@ -1,4 +1,3 @@
-from sqf.exceptions import ExecutionError
 from sqf.interpreter import Interpreter, interpret
 from sqf.types import Code, Array, String
 
@@ -34,10 +33,6 @@ class Client:
         return self._simulation.server == self
 
     @property
-    def is_client(self):
-        return self in self._simulation.clients
-
-    @property
     def is_dedicated(self):
         return self._simulation.is_dedicated
 
@@ -60,8 +55,7 @@ class Simulation:
         return self._clients
 
     def add_client(self, client):
-        if not self._is_dedicated:
-            raise ExecutionError('Cannot add a client to non-dedicated server')
+        assert self._is_dedicated
 
         self._clients.append(client)
 

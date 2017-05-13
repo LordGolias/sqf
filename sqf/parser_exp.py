@@ -1,5 +1,5 @@
 from sqf.base_type import ParserType
-from sqf.keywords import BINARY_OPERATORS, UNARY_OPERATORS, OP_COMPARISON, PREPROCESSORS_UNARY, PREPROCESSORS
+from sqf.keywords import BINARY_OPERATORS, UNARY_OPERATORS, OP_COMPARISON, PREPROCESSORS_UNARY
 
 
 class EndToken:
@@ -33,8 +33,6 @@ def get_lbp(token):
 
     if token == EndToken:
         return 0
-    elif str(token) in PREPROCESSORS:
-        return 0.1
     elif n_token == '=':
         return 0.8
     elif n_token == 'private':

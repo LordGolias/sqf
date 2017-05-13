@@ -222,9 +222,6 @@ def parse_switch(interpreter, code):
             v = interpreter.value(token)
             values.append(v)
 
-        if CaseExpression().is_match(values):
-            values = [CaseExpression().execute(values, interpreter)]
-
         if type(values[0]) != SwitchType:
             interpreter.exception(SQFParserError(
                 statement.position, 'Switch code can only start with "case" or "default"'))

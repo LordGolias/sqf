@@ -45,22 +45,20 @@ class BaseInterpreter:
         self.add_privates([token[0]])
 
     def add_params(self, base_token):
-        if isinstance(base_token, Array):
-            for token in base_token:
-                if isinstance(token, String):
-                    if token.value == '':
-                        continue
-                    self.add_privates([token])
-                elif isinstance(token, Array):
-                    if len(token) in (2, 3, 4):
-                        self._add_params(token)
-                    else:
-                        self.exception(
-                            SQFParserError(base_token.position, '`params` array element must have 2-4 elements'))
+        assert (isinstance(base_token, Array))
+        for token in base_token:
+            if isinstance(token, String):
+                if token.value == '':
+                    continue
+                self.add_privates([token])
+            elif isinstance(token, Array):
+                if len(token) in (2, 3, 4):
+                    self._add_params(token)
                 else:
-                    self.exception(SQFParserError(base_token.position, '`params` array element must be a string or array'))
-        else:
-            self.exception(SQFParserError(base_token.position, '`params` argument must be an array'))
+                    self.exception(
+                        SQFParserError(base_token.position, '`params` array element must have 2-4 elements'))
+            else:
+                self.exception(SQFParserError(base_token.position, '`params` array element must be a string or array'))
 
     def value(self, token, namespace_name=None):
         if isinstance(token, Statement):
@@ -95,19 +93,10 @@ class BaseInterpreter:
             namespace = self.namespace(namespace_name)
         return namespace.get_scope(name)
 
-    def add_scope(self, values=None):
-        self.current_namespace.add_scope(values)
-
-    def del_scope(self):
-        self.current_namespace.del_scope()
-
     def add_privates(self, variables):
         for variable in variables:
-            if isinstance(variable, Variable):
-                name = variable.name
-            else:
-                assert(isinstance(variable, String))
-                name = variable.value
+            assert(isinstance(variable, String))
+            name = variable.value
 
             if not name.startswith('_'):
                 self.exception(SQFParserError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % name))
