@@ -333,8 +333,9 @@ class Analyzer(BaseInterpreter):
 
             self.exception(SQFParserError(values[1].position, message))
         else:
+            helper = ' '.join(['<%s(%s)>' % (type(t).__name__, t) for t in tokens])
             self.exception(
-                SQFParserError(base_tokens[-1].position, 'statement is syntactically incorrect (missing ;?)'))
+                SQFParserError(base_tokens[-1].position, 'can\'t interpret statement (missing ;?): %s' % helper))
 
         if isinstance(outcome, InterpreterType) and \
             outcome not in self.unevaluated_interpreter_tokens and type(outcome) not in (SwitchType, PrivateType):
