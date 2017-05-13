@@ -51,10 +51,10 @@ def get_lbp(token):
         return 6
     elif n_token == 'else':
         return 5
-    elif n_token in BINARY_OPERATORS:
-        return 4
     elif n_token in UNARY_OPERATORS:
         return 9
+    elif n_token in BINARY_OPERATORS:
+        return 4
     else:
         return 0.1
 

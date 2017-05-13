@@ -498,6 +498,24 @@ class ParseCode(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
+    def test_count_and_plus(self):
+        code = '5 + {_x} count x'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([N(5), Space()]),
+                    Keyword('+'),
+                    Statement([
+                        Statement([
+                            Space(), Code([Statement([V('_x')])]), Space()
+                        ]),
+                        Keyword('count'),
+                        Statement([Space(), V('x')])
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
 
 class ControlStatements(ParserTestCase):
     def test_for(self):
