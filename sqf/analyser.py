@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, Number, Object
+from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, Number, Object, Preprocessor
 from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType
 from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
@@ -157,7 +157,7 @@ class Analyzer(BaseInterpreter):
             return outcome
 
         # operations that cannot evaluate the value of all base_tokens
-        if base_tokens[0] == Keyword('#define'):
+        if base_tokens[0] == Preprocessor('#define'):
             if len(base_tokens) < 2:
                 exception = SQFParserError(base_tokens[0].position, "#define must have at least one argument")
                 self.exception(exception)
@@ -172,7 +172,7 @@ class Analyzer(BaseInterpreter):
                 define_statement.position = base_tokens[3].position
                 self.defines[str(base_tokens[1])] = define_statement
             return outcome
-        elif base_tokens[0] == Keyword("#include"):
+        elif base_tokens[0] == Preprocessor("#include"):
             if len(base_tokens) != 2:
                 exception = SQFParserError(base_tokens[0].position, "#include requires one argument")
                 self.exception(exception)

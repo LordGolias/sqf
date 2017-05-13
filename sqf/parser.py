@@ -2,7 +2,7 @@ import sqf.base_type
 from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import SQFParenthesisError, SQFParserError
-from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace
+from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace, Preprocessor
 from sqf.keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parser_exp import parse_exp
@@ -36,6 +36,8 @@ def identify_token(token):
         return Number(float(token))
     except ValueError:
         pass
+    if token in PREPROCESSORS:
+        return Preprocessor(token)
     if token.lower() in NAMESPACES:
         return Namespace(token)
     elif token.lower() in KEYWORDS:
@@ -225,7 +227,7 @@ def parse_block(all_tokens, analyse_tokens, analyse_array, start=0, initial_lvls
             i += size - 1
         elif type(token) == EndOfLine and any(lvls[x] != 0 for x in PREPROCESSORS):
             if tokens:
-                if tokens[0] == Keyword('#define'):
+                if tokens[0] == Preprocessor('#define'):
                     statements.append(Statement(tokens))
                 else:
                     statements.append(analyse_tokens(tokens))

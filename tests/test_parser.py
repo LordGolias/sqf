@@ -4,7 +4,7 @@ from sqf.base_type import get_coord
 from sqf.parser_exp import parse_exp
 from sqf.exceptions import SQFError, SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
-    Number as N, BaseTypeContainer, Keyword
+    Number as N, BaseTypeContainer, Keyword, Preprocessor
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
 from sqf.parser import parse, parse_strings_and_comments, identify_token
 from sqf.base_tokenizer import tokenize
@@ -863,7 +863,7 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'),
+                        Preprocessor('#define'),
                         Statement([Space(), V('CHECK'), Space(), BrokenEndOfLine()]),
                         N(1),
                         Statement([]),
@@ -881,7 +881,7 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'),
+                        Preprocessor('#define'),
                         Statement([Space(), V('a'), Space()]),
                         Statement([], parenthesis=True),
                         Statement([]),
@@ -898,7 +898,7 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'),
+                        Preprocessor('#define'),
                         Statement([Space(), V('a')]),
                         Statement([
                             Statement([
@@ -926,7 +926,7 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#include'),
+                        Preprocessor('#include'),
                         Statement([Space(), String('"macros.hpp"')])
                 ])]),
                 Statement([
@@ -944,7 +944,7 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#ifdef'),
+                        Preprocessor('#ifdef'),
                         Statement([Space(), V('A')])
                     ])
                 ])
@@ -1002,7 +1002,7 @@ class ParsePreprocessor(ParserTestCase):
         expected = \
             Statement([
                 Statement([
-                    Statement([Keyword('#endif')])
+                    Statement([Preprocessor('#endif')])
                 ]),
                 Statement([EndOfLine('\n')])
             ])
@@ -1017,7 +1017,7 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'), Space(), Keyword('IN'), Space(), N(2),
+                        Preprocessor('#define'), Space(), Keyword('IN'), Space(), N(2),
                     ]),
                 ]),
                 Statement([EndOfLine('\n')])
@@ -1030,7 +1030,7 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Keyword('#define'),
+                        Preprocessor('#define'),
                         Statement([Space(), V('a'), Space()]),
                         Statement([
                             Statement([

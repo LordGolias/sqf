@@ -221,7 +221,7 @@ class _Statement(BaseTypeContainer):
     def __init__(self, tokens, parenthesis=None, ending=''):
         assert (isinstance(tokens, list))
         for i, s in enumerate(tokens):
-            assert(isinstance(s, (Type, Keyword, Statement, ParserType)))
+            assert(isinstance(s, (Type, Keyword, Preprocessor, Statement, ParserType)))
 
         self._parenthesis = parenthesis
         self._ending = ending
@@ -377,3 +377,7 @@ class File(Code):
 
     def __repr__(self):
         return 'F<%s>' % self._as_str(repr)
+
+
+class Preprocessor(Keyword):
+    pass
