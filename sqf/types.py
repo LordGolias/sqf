@@ -152,12 +152,10 @@ class Array(Type, BaseTypeContainer):
         assert(not self.is_undefined)
         new_tokens = [Nothing()] * (index - len(self._tokens) + 1)
         self._tokens += new_tokens
-        self._update_base_tokens()
 
     def append(self, token):
         assert (not self.is_undefined)
         self._tokens.append(token)
-        self._update_base_tokens()
 
     def resize(self, count):
         assert (not self.is_undefined)
@@ -165,17 +163,14 @@ class Array(Type, BaseTypeContainer):
             self.extend(count - 1)
         else:
             self._tokens = self._tokens[:count]
-        self._update_base_tokens()
 
     def reverse(self):
         assert (not self.is_undefined)
         self._tokens.reverse()
-        self._update_base_tokens()
 
     def add(self, other):
         assert (not self.is_undefined)
         self._tokens += other
-        self._update_base_tokens()
 
     def set(self, rhs_v):
         assert (not self.is_undefined)
@@ -187,7 +182,6 @@ class Array(Type, BaseTypeContainer):
         if index >= len(self._tokens):
             self.extend(index)
         self._tokens[index] = value
-        self._update_base_tokens()
 
 
 class Variable(Type):

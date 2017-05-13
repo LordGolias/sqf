@@ -83,15 +83,6 @@ class BaseTypeContainer(BaseType):
             assert(isinstance(s, BaseType))
         self._tokens = tokens
 
-        self._update_base_tokens()
-
-    def _update_base_tokens(self):
-        self._base_tokens = []
-        for token in self._tokens:
-            if not self._is_base_token(token):
-                continue
-            self._base_tokens.append(token)
-
     @staticmethod
     def _is_base_token(token):
         raise NotImplementedError
@@ -128,7 +119,7 @@ class BaseTypeContainer(BaseType):
 
     @property
     def base_tokens(self):
-        return self._base_tokens
+        return [token for token in self._tokens if self._is_base_token(token)]
 
     def __str__(self):
         return self._as_str()
