@@ -144,8 +144,8 @@ def _analyse_array_tokens(tokens, tokens_until):
     # an empty array is a valid array
     if part == [] and first_comma_found:
         raise SQFParserError(get_coord(tokens_until), 'Array cannot have an empty element')
-    result.append(_analyse_tokens(part))
-
+    elif tokens:
+        result.append(_analyse_tokens(part))
     return result
 
 

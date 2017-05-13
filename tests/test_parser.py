@@ -211,7 +211,7 @@ class ParseCode(ParserTestCase):
         expected = Statement([Statement([
             Statement([V('_y'), Space()]),
             Keyword('='),
-            Statement([Space(), Array([Statement([])])])], ending=';')])
+            Statement([Space(), Array([])])], ending=';')])
         self.assertEqualStatement(expected, result, code)
 
     def test_two_statements(self):
@@ -662,7 +662,7 @@ class ParseArray(ParserTestCase):
     def test_empty(self):
         code = '[];'
         result = parse(code)
-        expected = Statement([Statement([Array([Statement([])])], ending=';')])
+        expected = Statement([Statement([Array([])], ending=';')])
 
         self.assertEqualStatement(expected, result, code)
 

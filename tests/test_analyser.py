@@ -69,6 +69,12 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_private_empty(self):
+        code = "private [];"
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
     def test__this(self):
         analyser = analyze(parse('private _nr = _this select 0;'))
         errors = analyser.exceptions
