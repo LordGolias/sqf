@@ -95,20 +95,20 @@ class TestInterpreter(TestCase):
     def test_get_variable(self):
         with self.assertRaises(SQFParserError) as cm:
             interpret('missionnamespace getVariable ["x"]')
-        self.assertEqual((1, 33), cm.exception.position)
+        self.assertEqual((1, 29), cm.exception.position)
 
         with self.assertRaises(SQFParserError) as cm:
             interpret('missionnamespace getVariable [1, 2]')
-        self.assertEqual((1, 35), cm.exception.position)
+        self.assertEqual((1, 31), cm.exception.position)
 
     def test_set_variable(self):
         with self.assertRaises(SQFParserError) as cm:
             interpret('missionnamespace setVariable ["x"]')
-        self.assertEqual((1, 33), cm.exception.position)
+        self.assertEqual((1, 29), cm.exception.position)
 
         with self.assertRaises(SQFParserError) as cm:
             interpret('missionnamespace setVariable [1, 2]')
-        self.assertEqual((1, 35), cm.exception.position)
+        self.assertEqual((1, 31), cm.exception.position)
 
 
 class TestInterpretArray(TestCase):

@@ -349,6 +349,9 @@ class Namespace(Type):
     def __repr__(self):
         return 'NS<%s>' % self._token
 
+    def __str__(self):
+        return self._token
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self._unique_token == other._unique_token
