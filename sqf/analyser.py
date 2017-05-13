@@ -21,8 +21,16 @@ for exp in COMMON_EXPRESSIONS:
 EXPRESSIONS_MAP = build_database(EXPRESSIONS)
 
 
-def code_key(code):
-    return (code.position, str(code))
+class UnexecutedCode:
+    """
+    A piece of code that needs to be re-run on a contained env to check for issues.
+    We copy the state of the analyzer (namespaces) so we get what that code would run.
+    """
+    def __init__(self, code, analyzer):
+        self.namespaces = deepcopy(analyzer._namespaces)
+        self.namespace_name = analyzer.current_namespace.name
+        self.code = code
+        self.position = code.position
 
 
 class Analyzer(BaseInterpreter):
@@ -44,6 +52,9 @@ class Analyzer(BaseInterpreter):
 
     def exception(self, exception):
         self.exceptions.append(exception)
+
+    def code_key(self, code):
+        return code.position, str(code), self.current_namespace.name
 
     def value(self, token, namespace_name=None):
         """
@@ -70,8 +81,8 @@ class Analyzer(BaseInterpreter):
                 result = token
             result.position = token.position
 
-        if isinstance(result, Code) and code_key(result) not in self._unexecuted_codes:
-            self._unexecuted_codes[code_key(result)] = result
+        if isinstance(result, Code) and self.code_key(result) not in self._unexecuted_codes:
+            self._unexecuted_codes[self.code_key(result)] = UnexecutedCode(result, self)
 
         return result
 
@@ -100,21 +111,20 @@ class Analyzer(BaseInterpreter):
         """
         Executes a code in a dedicated env and put consequence exceptions in self.
         """
-        code = self._unexecuted_codes[code_key]
+        container = self._unexecuted_codes[code_key]
 
         analyser = Analyzer()
-        analyser._namespaces = deepcopy(self._namespaces)
-        analyser.current_namespace = analyser._namespaces['missionnamespace']
+        analyser._namespaces = container.namespaces
 
-        file = File(code._tokens)
-        file.position = code.position
+        file = File(container.code._tokens)
+        file.position = container.position
 
-        analyser.execute_code(file)
+        analyser.execute_code(file, namespace_name=container.namespace_name)
 
         self.exceptions.extend(analyser.exceptions)
 
     def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
-        key = code_key(code)
+        key = self.code_key(code)
 
         if key in self._unexecuted_codes:
             del self._unexecuted_codes[key]
@@ -270,8 +280,8 @@ class Analyzer(BaseInterpreter):
                 extra_scope = {values[0].variable.value: Number()}
             for value, t_or_v in zip(values, case_found.types_or_values):
                 # execute all pieces of code
-                if t_or_v == Code and isinstance(value, Code) and code_key(value) not in self._executed_codes:
-                    self.execute_code(value, extra_scope=extra_scope)
+                if t_or_v == Code and isinstance(value, Code) and self.code_key(value) not in self._executed_codes:
+                    self.execute_code(value, extra_scope=extra_scope, namespace_name=self.current_namespace.name)
 
                 # remove evaluated interpreter tokens
                 if isinstance(value, InterpreterType) and value in self.unevaluated_interpreter_tokens:

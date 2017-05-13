@@ -959,3 +959,15 @@ class UndefinedValues(TestCase):
         analyser = analyze(parse('y = 0; for [{x = 1},{x <= z},{x = x + 1}] do {!1}'))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 1)
+
+    def test_code_in_namespace(self):
+        code = 'with uiNamespace do {private _mapCtrl = 1;{_mapCtrl = _x} forEach GVAR(completedAreas);}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_unexecuted_code_in_namespace(self):
+        code = 'with uiNamespace do {private _mapCtrl = 1;x = {_mapCtrl = y};}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)

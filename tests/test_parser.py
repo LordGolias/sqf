@@ -172,6 +172,10 @@ class ParseCode(ParserTestCase):
         code = "x = {\ncall {private _x;}\n}"
         self.assertCorrectPositions(parse(code), code)
 
+    def test_namespace_position(self):
+        code = 'with uiNamespace do {private _mapCtrl = 1;x = {_mapCtrl = y}}'
+        self.assertCorrectPositions(parse(code), code)
+
     def test_one_bracketed(self):
         code = '{_x="AirS";}'
         result = parse(code)
