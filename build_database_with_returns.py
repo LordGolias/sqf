@@ -103,6 +103,8 @@ for function in data['functions']:
         return_type_names = case_data['retT']
         if op_name == 'handgunMagazine':
             return_type_names = ['ARRAY']
+        elif op_name == 'attachedTo':
+            return_type_names = ['OBJECT']
 
         for return_type_name in return_type_names:
             if return_type_name == 'NaN':

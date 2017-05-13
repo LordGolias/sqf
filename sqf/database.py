@@ -1291,7 +1291,7 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('atg'), Number, Number),
     UnaryExpression(Keyword('attachedObject'), Object, Object),
     UnaryExpression(Keyword('attachedObjects'), Object, Array),
-    UnaryExpression(Keyword('attachedTo'), Object, Array),
+    UnaryExpression(Keyword('attachedTo'), Object, Object),
     UnaryExpression(Keyword('attackEnabled'), Object, Boolean),
     UnaryExpression(Keyword('attackEnabled'), Object, Boolean),
     UnaryExpression(Keyword('backpack'), Object, String),

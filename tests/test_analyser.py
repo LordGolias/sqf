@@ -289,8 +289,13 @@ class GeneralTestCase(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 2)
 
-    def test_handgunMagazine_is_array(self):
+    def test_wrong_types(self):
         code = 'private _x = ""; private _m = handgunMagazine player; _x = _m select 0;'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = 'isNull attachedTo player;'
         analyser = analyze(parse(code))
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
