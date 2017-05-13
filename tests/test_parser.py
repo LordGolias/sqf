@@ -276,7 +276,7 @@ class ParseCode(ParserTestCase):
         with self.assertRaises(SQFParenthesisError):
             parse('_a = (x + 2')
 
-    def test_analyse_expression(self):
+    def test_analyze_expression(self):
         code = '_h = _civs spawn _fPscareC;'
         result = parse(code)
         # S<S<S<V<_h>' '>K<=>S<S<' 'V<_civs>' '>K<spawn>S<' 'V<_fPscareC>>>;>> !=
@@ -292,7 +292,7 @@ class ParseCode(ParserTestCase):
 
         self.assertEqualStatement(expected, result, code)
 
-    def test_analyse_expression2(self):
+    def test_analyze_expression2(self):
         code = 'isNil{_x getVariable "AirS"}'
         result = parse(code)
         expected = Statement([Statement([

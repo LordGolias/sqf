@@ -2,7 +2,7 @@ import sys
 import argparse
 
 from sqf.parser import parse
-import sqf.analyser
+import sqf.analyzer
 from sqf.exceptions import SQFParserError
 
 
@@ -13,13 +13,13 @@ def analyze(code, writer=sys.stdout):
         writer.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
         return
 
-    exceptions = sqf.analyser.analyze(result).exceptions
+    exceptions = sqf.analyzer.analyze(result).exceptions
     for e in exceptions:
         writer.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
 
 
 def _main():
-    parser = argparse.ArgumentParser(description="Static Analyser of SQF code")
+    parser = argparse.ArgumentParser(description="Static Analyzer of SQF code")
     parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=None,
                         help='The full path of the file to be analyzed')
 

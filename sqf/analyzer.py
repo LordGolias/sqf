@@ -113,16 +113,16 @@ class Analyzer(BaseInterpreter):
         """
         container = self._unexecuted_codes[code_key]
 
-        analyser = Analyzer()
-        analyser.defines = self.defines
-        analyser._namespaces = container.namespaces
+        analyzer = Analyzer()
+        analyzer.defines = self.defines
+        analyzer._namespaces = container.namespaces
 
         file = File(container.code._tokens)
         file.position = container.position
 
-        analyser.execute_code(file, namespace_name=container.namespace_name)
+        analyzer.execute_code(file, namespace_name=container.namespace_name)
 
-        self.exceptions.extend(analyser.exceptions)
+        self.exceptions.extend(analyzer.exceptions)
 
     def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
         key = self.code_key(code)
@@ -343,8 +343,8 @@ class Analyzer(BaseInterpreter):
             self.unevaluated_interpreter_tokens.append(outcome)
 
         assert(isinstance(outcome, BaseType))
-        # the position of Private is different because it can be passed from analyser to analyser,
-        # and we want to keep the position of the outermost analyser.
+        # the position of Private is different because it can be passed from analyzer to analyzer,
+        # and we want to keep the position of the outermost analyzer.
         if not isinstance(outcome, PrivateType):
             outcome.position = base_tokens[0].position
 

@@ -3,7 +3,7 @@
 
 # SQF linter
 
-This project contains a parser, compiler, static analyser and interpreter for 
+This project contains a parser, compiler, static analyzer and interpreter for 
 SQF (Arma scripting language), written in Python.
 It can be used to:
 
@@ -43,8 +43,8 @@ without having to run the game.
     SQFParserError((1, 11), "'(true)' can't preceed '{1}' (missing ';'?)")
 
     >>> code = 'private _y = _z'
-    >>> analyser = sqf.scope_analyzer.interpret(sqf.parser.parse(code))
-    >>> analyser.exceptions[0]
+    >>> analyzer = sqf.scope_analyzer.interpret(sqf.parser.parse(code))
+    >>> analyzer.exceptions[0]
     SQFWarning((1, 14), 'Local variable "_z" is not from this scope (not private)')
 
 ### Interpreter example

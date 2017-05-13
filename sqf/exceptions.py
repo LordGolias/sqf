@@ -4,7 +4,7 @@ class SQFError(Exception):
 
 class SQFParserException(SQFError):
     """
-    Raised by the parser and analyser
+    Raised by the parser and analyzer
     """
     def __init__(self, position, message):
         assert(isinstance(position, tuple))
@@ -14,7 +14,7 @@ class SQFParserException(SQFError):
 
 class SQFParserError(SQFParserException):
     """
-    Raised by the parser and analyser
+    Raised by the parser and analyzer
     """
     def __init__(self, position, message):
         super().__init__(position, "error:%s" % message)
