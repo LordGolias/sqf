@@ -544,6 +544,13 @@ class Preprocessor(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_upper_cased_keywords(self):
+        # cargo is a keyword, but if it is upper-cased, we treat it as a define
+        code = 'x = CARGO'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class Arrays(TestCase):
 

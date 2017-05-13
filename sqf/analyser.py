@@ -235,6 +235,11 @@ class Analyzer(BaseInterpreter):
         #   - global variable followed by a parenthesis statement
         #   - first token string is all upper
         #   - first token is a define
+        #   - is keyword but upper cased
+        elif len(base_tokens) == 1 and type(base_tokens[0]) == Keyword and str(base_tokens[0]).isupper():
+            outcome = Variable(str(base_tokens[0]))
+            outcome.position = base_tokens[0].position
+            return outcome
         elif len(base_tokens) == 2 and (
                             type(base_tokens[0]) == Variable and base_tokens[0].is_global or
                             str(base_tokens[0]).isupper() or
