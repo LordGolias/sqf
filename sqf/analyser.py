@@ -114,6 +114,7 @@ class Analyzer(BaseInterpreter):
         container = self._unexecuted_codes[code_key]
 
         analyser = Analyzer()
+        analyser.defines = self.defines
         analyser._namespaces = container.namespaces
 
         file = File(container.code._tokens)

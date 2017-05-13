@@ -538,6 +538,13 @@ class Preprocessor(TestCase):
         errors = analyser.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_defines_in_unexecuted_code(self):
+        code = '#define __VALUE 1\n{X = __VALUE}'
+        analyser = analyze(parse(code))
+        errors = analyser.exceptions
+        self.assertEqual(len(errors), 0)
+
+
 class Arrays(TestCase):
 
     def test_basic(self):
