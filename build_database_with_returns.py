@@ -53,50 +53,57 @@ STRING_TO_TYPE_RETURN = STRING_TO_TYPE.copy()
 STRING_TO_TYPE_RETURN['ANY'] = Nothing
 
 
+def _parse_return_type_names(return_type_names):
+    if 'NaN' in return_type_names:
+        return_type_names.remove('NaN')
+    if len(return_type_names) > 1 and 'NOTHING' in return_type_names:
+        return_type_names.remove('NOTHING')
+
+    if len(return_type_names) > 1:
+        return_type_name = 'ANY'
+    else:
+        return_type_name = return_type_names[0]
+
+    return STRING_TO_TYPE_RETURN[return_type_name]
+
+
 with open('fullFuncDump1.68.json') as f:
     data = json.load(f)
 
 
 expressions = []
-priorities = {}
-for operator in data['operators']:
-    op_name = operator
+for op_name in data['operators']:
     for case_data_raw in data['operators'][op_name]:
         case_data = case_data_raw['op']
 
-        priorities[op_name] = case_data_raw['priority']
+        return_type = _parse_return_type_names(case_data['retT'])
 
-        for return_type_name in case_data['retT']:
-            if return_type_name == 'NaN':
+        init_code = ''
+        if return_type in TYPE_TO_INIT_ARGS:
+            init_code = ', action=lambda lhs, rhs, i: %s' % TYPE_TO_INIT_ARGS[return_type]
+
+        for lhs_type_name in case_data['argL']:
+            if lhs_type_name == 'NaN':
                 continue
-            return_type = STRING_TO_TYPE_RETURN[return_type_name]
-            init_code = ''
-            if return_type in TYPE_TO_INIT_ARGS:
-                init_code = ', action=lambda lhs, rhs, i: %s' % TYPE_TO_INIT_ARGS[return_type]
-
-            for lhs_type_name in case_data['argL']:
-                if lhs_type_name == 'NaN':
+            lhs_type = STRING_TO_TYPE[lhs_type_name]
+            for rhs_type_name in case_data['argR']:
+                if rhs_type_name == 'NaN':
                     continue
-                lhs_type = STRING_TO_TYPE[lhs_type_name]
-                for rhs_type_name in case_data['argR']:
-                    if rhs_type_name == 'NaN':
-                        continue
-                    rhs_type = STRING_TO_TYPE[rhs_type_name]
-                    expression = 'BinaryExpression(' \
-                                 '{lhs_type}, ' \
-                                 'Keyword(\'{keyword}\'), ' \
-                                 '{rhs_type}, {return_type}{init_code})'.format(
-                        lhs_type=lhs_type.__name__,
-                        keyword=op_name,
-                        rhs_type=rhs_type.__name__,
-                        return_type=return_type.__name__,
-                        init_code=init_code
-                    )
-                    expressions.append(expression)
+                rhs_type = STRING_TO_TYPE[rhs_type_name]
+                expression = 'BinaryExpression(' \
+                             '{lhs_type}, ' \
+                             'Keyword(\'{keyword}\'), ' \
+                             '{rhs_type}, {return_type}{init_code})'.format(
+                    lhs_type=lhs_type.__name__,
+                    keyword=op_name,
+                    rhs_type=rhs_type.__name__,
+                    return_type=return_type.__name__,
+                    init_code=init_code
+                )
+                expressions.append(expression)
 
 unary_expressions = {}
-for function in data['functions']:
-    op_name = function
+for op_name in data['functions']:
     for case_data_raw in data['functions'][op_name]:
         case_data = case_data_raw['op']
 
@@ -106,33 +113,29 @@ for function in data['functions']:
         elif op_name == 'attachedTo':
             return_type_names = ['OBJECT']
 
-        for return_type_name in return_type_names:
-            if return_type_name == 'NaN':
+        return_type = _parse_return_type_names(return_type_names)
+
+        init_code = ''
+        if return_type in TYPE_TO_INIT_ARGS:
+            init_code = ', action=lambda rhs, i: %s' % TYPE_TO_INIT_ARGS[return_type]
+
+        for rhs_type_name in case_data['argT']:
+            if rhs_type_name == 'NaN':
                 continue
-            return_type = STRING_TO_TYPE_RETURN[return_type_name]
+            rhs_type = STRING_TO_TYPE[rhs_type_name]
+            expression = 'UnaryExpression(' \
+                         'Keyword(\'{keyword}\'), ' \
+                         '{rhs_type}, {return_type}{init_code})'.format(
+                keyword=op_name,
+                rhs_type=rhs_type.__name__,
+                return_type=return_type.__name__,
+                init_code=init_code
+            )
 
-            init_code = ''
-            if return_type in TYPE_TO_INIT_ARGS:
-                init_code = ', action=lambda rhs, i: %s' % TYPE_TO_INIT_ARGS[return_type]
+            unary_expressions[op_name] = rhs_type, return_type
+            expressions.append(expression)
 
-            for rhs_type_name in case_data['argT']:
-                if rhs_type_name == 'NaN':
-                    continue
-                rhs_type = STRING_TO_TYPE[rhs_type_name]
-                expression = 'UnaryExpression(' \
-                             'Keyword(\'{keyword}\'), ' \
-                             '{rhs_type}, {return_type}{init_code})'.format(
-                    keyword=op_name,
-                    rhs_type=rhs_type.__name__,
-                    return_type=return_type.__name__,
-                    init_code=init_code
-                )
-
-                unary_expressions[op_name] = rhs_type, return_type
-                expressions.append(expression)
-
-for nullop in data['nulars']:
-    op_name = nullop
+for op_name in data['nulars']:
     case_data = data['nulars'][op_name]['op']
 
     for return_type_name in case_data['retT']:

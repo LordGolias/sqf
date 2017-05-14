@@ -313,6 +313,13 @@ class GeneralTestCase(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_multiple_returns_is_nothing(self):
+        # Regression for issue #13
+        code = 'private _debug = getMissionConfigValue ["enableDebugConsole", 0];(_debug == 1)'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
     def test_count_with_config_and_minus(self):
         code = 'x = missionConfigFile >> "CfgInteractionMenus"; for "_n" from 0 to count(x) - 1 do {}'
         analyzer = analyze(parse(code))
