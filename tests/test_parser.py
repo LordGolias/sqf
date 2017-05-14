@@ -891,8 +891,8 @@ class ParsePreprocessor(ParserTestCase):
                         Statement([], parenthesis=True),
                         Statement([]),
                     ], ending=';'),
+                    Statement([EndOfLine('\n')])
                 ]),
-                Statement([EndOfLine('\n')])
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
@@ -932,11 +932,11 @@ class ParsePreprocessor(ParserTestCase):
                 Statement([
                     Statement([
                         Preprocessor('#include'),
-                        Statement([Space(), String('"macros.hpp"')])
-                ])]),
+                        Statement([Space(), String('"macros.hpp"'), EndOfLine('\n')]),
+                    ])
+                ]),
                 Statement([
-                    Statement([
-                        EndOfLine('\n'), V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
+                    Statement([V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
                 ])
             ])
 
@@ -1007,9 +1007,8 @@ class ParsePreprocessor(ParserTestCase):
         expected = \
             Statement([
                 Statement([
-                    Statement([Preprocessor('#endif')])
+                    Statement([Preprocessor('#endif'), EndOfLine('\n')]),
                 ]),
-                Statement([EndOfLine('\n')])
             ])
 
         self.assertEqualStatement(expected, result, code)
@@ -1022,10 +1021,9 @@ class ParsePreprocessor(ParserTestCase):
             Statement([
                 Statement([
                     Statement([
-                        Preprocessor('#define'), Space(), Keyword('IN'), Space(), N(2),
-                    ]),
+                        Preprocessor('#define'), Space(), Keyword('IN'), Space(), N(2), EndOfLine('\n')
+                    ])
                 ]),
-                Statement([EndOfLine('\n')])
             ])
         self.assertEqualStatement(expected, result, code)
 
@@ -1064,8 +1062,8 @@ class ParsePreprocessor(ParserTestCase):
                             ]),
                         ], parenthesis=True),
                         Statement([]),
-                    ], ending=';')
+                    ], ending=';'),
+                    Statement([EndOfLine('\n')])
                 ]),
-                Statement([EndOfLine('\n')])
             ])
         self.assertEqualStatement(expected, parse(code), code)

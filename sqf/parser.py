@@ -226,13 +226,14 @@ def parse_block(all_tokens, analyze_tokens, analyze_array, start=0, initial_lvls
             statements.append(expression)
             i += size - 1
         elif type(token) == EndOfLine and any(lvls[x] != 0 for x in PREPROCESSORS):
+            tokens.append(token)
             if tokens:
                 if tokens[0] == Preprocessor('#define'):
                     statements.append(Statement(tokens))
                 else:
                     statements.append(analyze_tokens(tokens))
 
-            return Statement(statements), i - start
+            return Statement(statements), i + 1 - start
         else:
             tokens.append(token)
         i += 1
