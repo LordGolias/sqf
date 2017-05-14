@@ -1,7 +1,7 @@
 import sys
 import os
 import io
-from unittest import TestCase, expectedFailure
+from unittest import TestCase
 
 from sqflint import parse_args, main
 
@@ -9,34 +9,38 @@ from sqflint import parse_args, main
 class ParseCode(TestCase):
 
     def setUp(self):
-        self.old_stdout = sys.stdout
-
         self.stdout = io.StringIO()
         sys.stdout = self.stdout
 
     def tearDown(self):
-        sys.stdout = self.old_stdout
+        sys.stdout = sys.__stdout__
+        sys.stdin = sys.__stdin__
 
-    # def test_stdin(self):
-    #     result = main([])
-    #     self.assertEqual(None, result)
+    def test_stdin(self):
+        sys.stdin = io.StringIO()
+        sys.stdin.write('hint _x')
+        sys.stdin.seek(0)
+        main([])
+        self.assertEqual(
+            self.stdout.getvalue(),
+            '[1,5]:warning:Local variable "_x" is not from this scope (not private)\n')
 
     def test_directory(self):
         args = parse_args(['--directory', 'tests/test_dir'])
         self.assertEqual('tests/test_dir', args.directory)
 
-    # @expectedFailure
-    # def test_filename_run(self):
-    #     result = main(['tests/test_dir/test.sqf'])
-    #     self.assertEqual(result,
-    #                      '[1,5]:warning:Local variable "_x" is not from this scope (not private)\n')
+    def test_filename_run(self):
+        main(['tests/test_dir/test.sqf'])
+        self.assertEqual(self.stdout.getvalue(),
+                         '[1,5]:warning:Local variable "_x" is not from this scope (not private)\n')
 
-    # def test_directory_run(self):
-    #     result = main(['--directory', 'tests/test_dir'])
-    #     self.assertEqual(
-    #         result,
-    #         'test.sqf\n\t[1,5]:warning:Local variable "_x" is not from this scope (not private)\n'
-    #         'test1.sqf\n\t[1,5]:warning:Local variable "_y" is not from this scope (not private)\n')
+    def test_directory_run(self):
+        main(['--directory', 'tests/test_dir'])
+        result = self.stdout.getvalue()
+        self.assertEqual(
+            result,
+            'test.sqf\n\t[1,5]:warning:Local variable "_x" is not from this scope (not private)\n'
+            'test1.sqf\n\t[1,5]:warning:Local variable "_y" is not from this scope (not private)\n')
 
     def test_directory_run_to_file(self):
         main(['--directory', 'tests/test_dir', '-o', 'tests/result.txt'])

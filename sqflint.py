@@ -87,13 +87,8 @@ def main(args):
     else:
         analyze_dir(args.directory, writer)
 
-    if args.output != sys.stdout:
+    if args.output is not None:
         writer.close()
-        return None
-    else:
-        result = writer.getvalue()
-        return result
-
 
 def _main():
     main(sys.argv[1:])
