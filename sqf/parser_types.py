@@ -19,7 +19,7 @@ class Comment(ParserType):
             return '%s' % self._string
 
     def __repr__(self):
-        return ('C(%s)' % self).replace('\n', ' ')
+        return ('C(%s)' % self).replace('\r\n', ' ').replace('\n', ' ')
 
 
 class Space(ParserType):

@@ -86,7 +86,7 @@ def parse_strings_and_comments(all_tokens):
                 string = ''
         elif mode == "comment_line":
             string += token
-            if token == '\n':
+            if token in ('\n', '\r\n'):
                 mode = None
                 tokens.append(Comment(string))
                 string = ''

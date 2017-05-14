@@ -131,6 +131,11 @@ class ParseCode(ParserTestCase):
         self.assertTrue(isinstance(result[4], String))
         self.assertEqual('', result[4].value)
 
+    def test_end_comment_with_windows_eol(self):
+        code = '// \r\n_x;\r\n'
+        result = parse_strings_and_comments(tokenize(code))
+        self.assertEqual([Comment('// \r\n'),'_x',';','\r\n'], result)
+
     def test_parse_windows_eol(self):
         code = '_x\r\n'
         result = parse(code)
