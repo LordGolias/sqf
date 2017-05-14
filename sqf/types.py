@@ -374,3 +374,23 @@ class Preprocessor(Keyword):
 
 class Script(ConstantValue):
     pass
+
+
+class Control(ConstantValue):
+    pass
+
+
+class Group(ConstantValue):
+    pass
+
+
+class Display(ConstantValue):
+    pass
+
+
+class Side(ConstantValue):
+    pass
+
+
+class Task(ConstantValue):
+    pass

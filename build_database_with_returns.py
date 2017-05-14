@@ -7,7 +7,8 @@ https://gist.github.com/LordGolias/1289d59b35359fa3714d3666de396ad7
 import json
 
 from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType, WithType
-from sqf.types import Code, Array, Boolean, Number, Type, Nothing, String, Namespace, Object, Config, Script
+from sqf.types import Code, Array, Boolean, Number, Type, Nothing, String, Namespace, \
+    Object, Config, Script, Control, Group, Display, Side, Task
 
 
 # The mapping of SQF types to our types
@@ -22,18 +23,18 @@ STRING_TO_TYPE = {
     'CONFIG': Config,
     'LOCATION': Object,
     'OBJECT': Object,
-    'GROUP': Object,
+    'GROUP': Group,
     'TEAM_MEMBER': Object,
-    'CONTROL': Object,
-    'DISPLAY': Object,
+    'CONTROL': Control,
+    'DISPLAY': Display,
     'EXCEPTION': TryType,
     'FOR': ForType,
     'IF': IfType,
     'SWITCH': SwitchType,
     'WHILE': WhileType,
     'WITH': WithType,
-    'SIDE': Object,
-    'TASK': Object,
+    'SIDE': Side,
+    'TASK': Task,
     'SCRIPT': Script,
     'NaN': Number,
     'NOTHING': Nothing,
@@ -44,7 +45,7 @@ STRING_TO_TYPE = {
 
 # the argument the type is initialized with
 TYPE_TO_INIT_ARGS = {
-    Namespace: "missionNamespace",
+    Namespace: "'missionNamespace'",
 }
 
 
@@ -158,7 +159,8 @@ for op_name in data['nulars']:
 
 preamble = r'''# This file is generated automatically by `build_database.py`. Change it there.
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
-from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, Object, Config, Script
+from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, \
+    Object, Config, Script, Control, Group, Display, Side, Task
 from sqf.interpreter_types import WhileType, \
     ForType, SwitchType, IfType, TryType, WithType'''
 
