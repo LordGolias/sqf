@@ -63,7 +63,7 @@ def parse_args(args):
                         help='The full path of the file to be analyzed')
     parser.add_argument('-d', '--directory', nargs='?', type=readable_dir, default=None,
                         help='The full path of the directory to recursively analyse sqf files on')
-    parser.add_argument('-o', '--output', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
+    parser.add_argument('-o', '--output', nargs='?', type=argparse.FileType('w'), default=None,
                         help='File path to redirect the output to (default to stdout)')
 
     return parser.parse_args(args)
@@ -72,16 +72,26 @@ def parse_args(args):
 def main(args):
     args = parse_args(args)
 
-    writer = args.output
+    if args.output is None:
+        writer = sys.stdout
+    else:
+        writer = args.output
 
     if args.file is None and args.directory is None:
         code = sys.stdin.read()
-        return analyze(code, writer)
+        analyze(code, writer)
     elif args.file is not None:
         code = args.file.read()
-        return analyze(code, writer)
+        args.file.close()
+        analyze(code, writer)
     else:
-        return analyze_dir(args.directory, writer)
+        analyze_dir(args.directory, writer)
+
+    if args.output is not None:
+        writer.close()
+    else:
+        result = writer.getvalue()
+        return result
 
 
 def _main():

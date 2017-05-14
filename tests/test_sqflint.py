@@ -17,34 +17,30 @@ class ParseCode(TestCase):
     def tearDown(self):
         sys.stdout = self.old_stdout
 
-    def test_filename(self):
-        args = parse_args(['test_dir/test.sqf'])
-        self.assertEqual('r', args.file.mode)
-
     def test_directory(self):
-        args = parse_args(['--directory', 'test_dir'])
-        self.assertEqual('test_dir', args.directory)
+        args = parse_args(['--directory', 'tests/test_dir'])
+        self.assertEqual('tests/test_dir', args.directory)
 
     def test_filename_run(self):
-        main(['test_dir/test.sqf'])
-        self.assertEqual(self.stdout.getvalue(),
+        result = main(['tests/test_dir/test.sqf'])
+        self.assertEqual(result,
                          '[1,5]:warning:Local variable "_x" is not from this scope (not private)\n')
 
     def test_directory_run(self):
-        main(['--directory', 'test_dir'])
+        result = main(['--directory', 'tests/test_dir'])
         self.assertEqual(
-            self.stdout.getvalue(),
+            result,
             'test.sqf\n\t[1,5]:warning:Local variable "_x" is not from this scope (not private)\n'
             'test1.sqf\n\t[1,5]:warning:Local variable "_y" is not from this scope (not private)\n')
 
     def test_directory_run_to_file(self):
-        main(['--directory', 'test_dir', '-o', 'result.txt'])
+        main(['--directory', 'tests/test_dir', '-o', 'tests/result.txt'])
 
-        with open('result.txt') as f:
+        with open('tests/result.txt') as f:
             result = f.read()
 
         try:
-            os.remove('result.txt')
+            os.remove('tests/result.txt')
         except OSError:
             pass
 
