@@ -155,6 +155,29 @@ class Analyzer(BaseInterpreter):
 
         return outcome
 
+    def assign(self, lhs, rhs_v):
+        """
+        Assigns the rhs_v to the lhs variable.
+        """
+        scope = self.get_scope(lhs.name)
+
+        lhs_t = type(scope[lhs.name])
+        rhs_t = type(rhs_v)
+
+        # variables that change type are added to undefined_variables and become `Nothing`
+        if lhs_t != Nothing and lhs_t != rhs_t and lhs.name not in self.undefined_variables:
+            self.undefined_variables.add(lhs.name)
+
+        # any undefined variable becomes Nothing
+        if lhs.name in self.undefined_variables:
+            rhs_t = Nothing
+
+        scope[lhs.name] = rhs_t()
+
+        if scope.level == 0 and not lhs.is_global:
+            self.exception(
+                SQFWarning(lhs.position, 'Local variable "%s" assigned to an outer scope (not private)' % lhs.name))
+
     def execute_single(self, statement):
         assert(isinstance(statement, Statement))
 
@@ -225,28 +248,11 @@ class Analyzer(BaseInterpreter):
                 lhs = self.get_variable(base_tokens[0])
 
             rhs_v = self.value(base_tokens[2])
-            rhs_t = type(rhs_v)
 
             if not isinstance(lhs, Variable):
                 self.exception(SQFParserError(base_tokens[0].position, 'lhs of assignment operator must be a variable'))
             else:
-                scope = self.get_scope(lhs.name)
-
-                lhs_t = type(scope[lhs.name])
-                # variables that change type are added to undefined_variables and become `Nothing`
-                if lhs_t != Nothing and lhs_t != rhs_t and lhs.name not in self.undefined_variables:
-                    self.undefined_variables.add(lhs.name)
-
-                # any undefined variable becomes Nothing
-                if lhs.name in self.undefined_variables:
-                    rhs_t = Nothing
-
-                scope[lhs.name] = rhs_t()
-
-                if scope.level == 0 and not lhs.is_global:
-                    self.exception(
-                        SQFWarning(lhs.position, 'Local variable "%s" assigned to an outer scope (not private)' % lhs.name))
-
+                self.assign(lhs, rhs_v)
                 if not statement.ending:
                     outcome = rhs_v
             return outcome
