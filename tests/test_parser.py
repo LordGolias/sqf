@@ -474,6 +474,8 @@ class ParseCode(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
+
+class Precedence(ParserTestCase):
     def test_precedence(self):
         code = '_i < 10 && b'
         expected = \
@@ -492,7 +494,7 @@ class ParseCode(ParserTestCase):
                 ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_precedence_unary_binary(self):
+    def test_precedence_unary_nullary(self):
         code = 'alive player'
         expected = \
             Statement([
@@ -503,7 +505,7 @@ class ParseCode(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_count_and_plus(self):
+    def test_precedence_binary_unary(self):
         code = '5 + {_x} count x'
         expected = \
             Statement([
@@ -517,6 +519,22 @@ class ParseCode(ParserTestCase):
                         Keyword('count'),
                         Statement([Space(), V('x')])
                     ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_precedence_unary_binary(self):
+        code = 'if()then{}params[]'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Statement([
+                            Keyword('if'), Statement([], parenthesis=True)
+                        ]),
+                        Keyword('then'), Code([])
+                    ]),
+                    Keyword('params'), Array([])
                 ])
             ])
         self.assertEqualStatement(expected, parse(code), code)
