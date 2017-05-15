@@ -1,4 +1,4 @@
-from unittest import TestCase, expectedFailure
+from unittest import TestCase
 
 from sqf.types import Number, String, Boolean, Nothing, Array, Script
 from sqf.parser import parse
@@ -755,13 +755,19 @@ class NestedCode(TestCase):
         self.assertEqual(len(errors), 0)
         self.assertEqual(Nothing, type(analyzer['x']))
 
-    @expectedFailure
-    def test_change_types1(self):
+    def test_change_types_in_same_scope(self):
         code = 'x = 1; if (y) then {x = ""} else {x = "string"};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
         self.assertEqual(Nothing, type(analyzer['x']))
+
+    def test_change_types_with_private(self):
+        code = 'private _x = 1; if (y) then {private _x = ""}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number, type(analyzer['_x']))
 
 
 class Params(TestCase):

@@ -55,6 +55,10 @@ class Analyzer(BaseInterpreter):
         self._executed_codes = set()
         self.defines = {}
 
+        # list of variables that changed type during the script. These will be Nothing until they are
+        # changed in the level 0
+        self.undefined_variables = set()
+
     def exception(self, exception):
         self.exceptions.append(exception)
 
@@ -229,7 +233,12 @@ class Analyzer(BaseInterpreter):
                 scope = self.get_scope(lhs.name)
 
                 lhs_t = type(scope[lhs.name])
-                if lhs_t != Nothing and lhs_t != rhs_t:
+                # variables that change type are added to undefined_variables and become `Nothing`
+                if lhs_t != Nothing and lhs_t != rhs_t and lhs.name not in self.undefined_variables:
+                    self.undefined_variables.add(lhs.name)
+
+                # any undefined variable becomes Nothing
+                if lhs.name in self.undefined_variables:
                     rhs_t = Nothing
 
                 scope[lhs.name] = rhs_t()
