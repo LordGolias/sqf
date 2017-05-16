@@ -8,7 +8,7 @@ import json
 
 from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType, WithType
 from sqf.types import Code, Array, Boolean, Number, Type, Nothing, Anything, String, Namespace, \
-    Object, Config, Script, Control, Group, Display, Side, Task
+    Object, Config, Script, Control, Group, Display, Side, Task, Location, NetObject, DiaryReport, TeamMember
 
 
 # The mapping of SQF types to our types
@@ -21,10 +21,10 @@ STRING_TO_TYPE = {
     'TEXT': String,
     'NAMESPACE': Namespace,
     'CONFIG': Config,
-    'LOCATION': Object,
+    'LOCATION': Location,
     'OBJECT': Object,
     'GROUP': Group,
-    'TEAM_MEMBER': Object,
+    'TEAM_MEMBER': TeamMember,
     'CONTROL': Control,
     'DISPLAY': Display,
     'EXCEPTION': TryType,
@@ -38,9 +38,9 @@ STRING_TO_TYPE = {
     'SCRIPT': Script,
     'NaN': Number,
     'NOTHING': Nothing,
-    'NetObject': Object,
+    'NetObject': NetObject,
     'ANY': Type,
-    'DIARY_RECORD': Object
+    'DIARY_RECORD': DiaryReport
 }
 
 # the argument the type is initialized with
@@ -160,7 +160,7 @@ for op_name in data['nulars']:
 preamble = r'''# This file is generated automatically by `build_database.py`. Change it there.
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
 from sqf.types import Keyword, Type, Nothing, Anything, String, Code, Array, Number, Boolean, Namespace, \
-    Object, Config, Script, Control, Group, Display, Side, Task
+    Object, Config, Script, Control, Group, Display, Side, Task, Location, NetObject, DiaryReport, TeamMember
 from sqf.interpreter_types import WhileType, \
     ForType, SwitchType, IfType, TryType, WithType'''
 

@@ -31,6 +31,9 @@ class ConstantValue(Type):
     def value(self):
         return self._value
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class Boolean(ConstantValue):
     def __init__(self, value=None):
@@ -229,7 +232,7 @@ class _Statement(BaseTypeContainer):
     def is_base_token(token):
         # ignore tokens that are not relevant for the interpreter
         return not (isinstance(token, ParserType) or
-                    isinstance(token, _Statement) and not token._parenthesis and not token.base_tokens)
+                    isinstance(token, _Statement) and not token.parenthesis and not token.base_tokens)
 
     @property
     def ending(self):
@@ -401,4 +404,20 @@ class Side(ConstantValue):
 
 
 class Task(ConstantValue):
+    pass
+
+
+class Location(ConstantValue):
+    pass
+
+
+class NetObject(ConstantValue):
+    pass
+
+
+class DiaryReport(ConstantValue):
+    pass
+
+
+class TeamMember(ConstantValue):
     pass
