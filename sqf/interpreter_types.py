@@ -1,4 +1,4 @@
-from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Nothing, Namespace
+from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Namespace
 
 
 class InterpreterType(Type):

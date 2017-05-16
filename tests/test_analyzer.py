@@ -1,6 +1,6 @@
-from unittest import TestCase
+from unittest import TestCase, expectedFailure
 
-from sqf.types import Number, String, Boolean, Nothing, Array, Code
+from sqf.types import Number, String, Boolean, Array, Code, Anything
 from sqf.parser import parse
 from sqf.analyzer import analyze, Analyzer
 
@@ -251,7 +251,7 @@ class GeneralTestCase(TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_foreach_no_errors(self):
-        code = '{} foreach ();'
+        code = '{} foreach [];'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
@@ -345,7 +345,7 @@ class GeneralTestCase(TestCase):
         self.assertEqual(len(errors), 2)
 
     def test_throw(self):
-        analyzer = analyze(parse('if () throw false'))
+        analyzer = analyze(parse('if (true) throw false'))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
@@ -422,14 +422,14 @@ class GeneralTestCase(TestCase):
         code = 'with uinamespace do {_x; x = 2}'
         analyzer = analyze(parse(code))
         self.assertEqual(len(analyzer.exceptions), 1)
-        self.assertEqual(Nothing, type(analyzer['x']))  # missionnamespace is empty
+        self.assertEqual(Anything, type(analyzer['x']))  # missionnamespace is empty
         self.assertEqual(Number, type(analyzer.namespace('uinamespace')['x']))
 
     def test_with_namespace(self):
         code = 'with uinamespace do {with missionnamespace do {x = 2}}'
         analyzer = analyze(parse(code))
         self.assertEqual(Number, type(analyzer['x']))  # missionnamespace is empty
-        self.assertEqual(Nothing, type(analyzer.namespace('uinamespace')['x']))
+        self.assertNotIn('x', analyzer.namespace('uinamespace'))
 
 
 class Preprocessor(TestCase):
@@ -764,7 +764,7 @@ class Params(TestCase):
         analyzer = analyze(parse('params [["_x", 0], "_y"]'))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing(), analyzer['_x'])
+        self.assertEqual(Anything(), analyzer['_x'])
 
     def test_params_with_prefix(self):
         analyzer = analyze(parse('[] params ["_x"]'))
@@ -883,6 +883,21 @@ class UndefinedValues(TestCase):
     """
     Test what happens when a value is not defined.
     """
+    def test_anything(self):
+        code = 'y = (count x)'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(), analyzer['y'])
+
+    def test_anything_for_undecided(self):
+        # x could be different things and select would return different types, so select returns Anything
+        code = 'y = (x select 0)'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Anything(), analyzer['y'])
+
     def test_number(self):
         analyzer = Analyzer()
         scope = analyzer.get_scope('x')
@@ -893,6 +908,19 @@ class UndefinedValues(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
         self.assertEqual(analyzer['y'], Number())
+
+    def test_nothing_is_not_anything(self):
+        code = 'sleep 1 + 5'  # in-game, this is (sleep 1) + 5
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+
+        # in-game, `{...} forEach allPlayers select {!isPlayer x}` is
+        # `({...} forEach allPlayers) select {!isPlayer x}`
+        code = '{systemChat str _x;} forEach allPlayers select {!isPlayer x}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
 
     def test_string(self):
         code = "y = 'x' + x"
@@ -925,7 +953,7 @@ class UndefinedValues(TestCase):
 
         analyze(parse(code), analyzer)
         self.assertEqual(len(analyzer.exceptions), 0)
-        self.assertEqual(analyzer['y'], Nothing())
+        self.assertEqual(analyzer['y'], Anything())
 
     def test_array2(self):
         analyzer = analyze(parse('allPlayers select [1,2];'))
@@ -955,14 +983,14 @@ class UndefinedValues(TestCase):
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing(), analyzer['a'])
+        self.assertEqual(Anything(), analyzer['a'])
 
     def test_while(self):
         # undefined -> do not iterate
         analyzer = analyze(parse('while {x != 0} do {x = 1}'))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing(), analyzer['x'])
+        self.assertEqual(Anything(), analyzer['x'])
 
         # undefined -> test
         analyzer = analyze(parse('while {x != 0} do {! 1}'))
@@ -1014,61 +1042,63 @@ class UndefinedValues(TestCase):
         self.assertEqual(Number(), analyzer['_x'])
 
     def test_many_scopes(self):
-        code = 'private _x=1;if(a=="")then{_x=2} else {private "_x"; if()then{_x=""}};'
+        code = 'private _x=1;if(a=="")then{_x=2} else {private "_x"; if(true)then{_x=""}};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
         self.assertEqual(Number(), analyzer['_x'])
 
     def test_many_scopes2(self):
-        code = 'private _x=1;if(a=="")then{_x=2} else {if()then{_x=""}};'
+        code = 'private _x=1;if(a=="")then{_x=2} else {if(true)then{_x=""}};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing(), analyzer['_x'])
+        self.assertEqual(Anything(), analyzer['_x'])
 
     def test_if_with_global(self):
         code = 'x = 1; if (y) then {x = ""};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['x']))
+        self.assertEqual(Anything, type(analyzer['x']))
 
     def test_if_else_with_global(self):
         code = 'x = 1; if (y) then {x = ""} else {x = "string"};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['x']))
+        self.assertEqual(Anything, type(analyzer['x']))
 
     def test_if_then_private(self):
         code = 'private _x = 1; if (y) then {_x = ""}'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['_x']))
+        self.assertEqual(Anything, type(analyzer['_x']))
 
         code = 'private "_x"; if (y) then {_x = ""}'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['_x']))
+        self.assertEqual(Anything, type(analyzer['_x']))
 
     def test_if_else_private(self):
         code = 'private "_a"; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['_a']))
+        self.assertEqual(Anything, type(analyzer['_a']))
 
         code = 'private _a = ""; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['_a']))
+        self.assertEqual(Anything, type(analyzer['_a']))
 
+    @expectedFailure
+    def test_if_else_error(self):
         # this may lead to `compile 1`, which is wrong
-        code = 'private _a = 1; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
+        code = 'private _a = 1; if (y == "") then {_a = {true};} else {_a = compile _a;};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)

@@ -1,6 +1,5 @@
-from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Nothing, Namespace
+from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Nothing, Anything, Namespace
 from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType, WithType
-from sqf.exceptions import SQFParserError
 from sqf.expressions import BinaryExpression, UnaryExpression
 
 
@@ -107,7 +106,7 @@ class IfThenSpecExpression(BinaryExpression):
 
 class IfThenExitWithExpression(BinaryExpression):
     def __init__(self, action=None):
-        super().__init__(IfType, Keyword('exitwith'), Code, Nothing, action)
+        super().__init__(IfType, Keyword('exitwith'), Code, None, action)
 
 
 class TryExpression(UnaryExpression):

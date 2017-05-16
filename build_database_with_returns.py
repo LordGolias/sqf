@@ -7,7 +7,7 @@ https://gist.github.com/LordGolias/1289d59b35359fa3714d3666de396ad7
 import json
 
 from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType, WithType
-from sqf.types import Code, Array, Boolean, Number, Type, Nothing, String, Namespace, \
+from sqf.types import Code, Array, Boolean, Number, Type, Nothing, Anything, String, Namespace, \
     Object, Config, Script, Control, Group, Display, Side, Task
 
 
@@ -51,7 +51,7 @@ TYPE_TO_INIT_ARGS = {
 
 # The return type "ANY" means that we do not know it, so it is Nothing()
 STRING_TO_TYPE_RETURN = STRING_TO_TYPE.copy()
-STRING_TO_TYPE_RETURN['ANY'] = Nothing
+STRING_TO_TYPE_RETURN['ANY'] = Anything
 
 
 def _parse_return_type_names(return_type_names):
@@ -159,7 +159,7 @@ for op_name in data['nulars']:
 
 preamble = r'''# This file is generated automatically by `build_database.py`. Change it there.
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
-from sqf.types import Keyword, Type, Nothing, String, Code, Array, Number, Boolean, Namespace, \
+from sqf.types import Keyword, Type, Nothing, Anything, String, Code, Array, Number, Boolean, Namespace, \
     Object, Config, Script, Control, Group, Display, Side, Task
 from sqf.interpreter_types import WhileType, \
     ForType, SwitchType, IfType, TryType, WithType'''

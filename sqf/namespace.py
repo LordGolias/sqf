@@ -1,6 +1,3 @@
-from sqf.types import Nothing
-
-
 class Scope:
     """
     A scope is a dictionary that stores variables. Its level is controlled by a namespace
@@ -17,10 +14,7 @@ class Scope:
         return name.lower() in self.values
 
     def __getitem__(self, name):
-        if name.lower() in self.values:
-            return self.values[name.lower()]
-        else:
-            return Nothing()
+        return self.values[name.lower()]
 
     def __setitem__(self, name, value):
         self.values[name.lower()] = value
@@ -36,6 +30,9 @@ class Namespace:
 
     def __getitem__(self, name):
         return self.get_scope(name)[name]
+
+    def __contains__(self, name):
+        return name.lower() in self.get_scope(name)
 
     @property
     def current_scope(self):

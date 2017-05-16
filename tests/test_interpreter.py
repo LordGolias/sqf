@@ -453,7 +453,7 @@ class Namespaces(TestCase):
 
         interpreter, outcome = interpret('uiNamespace setVariable ["_x", 2];')
         self.assertEqual(N(2), interpreter.namespace('uiNamespace')['_x'])
-        self.assertEqual(Nothing(), interpreter.namespace('missionNamespace')['_x'])
+        self.assertTrue('_x' not in interpreter.namespace('missionNamespace'))
         self.assertEqual(Nothing(), interpreter['_x'])
 
     def test_getvariable(self):

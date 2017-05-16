@@ -82,6 +82,14 @@ class Nothing(ConstantValue):
         return '<%s>' % self
 
 
+class Anything(Type):
+    """
+    A type of unknown type
+    """
+    def __repr__(self):
+        return '<Anything>'
+
+
 class Number(ConstantValue):
     def __init__(self, value=None):
         assert(value is None or isinstance(value, (int, float)))

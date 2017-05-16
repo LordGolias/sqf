@@ -1,4 +1,4 @@
-from sqf.types import Keyword, Nothing, Type
+from sqf.types import Keyword, Nothing, Anything, Type
 from sqf.interpreter_types import InterpreterType
 
 
@@ -28,7 +28,7 @@ class Expression:
                     return False
             else:  # it is a type
                 if not (isinstance(value, t_or_v) or
-                            (not exact and type(value) == Nothing and
+                            (not exact and type(value) == Anything and
                              not issubclass(t_or_v, InterpreterType))):
                     return False
         return True
@@ -55,8 +55,8 @@ class Expression:
     def _result_to_typed_result(self, value):
         if self.return_type is None:
             return value
-        elif self.return_type is Nothing:
-            return Nothing()
+        elif self.return_type in (Anything, Nothing):
+            return self.return_type()
         else:
             if isinstance(value, tuple):
                 return self.return_type(*value)

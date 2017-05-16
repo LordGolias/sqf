@@ -2,7 +2,7 @@ import math
 
 from sqf.common_expressions import TryCatchExpression, ForEachExpression, \
     WhileDoExpression, ForFromToDoExpression, ForSpecDoExpression, SwitchDoExpression, \
-    IfThenSpecExpression, IfThenElseExpression, IfThenExpression, IfThenExitWithExpression, CaseExpression
+    IfThenSpecExpression, IfThenElseExpression, IfThenExpression, IfThenExitWithExpression
 from sqf.types import Keyword, Namespace, Number, Array, Code, Type, Boolean, String, Nothing, Variable
 from sqf.exceptions import SQFParserError
 from sqf.keywords import OP_ARITHMETIC, OP_COMPARISON, OP_LOGICAL
@@ -317,9 +317,6 @@ def _forspecs_loop_code(interpreter, start_code, stop_code, increment_code, do_c
 
 
 def _forspecs_loop(forspec_type, do_code, interpreter):
-    if forspec_type.is_undefined:
-        return Nothing()
-
     return _forspecs_loop_code(interpreter, forspec_type.array[0],
                                forspec_type.array[1], forspec_type.array[2], do_code)
 

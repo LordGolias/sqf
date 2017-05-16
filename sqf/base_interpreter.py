@@ -1,4 +1,4 @@
-from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File
+from sqf.types import Statement, Code, Nothing, Anything, Variable, Array, String, Type, File
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFParserError
 import sqf.namespace
@@ -8,6 +8,8 @@ class BaseInterpreter:
     """
     Base Interpreter used by the analyzer and interpreter
     """
+    private_default_class = Anything
+
     def __init__(self, all_vars=None):
         self._namespaces = {
             'uinamespace': sqf.namespace.Namespace('uinamespace'),
@@ -36,7 +38,10 @@ class BaseInterpreter:
         return self.current_namespace.current_scope
 
     def __getitem__(self, name):
-        return self.get_scope(name)[name]
+        try:
+            return self.get_scope(name)[name]
+        except KeyError:
+            return self.private_default_class()
 
     def __contains__(self, name):
         return name in self.get_scope(name)
@@ -65,8 +70,12 @@ class BaseInterpreter:
             return self.value(self.execute_single(statement=token))
         elif isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
-            assert isinstance(scope[token.name], Type)
-            return scope[token.name]
+            try:
+                value = scope[token.name]
+            except KeyError:
+                value = self.private_default_class()
+            assert isinstance(value, Type)
+            return value
         elif isinstance(token, (Type, Keyword)):
             return token
         else:
@@ -100,7 +109,7 @@ class BaseInterpreter:
 
             if not name.startswith('_'):
                 self.exception(SQFParserError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % name))
-            self.current_scope[name] = Nothing()
+            self.current_scope[name] = self.private_default_class()
 
     def execute_other(self, statement):
         pass
@@ -117,7 +126,7 @@ class BaseInterpreter:
         self.current_namespace = namespace
 
         if params is None:
-            params = Nothing()
+            params = self.private_default_class()
             params.position = code.position
         if extra_scope is None:
             extra_scope = {}

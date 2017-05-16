@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, \
-    Number, Object, Preprocessor, Script
+    Number, Object, Preprocessor, Script, Anything
 from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType
 from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
@@ -12,6 +12,10 @@ from sqf.common_expressions import COMMON_EXPRESSIONS
 from sqf.expressions_cache import values_to_expressions, build_database
 from sqf.parser_types import Comment
 from sqf.parser import parse
+
+
+def all_equal(iterable):
+    return iterable.count(iterable[0]) == len(iterable)
 
 
 # Replace all expressions in `database` by expressions from `COMMON_EXPRESSIONS` with the same signature
@@ -55,7 +59,7 @@ class Analyzer(BaseInterpreter):
         self._executed_codes = set()
         self.defines = {}
 
-        # a counter used by `self.assign` to identify if a variable is deleted (assigned to Nothing) or not.
+        # a counter used by `self.assign` to identify if a variable is deleted (assigned to Anything) or not.
         self.delete_scope_level = 0
 
         # list of variables that we currently know the type during the script.
@@ -79,7 +83,10 @@ class Analyzer(BaseInterpreter):
             if scope.level == 0 and not token.is_global:
                 self.exception(SQFWarning(token.position, 'Local variable "%s" is not from this scope (not private)' % token))
 
-            result = scope[token.name]
+            try:
+                result = scope[token.name]
+            except KeyError:
+                result = self.private_default_class()
             result.position = token.position
         elif isinstance(token, Array) and not token.is_undefined:
             result = Array([self.value(self.execute_token(s)) for s in token.value])
@@ -168,22 +175,25 @@ class Analyzer(BaseInterpreter):
 
         scope = self.get_scope(lhs_name)
 
-        lhs_t = type(scope[lhs_name])
+        try:
+            lhs_t = type(scope[lhs.name])
+        except KeyError:
+            lhs_t = self.private_default_class
         rhs_t = type(rhs_v)
 
         if scope.level == 0:
             # global variable becomes undefined when:
             # 1. it changes type AND
             # 2. it is modified on a higher delete scope (e.g. if {}) or it already has a defined type
-            if (lhs_t != Nothing or self.delete_scope_level > scope.level) and \
+            if (lhs_t != Anything or self.delete_scope_level > scope.level) and \
                     lhs_t != rhs_t and lhs_name not in self.undefined_variables:
                 self.undefined_variables.add(lhs_name)
 
         if scope.level == 0:
             if lhs_name in self.undefined_variables:
-                rhs_t = Nothing
+                rhs_t = Anything
         elif lhs_t != rhs_t and self.delete_scope_level >= scope.level:
-            rhs_t = Nothing
+            rhs_t = Anything
 
         scope[lhs_name] = rhs_t()
 
@@ -213,7 +223,7 @@ class Analyzer(BaseInterpreter):
                 exception = SQFParserError(base_tokens[0].position, "#define must have at least one argument")
                 self.exception(exception)
             elif len(base_tokens) == 2: # e.g. #define a
-                value = Nothing()
+                value = Anything()
                 value.position = base_tokens[1].position
                 self.defines[str(base_tokens[1])] = value
             elif len(base_tokens) == 3:  # e.g. #define a 2
@@ -286,6 +296,8 @@ class Analyzer(BaseInterpreter):
                             str(base_tokens[0]).isupper() or
                             str(base_tokens[0]) in self.defines) and \
                 str(base_tokens[1])[0] == '(':
+            outcome = Anything()
+            outcome.position = base_tokens[0].position
             return outcome
 
         # evaluate all the base_tokens, trying to obtain their values
@@ -309,18 +321,21 @@ class Analyzer(BaseInterpreter):
             # if exact match, we run the expression.
             if case_found.is_match(values):
                 outcome = case_found.execute(values, self)
-            elif len(possible_expressions) == 1:
+            elif len(possible_expressions) == 1 or all_equal([x.return_type for x in possible_expressions]):
                 return_type = possible_expressions[0].return_type
                 if return_type is not None:
                     outcome = return_type()
                 if return_type == ForType:
                     outcome.copy(values[0])
+            else:
+                # when a case is found but we cannot decide on the type, it is anything
+                outcome = Anything()
 
             extra_scope = None
             if case_found.keyword in (Keyword('select'), Keyword('apply'), Keyword('count')):
-                extra_scope = {'_x': Nothing()}
+                extra_scope = {'_x': Anything()}
             elif case_found.keyword == Keyword('foreach'):
-                extra_scope = {'_foreachindex': Number(), '_x': Nothing()}
+                extra_scope = {'_foreachindex': Number(), '_x': Anything()}
             elif case_found.keyword == Keyword('catch'):
                 extra_scope = {'_exception': Object()}
             elif case_found.keyword == Keyword('spawn'):
@@ -421,9 +436,9 @@ def analyze(statement, analyzer=None):
 
     file.position = (1, 1)
 
-    arg = Nothing()
+    arg = Anything()
     arg.position = (1, 1)
 
-    analyzer.execute_code(file, extra_scope={'_this': arg})
+    analyzer.execute_code(file, params=arg)
 
     return analyzer
