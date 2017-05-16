@@ -566,6 +566,19 @@ class Preprocessor(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_defines_underscored(self):
+        code = '#define __TRACKINTERVAL 0\n x ctrlCommit __TRACKINTERVAL'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_define_expression(self):
+        code = '#define X (1 == 2)\n x = X'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Boolean(), analyzer['x'])
+
 
 class Arrays(TestCase):
 
@@ -915,13 +928,6 @@ class UndefinedValues(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
 
-        # in-game, `{...} forEach allPlayers select {!isPlayer x}` is
-        # `({...} forEach allPlayers) select {!isPlayer x}`
-        code = '{systemChat str _x;} forEach allPlayers select {!isPlayer x}'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 1)
-
     def test_string(self):
         code = "y = 'x' + x"
         analyzer = Analyzer()
@@ -1103,6 +1109,12 @@ class UndefinedValues(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
 
+    def test_delayed_execution(self):
+        code = '[0, {private _x = "";if(true)then{_x = compile _x;}else{_x = missionNamespace getVariable _x;};}]'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
     def test_if_with_private_with_scoping(self):
         """
         Changing on a scope does not alter the type of the other scope
@@ -1112,6 +1124,12 @@ class UndefinedValues(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
         self.assertEqual(Number, type(analyzer['_x']))
+
+    def test_assign_if(self):
+        code = 'x = if (true) then {1} else {0}; 1 - x'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
 
 
 class SpecialComment(TestCase):

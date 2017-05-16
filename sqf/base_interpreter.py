@@ -64,6 +64,7 @@ class BaseInterpreter:
                         SQFParserError(base_token.position, '`params` array element must have 2-4 elements'))
             else:
                 self.exception(SQFParserError(base_token.position, '`params` array element must be a string or array'))
+        return True
 
     def value(self, token, namespace_name=None):
         if isinstance(token, Statement):

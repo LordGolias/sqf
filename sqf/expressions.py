@@ -69,7 +69,7 @@ class UnaryExpression(Expression):
         assert (isinstance(op, Keyword))
         super().__init__([op, rhs_type], return_type)
         if action is None and return_type is None:
-            action = lambda rhs, i: Nothing()
+            action = lambda rhs, i: i.private_default_class()
         elif action is None:
             action = lambda rhs, i: None
         self.action = action
@@ -88,7 +88,7 @@ class BinaryExpression(Expression):
         assert(isinstance(op, Keyword))
         super().__init__([lhs_type, op, rhs_type], return_type)
         if action is None and return_type is None:
-            action = lambda lhs, rhs, i: Nothing()
+            action = lambda lhs, rhs, i: i.private_default_class()
         elif action is None:
             action = lambda lhs, rhs, i: None
         self.action = action

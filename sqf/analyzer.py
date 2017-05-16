@@ -38,6 +38,7 @@ class UnexecutedCode:
         self.namespace_name = analyzer.current_namespace.name
         self.code = code
         self.position = code.position
+        self.delete_scope_level = analyzer.delete_scope_level
 
 
 class Analyzer(BaseInterpreter):
@@ -134,11 +135,12 @@ class Analyzer(BaseInterpreter):
         analyzer = Analyzer()
         analyzer.defines = self.defines
         analyzer._namespaces = container.namespaces
+        analyzer.delete_scope_level = container.delete_scope_level
 
         file = File(container.code._tokens)
         file.position = container.position
 
-        analyzer.execute_code(file, namespace_name=container.namespace_name)
+        analyzer.execute_code(file, namespace_name=container.namespace_name, delete_mode=True)
 
         self.exceptions.extend(analyzer.exceptions)
 
@@ -225,9 +227,11 @@ class Analyzer(BaseInterpreter):
             elif len(base_tokens) == 2: # e.g. #define a
                 value = Anything()
                 value.position = base_tokens[1].position
-                self.defines[str(base_tokens[1])] = value
+                token = str(self.execute_token(base_tokens[1]))
+                self.defines[token] = value
             elif len(base_tokens) == 3:  # e.g. #define a 2
-                self.defines[str(base_tokens[1])] = base_tokens[2]
+                token = str(self.execute_token(base_tokens[1]))
+                self.defines[token] = base_tokens[2]
             else:  # e.g. #define a(_x) b(_x)
                 define_statement = Statement(statement.base_tokens[3:])
                 define_statement.position = base_tokens[3].position
@@ -337,7 +341,7 @@ class Analyzer(BaseInterpreter):
             elif case_found.keyword == Keyword('foreach'):
                 extra_scope = {'_foreachindex': Number(), '_x': Anything()}
             elif case_found.keyword == Keyword('catch'):
-                extra_scope = {'_exception': Object()}
+                extra_scope = {'_exception': Anything()}
             elif case_found.keyword == Keyword('spawn'):
                 extra_scope = {'_thisScript': Script()}
             elif case_found.keyword == Keyword('do') and type(values[0]) == ForType:
@@ -390,10 +394,16 @@ class Analyzer(BaseInterpreter):
                 assert False
 
             self.exception(SQFParserError(values[1].position, message))
+            # so the error does not propagate further
+            outcome = Anything()
+            outcome.position = base_tokens[0].position
         else:
             helper = ' '.join(['<%s(%s)>' % (type(t).__name__, t) for t in tokens])
             self.exception(
                 SQFParserError(base_tokens[-1].position, 'can\'t interpret statement (missing ;?): %s' % helper))
+            # so the error does not propagate further
+            outcome = Anything()
+            outcome.position = base_tokens[0].position
 
         if isinstance(outcome, InterpreterType) and \
             outcome not in self.unevaluated_interpreter_tokens and type(outcome) not in (SwitchType, PrivateType):

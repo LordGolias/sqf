@@ -1,4 +1,4 @@
-from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Nothing, Anything, Namespace
+from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Namespace
 from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType, WithType
 from sqf.expressions import BinaryExpression, UnaryExpression
 
@@ -162,6 +162,6 @@ COMMON_EXPRESSIONS = [
     IfThenExpression(),
     IfThenExitWithExpression(),
 
-    UnaryExpression(Keyword('params'), Array, Nothing, lambda rhs_v, i: i.add_params(rhs_v)),
-    BinaryExpression(Type, Keyword('params'), Array, Nothing, lambda lhs_v, rhs_v, i: i.add_params(rhs_v)),
+    UnaryExpression(Keyword('params'), Array, Boolean, lambda rhs_v, i: i.add_params(rhs_v)),
+    BinaryExpression(Type, Keyword('params'), Array, Boolean, lambda lhs_v, rhs_v, i: i.add_params(rhs_v)),
 ]
