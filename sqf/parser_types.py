@@ -5,21 +5,14 @@ class Comment(ParserType):
 
     def __init__(self, string):
         super().__init__()
-        if string.startswith('//'):
-            self._line = True
-        else:
-            assert(string.startswith('/*'))
-            self._line = False
+        assert (string.startswith('/*') or string.startswith('//'))
         self._string = string
 
     def __str__(self):
-        if self._line:
-            return '%s' % self._string
-        else:
-            return '%s' % self._string
+        return self._string
 
     def __repr__(self):
-        return ('C(%s)' % self).replace('\r\n', ' ').replace('\n', ' ')
+        return ('C(%s)' % self).replace('\r\n', r'\r\n').replace('\n', r'\n')
 
 
 class Space(ParserType):

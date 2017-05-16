@@ -1085,3 +1085,21 @@ class ParsePreprocessor(ParserTestCase):
                 ]),
             ])
         self.assertEqualStatement(expected, parse(code), code)
+
+    def test_define_with_comment_after(self):
+        code = '#define A 2 // foo\nx = A'
+        result = parse(code)
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Preprocessor('#define'), Space(), V('A'), Space(), N(2), Space(), Comment('// foo\n'),
+                    ]),
+                ]),
+                Statement([
+                    Statement([V('x'), Space()]),
+                    Keyword('='),
+                    Statement([Space(), V('A')])
+                ])
+            ])
+        self.assertEqualStatement(expected, result, code)

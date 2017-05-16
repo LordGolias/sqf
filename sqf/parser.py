@@ -225,7 +225,7 @@ def parse_block(all_tokens, analyze_tokens, analyze_array, start=0, initial_lvls
 
             statements.append(expression)
             i += size - 1
-        elif type(token) == EndOfLine and any(lvls[x] != 0 for x in PREPROCESSORS):
+        elif type(token) in (EndOfLine, Comment) and any(lvls[x] != 0 for x in PREPROCESSORS):
             tokens.append(token)
             if tokens:
                 if tokens[0] == Preprocessor('#define'):
