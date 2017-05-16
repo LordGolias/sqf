@@ -55,8 +55,10 @@ class Analyzer(BaseInterpreter):
         self._executed_codes = set()
         self.defines = {}
 
-        # list of variables that changed type during the script. These will be Nothing until they are
-        # changed in the level 0
+        # a counter used by `self.assign` to identify if a variable is deleted (assigned to Nothing) or not.
+        self.delete_scope_level = 0
+
+        # list of variables that we currently know the type during the script.
         self.undefined_variables = set()
 
     def exception(self, exception):
@@ -133,14 +135,16 @@ class Analyzer(BaseInterpreter):
 
         self.exceptions.extend(analyzer.exceptions)
 
-    def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
+    def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace', delete_mode=False):
         key = self.code_key(code)
 
         if key in self._unexecuted_codes:
             del self._unexecuted_codes[key]
         self._executed_codes.add(key)
 
+        self.delete_scope_level += delete_mode
         outcome = super().execute_code(code, params, extra_scope, namespace_name)
+        self.delete_scope_level -= delete_mode
 
         # collect `private` statements that have a variable but were not collected by the assignment operator
         if isinstance(code, File):
@@ -159,24 +163,33 @@ class Analyzer(BaseInterpreter):
         """
         Assigns the rhs_v to the lhs variable.
         """
-        scope = self.get_scope(lhs.name)
+        lhs_name = lhs.name
+        lhs_position = lhs.position
 
-        lhs_t = type(scope[lhs.name])
+        scope = self.get_scope(lhs_name)
+
+        lhs_t = type(scope[lhs_name])
         rhs_t = type(rhs_v)
 
-        # variables that change type are added to undefined_variables and become `Nothing`
-        if lhs_t != Nothing and lhs_t != rhs_t and lhs.name not in self.undefined_variables:
-            self.undefined_variables.add(lhs.name)
+        if scope.level == 0:
+            # global variable becomes undefined when:
+            # 1. it changes type AND
+            # 2. it is modified on a higher delete scope (e.g. if {}) or it already has a defined type
+            if (lhs_t != Nothing or self.delete_scope_level > scope.level) and \
+                    lhs_t != rhs_t and lhs_name not in self.undefined_variables:
+                self.undefined_variables.add(lhs_name)
 
-        # any undefined variable becomes Nothing
-        if lhs.name in self.undefined_variables:
+        if scope.level == 0:
+            if lhs_name in self.undefined_variables:
+                rhs_t = Nothing
+        elif lhs_t != rhs_t and self.delete_scope_level >= scope.level:
             rhs_t = Nothing
 
-        scope[lhs.name] = rhs_t()
+        scope[lhs_name] = rhs_t()
 
-        if scope.level == 0 and not lhs.is_global:
+        if scope.level == 0 and lhs_name.startswith('_'):
             self.exception(
-                SQFWarning(lhs.position, 'Local variable "%s" assigned to an outer scope (not private)' % lhs.name))
+                SQFWarning(lhs_position, 'Local variable "%s" assigned to an outer scope (not private)' % lhs_name))
 
     def execute_single(self, statement):
         assert(isinstance(statement, Statement))
@@ -317,7 +330,7 @@ class Analyzer(BaseInterpreter):
             for value, t_or_v in zip(values, case_found.types_or_values):
                 # execute all pieces of code
                 if t_or_v == Code and isinstance(value, Code) and self.code_key(value) not in self._executed_codes:
-                    self.execute_code(value, extra_scope=extra_scope, namespace_name=self.current_namespace.name)
+                    self.execute_code(value, extra_scope=extra_scope, namespace_name=self.current_namespace.name, delete_mode=True)
 
                 # remove evaluated interpreter tokens
                 if isinstance(value, InterpreterType) and value in self.unevaluated_interpreter_tokens:

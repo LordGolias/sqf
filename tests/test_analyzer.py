@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from sqf.types import Number, String, Boolean, Nothing, Array, Script
+from sqf.types import Number, String, Boolean, Nothing, Array, Code
 from sqf.parser import parse
 from sqf.analyzer import analyze, Analyzer
 
@@ -414,20 +414,21 @@ class GeneralTestCase(TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_call_recursive(self):
-        code = '''x = {call x}; call x'''
-        analyze(parse(code))
+        code = 'x = {call x}; call x'
+        analyzer = analyze(parse(code))
+        self.assertEqual(Code(), analyzer['x'])
 
     def test_with_namespace_simple(self):
         code = 'with uinamespace do {_x; x = 2}'
         analyzer = analyze(parse(code))
         self.assertEqual(len(analyzer.exceptions), 1)
-        self.assertEqual(Nothing, type(analyzer['x'])) # missionnamespace is empty
+        self.assertEqual(Nothing, type(analyzer['x']))  # missionnamespace is empty
         self.assertEqual(Number, type(analyzer.namespace('uinamespace')['x']))
 
     def test_with_namespace(self):
         code = 'with uinamespace do {with missionnamespace do {x = 2}}'
         analyzer = analyze(parse(code))
-        self.assertEqual(Number, type(analyzer['x'])) # missionnamespace is empty
+        self.assertEqual(Number, type(analyzer['x']))  # missionnamespace is empty
         self.assertEqual(Nothing, type(analyzer.namespace('uinamespace')['x']))
 
 
@@ -744,31 +745,6 @@ class NestedCode(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_change_types(self):
-        """
-        When branched code changes variable type, we make it Nothing
-        since we do not know which branch it took.
-        """
-        code = 'x = 1; if (y) then {x = ""};'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['x']))
-
-    def test_change_types_in_same_scope(self):
-        code = 'x = 1; if (y) then {x = ""} else {x = "string"};'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(Nothing, type(analyzer['x']))
-
-    def test_change_types_with_private(self):
-        code = 'private _x = 1; if (y) then {private _x = ""}'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(Number, type(analyzer['_x']))
-
 
 class Params(TestCase):
 
@@ -869,7 +845,7 @@ class SpecialContext(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
-        code = 'x select {_x == _y}' # _y is undefined
+        code = 'x select {_x == _y}'  # _y is undefined
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
@@ -901,7 +877,6 @@ class SpecialContext(TestCase):
         code = '[] spawn {x = _thisScript}'
         analyzer = analyze(parse(code))
         self.assertEqual(len(analyzer.exceptions), 0)
-        self.assertEqual(type(analyzer['x']), Script)
 
 
 class UndefinedValues(TestCase):
@@ -909,11 +884,11 @@ class UndefinedValues(TestCase):
     Test what happens when a value is not defined.
     """
     def test_number(self):
-        code = "y = 2 + x"
         analyzer = Analyzer()
         scope = analyzer.get_scope('x')
         scope['x'] = Number()
 
+        code = "y = 2 + x"
         analyze(parse(code), analyzer)
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
@@ -957,7 +932,7 @@ class UndefinedValues(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_if(self):
+    def test_if1(self):
         # undefined -> do neither and invalidate any assigment
         analyzer = analyze(parse('x=2; if (y) then {x=1} else {x=2}'))
         errors = analyzer.exceptions
@@ -974,12 +949,20 @@ class UndefinedValues(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 2)
 
+    def test_if(self):
+        # assign in one branch is independent of the other
+        code = 'if (a == "") then {a = {true};} else {a = compile a;};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing(), analyzer['a'])
+
     def test_while(self):
         # undefined -> do not iterate
         analyzer = analyze(parse('while {x != 0} do {x = 1}'))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Number(), analyzer['x'])
+        self.assertEqual(Nothing(), analyzer['x'])
 
         # undefined -> test
         analyzer = analyze(parse('while {x != 0} do {! 1}'))
@@ -1022,6 +1005,83 @@ class UndefinedValues(TestCase):
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
+
+    def test_two_scopes(self):
+        code = 'private _x=1;if(a=="")then{_x=2} else {private _x = ""};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(), analyzer['_x'])
+
+    def test_many_scopes(self):
+        code = 'private _x=1;if(a=="")then{_x=2} else {private "_x"; if()then{_x=""}};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number(), analyzer['_x'])
+
+    def test_many_scopes2(self):
+        code = 'private _x=1;if(a=="")then{_x=2} else {if()then{_x=""}};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing(), analyzer['_x'])
+
+    def test_if_with_global(self):
+        code = 'x = 1; if (y) then {x = ""};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyzer['x']))
+
+    def test_if_else_with_global(self):
+        code = 'x = 1; if (y) then {x = ""} else {x = "string"};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyzer['x']))
+
+    def test_if_then_private(self):
+        code = 'private _x = 1; if (y) then {_x = ""}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyzer['_x']))
+
+        code = 'private "_x"; if (y) then {_x = ""}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyzer['_x']))
+
+    def test_if_else_private(self):
+        code = 'private "_a"; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyzer['_a']))
+
+        code = 'private _a = ""; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Nothing, type(analyzer['_a']))
+
+        # this may lead to `compile 1`, which is wrong
+        code = 'private _a = 1; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+
+    def test_if_with_private_with_scoping(self):
+        """
+        Changing on a scope does not alter the type of the other scope
+        """
+        code = 'private _x = 1; if (y) then {private _x = ""}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number, type(analyzer['_x']))
 
 
 class SpecialComment(TestCase):
