@@ -476,7 +476,8 @@ class ParseCode(ParserTestCase):
 
 
 class Precedence(ParserTestCase):
-    def test_precedence(self):
+    # both => keyword that is both an unary and binary operator
+    def test_binary_binary_diff(self):
         code = '_i < 10 && b'
         expected = \
             Statement([
@@ -494,7 +495,7 @@ class Precedence(ParserTestCase):
                 ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_precedence_unary_nullary(self):
+    def test_unary_nullary(self):
         code = 'alive player'
         expected = \
             Statement([
@@ -505,25 +506,22 @@ class Precedence(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_precedence_binary_unary(self):
-        code = '5 + {_x} count x'
+    def test_binary_both(self):
+        # + has precedence over binaries, (this is syntactically correct but fails to run)
+        code = '5+{_x}count x'
         expected = \
             Statement([
                 Statement([
-                    Statement([N(5), Space()]),
-                    Keyword('+'),
                     Statement([
-                        Statement([
-                            Space(), Code([Statement([V('_x')])]), Space()
-                        ]),
-                        Keyword('count'),
-                        Statement([Space(), V('x')])
-                    ])
+                        N(5), Keyword('+'), Code([Statement([V('_x')])])
+                    ]),
+                    Keyword('count'),
+                    Statement([Space(), V('x')])
                 ])
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_precedence_unary_binary(self):
+        # both binary, evaluate from left to right
         code = 'if()then{}params[]'
         expected = \
             Statement([
@@ -539,7 +537,46 @@ class Precedence(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_binary_binary(self):
+        # same, but + has higher binding power
+        code = '"A"+"B"params[]'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([String('"A"'), Keyword('+'), String('"B"')]),
+                    Keyword('params'),
+                    Array([])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+        # same, but = has lower binding power
+        code = 'a="B"params[]'
+        expected = \
+            Statement([
+                Statement([
+                    V('a'), Keyword('='),
+                    Statement([
+                        String('"B"'),
+                        Keyword('params'),
+                        Array([])
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_unary_both(self):
+        code = 'call{_x}count x'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([Keyword('call'), Code([Statement([V('_x')])])]),
+                    Keyword('count'),
+                    Statement([Space(), V('x')])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_both_binary(self):
         code = 'a ctrlSetText"A"+"B"'
         expected = \
             Statement([
@@ -551,6 +588,83 @@ class Precedence(ParserTestCase):
                         Keyword('+'),
                         String('"B"')
                     ]),
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_both_unary(self):
+        code = 'a ctrlSetText alive"B"'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([V('a'), Space()]),
+                    Keyword('ctrlSetText'),
+                    Statement([
+                        Space(),
+                        Statement([
+                            Keyword('alive'),
+                            String('"B"')
+                        ])
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+        code = 'ctrlSetText alive"B"'
+        expected = \
+            Statement([
+                Statement([
+                    Keyword('ctrlSetText'),
+                    Statement([
+                        Space(),
+                        Statement([
+                            Keyword('alive'),
+                            String('"B"')
+                        ])
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+        code = 'count[1]+[1]'  # => (count[1]) + [1]
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        Keyword('count'), Array([Statement([N(1)])])
+                    ]),
+                    Keyword('+'),
+                    Array([Statement([N(1)])]),
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+        code = '{true}count[1]+[1]'  # => {true}count([1] + [1])
+        expected = \
+            Statement([
+                Statement([
+                    Code([Statement([Boolean(True)])]), Keyword('count'),
+                    Statement([
+                        Array([Statement([N(1)])]),
+                        Keyword('+'),
+                        Array([Statement([N(1)])]),
+                    ])
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
+    def test_both_both(self):
+        code = '"a"ctrlSetText"A"params"B"'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([
+                        String('"a"'),
+                        Keyword('ctrlSetText'),
+                        String('"A"')
+                    ]),
+                    Keyword('params'),
+                    String('"B"')
                 ])
             ])
         self.assertEqualStatement(expected, parse(code), code)

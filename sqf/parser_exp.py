@@ -28,7 +28,7 @@ def nud(token, parser):
     return token
 
 
-def get_lbp(token, rbp=0):
+def get_lbp(token):
     n_token = _normalize(token)
 
     if token == EndToken:
@@ -49,15 +49,10 @@ def get_lbp(token, rbp=0):
         return 6
     elif n_token == 'else':
         return 5
-    elif n_token in UNARY_OPERATORS and n_token in BINARY_OPERATORS:
-        if rbp <= 4:  # previous is binary or lower, so we compare it against the binary version of this one
-            return 4
-        else:
-            return 9
-    elif n_token in UNARY_OPERATORS:
-        return 9
     elif n_token in BINARY_OPERATORS:
         return 4
+    elif n_token in UNARY_OPERATORS:
+        return 9
     else:
         return 0.1
 
@@ -97,7 +92,7 @@ class Parser:
             left = self.container(cum_prefix + [left] + self.cumulator)
             self.cumulator = []
 
-        while rbp < get_lbp(self.next, rbp):
+        while rbp < get_lbp(self.next):
             current = self.next
             self.next = next(self.iterator)
             if self.next is EndToken:
