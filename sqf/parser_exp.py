@@ -50,7 +50,7 @@ def get_lbp(token, rbp=0):
     elif n_token == 'else':
         return 5
     elif n_token in UNARY_OPERATORS and n_token in BINARY_OPERATORS:
-        if rbp == 4:  # previous is binary, so we compare it against the binary version of this one
+        if rbp <= 4:  # previous is binary or lower, so we compare it against the binary version of this one
             return 4
         else:
             return 9

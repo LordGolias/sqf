@@ -539,6 +539,22 @@ class Precedence(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
+    def test_binary_binary(self):
+        code = 'a ctrlSetText"A"+"B"'
+        expected = \
+            Statement([
+                Statement([
+                    Statement([V('a'), Space()]),
+                    Keyword('ctrlSetText'),
+                    Statement([
+                        String('"A"'),
+                        Keyword('+'),
+                        String('"B"')
+                    ]),
+                ])
+            ])
+        self.assertEqualStatement(expected, parse(code), code)
+
 
 class ControlStatements(ParserTestCase):
     def test_for(self):
