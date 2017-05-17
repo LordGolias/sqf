@@ -1,8 +1,12 @@
-from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Namespace
+from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Namespace, _Statement, Nothing
 
 
 class InterpreterType(Type):
     # type that is used by the interpreter (e.g. While type)
+    pass
+
+
+class _InterpreterType(InterpreterType):
     def __init__(self, token):
         assert (isinstance(token, Type))
         super().__init__()
@@ -13,7 +17,7 @@ class InterpreterType(Type):
         return self.token.is_undefined
 
 
-class PrivateType(InterpreterType):
+class PrivateType(_InterpreterType):
     """
     A type to store the result of "private _x" as in "private _x = 2"
     """
@@ -26,7 +30,7 @@ class PrivateType(InterpreterType):
         return self.token
 
 
-class WhileType(InterpreterType):
+class WhileType(_InterpreterType):
     def __init__(self, condition):
         assert(isinstance(condition, Code))
         super().__init__(condition)
@@ -36,7 +40,7 @@ class WhileType(InterpreterType):
         return self.token
 
 
-class ForType(InterpreterType):
+class ForType(_InterpreterType):
     def __init__(self, variable=None, from_=None, to=None, step=None):
         if step is None:
             step = Number(1)
@@ -68,7 +72,7 @@ class ForType(InterpreterType):
         self.step = other.step
 
 
-class ForSpecType(InterpreterType):
+class ForSpecType(_InterpreterType):
     def __init__(self, array):
         assert (isinstance(array, Array))
         super().__init__(array)
@@ -78,7 +82,7 @@ class ForSpecType(InterpreterType):
         return self.token
 
 
-class SwitchType(InterpreterType):
+class SwitchType(_InterpreterType):
     def __init__(self, keyword, result):
         super().__init__(result)
         self.keyword = keyword
@@ -88,7 +92,7 @@ class SwitchType(InterpreterType):
         return self.token
 
 
-class IfType(InterpreterType):
+class IfType(_InterpreterType):
     def __init__(self, condition=None):
         if condition is None:
             condition = Boolean()
@@ -99,7 +103,7 @@ class IfType(InterpreterType):
         return self.token
 
 
-class ElseType(InterpreterType):
+class ElseType(_InterpreterType):
     def __init__(self, then, else_):
         super().__init__(then)
         assert (isinstance(then, Code))
@@ -115,13 +119,13 @@ class ElseType(InterpreterType):
         return self.else_.is_undefined or self.then.is_undefined
 
 
-class TryType(InterpreterType):
+class TryType(_InterpreterType):
     def __init__(self, code):
         assert (isinstance(code, Code))
         super().__init__(code)
 
 
-class WithType(InterpreterType):
+class WithType(_InterpreterType):
     def __init__(self, namespace):
         assert (isinstance(namespace, Namespace))
         super().__init__(namespace)
@@ -129,3 +133,37 @@ class WithType(InterpreterType):
     @property
     def namespace(self):
         return self.token
+
+
+class DefineStatement(_Statement, InterpreterType):
+    def __init__(self, tokens, variable_name, expression=None, args=None, ending=''):
+        assert(isinstance(variable_name, str))
+        assert(isinstance(tokens, list))
+        super().__init__(tokens, ending=ending)
+        self.variable_name = variable_name
+        if expression is None:
+            expression = [Nothing()]
+        self.expression = expression
+        if args is None:
+            args = []
+        self.args = args
+
+    def __repr__(self):
+        return '#d<%s>' % self._as_str(repr)
+
+
+class DefineResult(_Statement, InterpreterType):
+    """
+    A statement whose some token was replaced by a #define.
+    The statement contain the original tokens, but also what define_statement was used,
+    and what was the resulting statement after replacement.
+
+    str(self) still returns the original tokens, but `result` can be used to evaluate the statement.
+    """
+    def __init__(self, tokens, define_statement, result, ending=''):
+        super().__init__(tokens, ending=ending)
+        self.define_statement = define_statement
+        self.result = result
+
+    def __repr__(self):
+        return '#dR|%s -> %s|' % (self.tokens, repr(self.result))

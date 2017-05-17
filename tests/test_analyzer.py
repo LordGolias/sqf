@@ -432,32 +432,61 @@ class GeneralTestCase(TestCase):
         self.assertNotIn('x', analyzer.namespace('uinamespace'))
 
 
-class Preprocessor(TestCase):
-
-    def test_define_simple(self):
-        code = "#define A (true)\nprivate _x = A;"
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_define(self):
-        code = "#define A(_x) (_x == 2)\nprivate _x = A(3);"
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
+class PreprocessorDefine(TestCase):
 
     def test_define_no_error(self):
-        code = "#define CHECK_CATEGORY 2\n"
+        code = "#define A 2\n"
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_define_error(self):
-        code = "#define\n"
+    def test_simple(self):
+        code = "#define A true\nprivate _x = A;"
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
-        self.assertEqual(len(errors), 1)
-        self.assertEqual((1, 1), errors[0].position)
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['_x']), Boolean)
+
+        code = "#define __CHECK_CATEGORY 2\nx = __CHECK_CATEGORY"
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(analyzer['x'], Number())
+
+    def test_define_array(self):
+        code = "#define A 1,2\nx = [A,3]"
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Array, type(analyzer['x']))
+
+    def test_define_fnc(self):
+        code = "#define A(_x) (_x == 2)\nx = A(3)"
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Boolean, type(analyzer['x']))
+
+    def test_define_of_define(self):
+        code = "#define A (call y)\n#define B (A==2)\nx=B;"
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Boolean, type(analyzer['x']))
+
+        code = "#define A(y) (call y)\n#define B (2==A({}))\nx=B;"
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Boolean, type(analyzer['x']))
+
+    def test_define_replace_in_statement(self):
+        code = '#define A 2\n'
+        code += 'z=((2)min A)max 1'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Number, type(analyzer['z']))
 
     def test_define_complex(self):
         code = '#define CHECK_CATEGORY(_category) (if !(_category in AS_AAFarsenal_categories) then { \\\n' \
@@ -465,6 +494,67 @@ class Preprocessor(TestCase):
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
+
+    def test_define_with_args_usage(self):
+        code = "#define __CHECK_CATEGORY(_x) (_x)\n"
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_define_with_define(self):
+        code = "#define PASS(x) PUSH(x,y)\n"
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_defines(self):
+        # ignore "macros" (not correct since CHECK may not be defined, but for that we need a pre-processor)
+        code = 'CHECK(x)'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_define_correct(self):
+        # ignore "macros" (not correct since CHECK may not be defined, bot for that we need a pre-processor)
+        code = '#define A'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_defines_underscored(self):
+        code = '#define __TRACKINTERVAL 0\n x ctrlCommit __TRACKINTERVAL'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_define_expression(self):
+        code = '#define X (1 == 2)\n x = X'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Boolean(), analyzer['x'])
+
+    def test_defines_in_unexecuted_code(self):
+        code = '#define __VALUE 1\n{X = __VALUE}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_defines_in_array(self):
+        code = '#define x 1\ny=[x,x]'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(Array(), analyzer['y'])
+
+    def test_defines_in_array2(self):
+        code = '#define x  (0.1)\n#define y  (0.02)\nz = [2 * x, 2 * y, 2 * x];'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(Array(), analyzer['z'])
+
+
+class Preprocessor(TestCase):
 
     def test_include(self):
         code = '#include "macros.hpp"\nx = 1;'
@@ -498,39 +588,6 @@ class Preprocessor(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_define_usage(self):
-        code = "#define __CHECK_CATEGORY 2\nx = __CHECK_CATEGORY"
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(analyzer['x'], Number())
-
-    def test_define_with_args_usage(self):
-        code = "#define __CHECK_CATEGORY(_x) (_x)\n"
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_define_with_define(self):
-        code = "#define PASS(x) PUSH(x,y)\n"
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_defines(self):
-        # ignore "macros" (not correct since CHECK may not be defined, but for that we need a pre-processor)
-        code = 'CHECK(x)'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_define_correct(self):
-        # ignore "macros" (not correct since CHECK may not be defined, bot for that we need a pre-processor)
-        code = '#define A'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-
     def test_same_name(self):
         analyzer = analyze(parse('LOG("")'))
         errors = analyzer.exceptions
@@ -553,31 +610,12 @@ class Preprocessor(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
-    def test_defines_in_unexecuted_code(self):
-        code = '#define __VALUE 1\n{X = __VALUE}'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-
     def test_upper_cased_keywords(self):
         # cargo is a keyword, but if it is upper-cased, we treat it as a define
         code = 'x = CARGO'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-
-    def test_defines_underscored(self):
-        code = '#define __TRACKINTERVAL 0\n x ctrlCommit __TRACKINTERVAL'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-
-    def test_define_expression(self):
-        code = '#define X (1 == 2)\n x = X'
-        analyzer = analyze(parse(code))
-        errors = analyzer.exceptions
-        self.assertEqual(len(errors), 0)
-        self.assertEqual(Boolean(), analyzer['x'])
 
 
 class Arrays(TestCase):

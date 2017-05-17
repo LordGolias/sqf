@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, \
     Number, Object, Preprocessor, Script, Anything
-from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType
+from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType, DefineStatement, DefineResult
 from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
 from sqf.exceptions import SQFParserError, SQFWarning
@@ -77,7 +77,10 @@ class Analyzer(BaseInterpreter):
         Given a single token, recursively evaluates and returns its value
         """
         assert(isinstance(token, BaseType))
-        if isinstance(token, Statement):
+        if isinstance(token, DefineResult):
+            token.result.set_position(token.position)
+            result = self.value(self.execute_token(token.result))
+        elif isinstance(token, Statement):
             result = self.value(self.execute_token(token))
         elif isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
@@ -220,23 +223,8 @@ class Analyzer(BaseInterpreter):
             return outcome
 
         # operations that cannot evaluate the value of all base_tokens
-        if base_tokens[0] == Preprocessor('#define'):
-            if len(base_tokens) < 2:
-                exception = SQFParserError(base_tokens[0].position, "#define must have at least one argument")
-                self.exception(exception)
-            elif len(base_tokens) == 2: # e.g. #define a
-                value = Anything()
-                value.position = base_tokens[1].position
-                token = str(self.execute_token(base_tokens[1]))
-                self.defines[token] = value
-            elif len(base_tokens) == 3:  # e.g. #define a 2
-                token = str(self.execute_token(base_tokens[1]))
-                self.defines[token] = base_tokens[2]
-            else:  # e.g. #define a(_x) b(_x)
-                define_statement = Statement(statement.base_tokens[3:])
-                define_statement.position = base_tokens[3].position
-                self.defines[str(base_tokens[1])] = define_statement
-            return outcome
+        if type(base_tokens[0]) == DefineStatement:
+            return base_tokens[0]
         elif base_tokens[0] == Preprocessor("#include"):
             if len(base_tokens) != 2:
                 exception = SQFParserError(base_tokens[0].position, "#include requires one argument")

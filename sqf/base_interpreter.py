@@ -138,7 +138,10 @@ class BaseInterpreter:
         outcome = Nothing()
         outcome.position = code.position
         for statement in code.base_tokens:
-            outcome = self.value(self.execute_single(statement))
+            token = self.execute_token(statement)
+            if isinstance(token, tuple):
+                token = token[0]
+            outcome = self.value(token)
 
         # cleanup
         if not isinstance(code, File):  # so we have access to its scope
