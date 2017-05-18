@@ -58,7 +58,6 @@ class Analyzer(BaseInterpreter):
         self.unevaluated_interpreter_tokens = []
         self._unexecuted_codes = {}
         self._executed_codes = set()
-        self.defines = {}
 
         # a counter used by `self.assign` to identify if a variable is deleted (assigned to Anything) or not.
         self.delete_scope_level = 0
@@ -120,9 +119,6 @@ class Analyzer(BaseInterpreter):
         elif isinstance(token, Array) and token.value is not None:
             result = Array([self.execute_token(s) for s in token.value])
             result.position = token.position
-        elif str(token) in self.defines:
-            result = self.execute_token(self.defines[str(token)])
-            result.position = token.position
         else:
             result = token
             result.position = token.position
@@ -136,7 +132,6 @@ class Analyzer(BaseInterpreter):
         container = self._unexecuted_codes[code_key]
 
         analyzer = Analyzer()
-        analyzer.defines = self.defines
         analyzer._namespaces = container.namespaces
         analyzer.delete_scope_level = container.delete_scope_level
 
@@ -277,7 +272,6 @@ class Analyzer(BaseInterpreter):
         # heuristic for defines (that are thus syntactically correct):
         #   - global variable followed by a parenthesis statement
         #   - first token string is all upper
-        #   - first token is a define
         #   - is keyword but upper cased
         elif len(base_tokens) == 1 and type(base_tokens[0]) == Keyword and str(base_tokens[0]).isupper():
             outcome = Variable(str(base_tokens[0]))
@@ -285,8 +279,7 @@ class Analyzer(BaseInterpreter):
             return outcome
         elif len(base_tokens) == 2 and (
                             type(base_tokens[0]) == Variable and base_tokens[0].is_global or
-                            str(base_tokens[0]).isupper() or
-                            str(base_tokens[0]) in self.defines) and \
+                            str(base_tokens[0]).isupper()) and \
                 str(base_tokens[1])[0] == '(':
             outcome = Anything()
             outcome.position = base_tokens[0].position
