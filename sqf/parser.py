@@ -7,7 +7,7 @@ from sqf.base_tokenizer import tokenize
 from sqf.exceptions import SQFParenthesisError, SQFParserError
 from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace, Preprocessor, ParserType
 from sqf.keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
-from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine
+from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine, EndOfFile
 from sqf.interpreter_types import DefineStatement, DefineResult
 from sqf.parser_exp import parse_exp
 
@@ -273,7 +273,7 @@ def parse_block(all_tokens, analyze_tokens, analyze_array, start=0, initial_lvls
                 if isinstance(expression, Statement):
                     expression = expression[0]
 
-                if type(original_tokens[-1]) in (EndOfLine, Comment):
+                if type(original_tokens[-1]) in (EndOfLine, Comment, EndOfFile):
                     del original_tokens[-1]
                     original_tokens_taken -= 1
 
@@ -338,21 +338,23 @@ def parse_block(all_tokens, analyze_tokens, analyze_array, start=0, initial_lvls
             tokens.append(token)
             statements.append(analyze_tokens(tokens))
             tokens = []
-        elif isinstance(token, Keyword) and token.value in PREPROCESSORS and lvls[token.value] == 0:
+        elif isinstance(token, Keyword) and token.value in PREPROCESSORS:
+            # notice that `token` is ignored here. It will be picked up in the end
             if tokens:
                 # a pre-processor starts a new statement
                 statements.append(analyze_tokens(tokens))
                 tokens = []
 
-            # repeat the loop for this token.
             lvls[token.value] += 1
-            expression, size = parse_block(all_tokens, analyze_tokens, analyze_array, i, lvls, stop_statement, defines=defines)
+            expression, size = parse_block(all_tokens, analyze_tokens, analyze_array, i + 1, lvls, stop_statement, defines=defines)
             lvls[token.value] -= 1
 
             statements.append(expression)
-            i += size - 1
-        elif type(token) in (EndOfLine, Comment) and any(lvls[x] != 0 for x in PREPROCESSORS):
-            tokens.append(token)
+            i += size + 1
+        elif type(token) in (EndOfLine, Comment, EndOfFile) and any(lvls[x] != 0 for x in PREPROCESSORS):
+            tokens.insert(0, all_tokens[start - 1])  # pick the token that triggered the statement
+            if type(token) != EndOfFile:
+                tokens.append(token)
             if tokens[0] == Preprocessor('#define'):
                 define_statement = _analyze_define(tokens)
                 defines[define_statement.variable_name][len(define_statement.args)] = define_statement
@@ -360,8 +362,8 @@ def parse_block(all_tokens, analyze_tokens, analyze_array, start=0, initial_lvls
             else:
                 statements.append(analyze_tokens(tokens))
 
-            return Statement(statements), i + 1 - start
-        else:
+            return Statement(statements), i - start
+        elif type(token) != EndOfFile:
             tokens.append(token)
         i += 1
 
@@ -378,7 +380,7 @@ def parse_block(all_tokens, analyze_tokens, analyze_array, start=0, initial_lvls
 def parse(script):
     tokens = [identify_token(x) for x in parse_strings_and_comments(tokenize(script))]
 
-    result = parse_block(tokens, _analyze_tokens, _analyze_array_tokens)[0]
+    result = parse_block(tokens + [EndOfFile()], _analyze_tokens, _analyze_array_tokens)[0]
 
     result.set_position((1, 1))
 

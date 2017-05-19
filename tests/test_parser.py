@@ -1091,8 +1091,10 @@ class ParsePreprocessor(ParserTestCase):
         expected = \
             Statement([
                 Statement([
-                    Statement([Preprocessor('#endif'), EndOfLine('\n')]),
-                ]),
+                    Statement([
+                        Preprocessor('#endif'), EndOfLine('\n')
+                    ])
+                ])
             ])
 
         self.assertEqualStatement(expected, result, code)
@@ -1146,15 +1148,13 @@ class TestDefineStatement(ParserTestCase):
         expected = \
             Statement([
                 Statement([
-                    Statement([
+                    DefineStatement([
                         Preprocessor('#define'),
-                        Statement([Space(), V('CHECK'), Space(), BrokenEndOfLine()]),
-                        N(1),
-                        Statement([]),
-                    ])
+                        Space(), V('CHECK'), Space(), BrokenEndOfLine(),
+                        N(1)
+                    ], 'CHECK', expression=[N(1)])
                 ])
             ])
-
         self.assertEqualStatement(expected, result, code)
 
     def test_define_with_argument_and_line_break(self):
@@ -1163,19 +1163,19 @@ class TestDefineStatement(ParserTestCase):
         expected = \
             Statement([
                 Statement([
-                    Statement([
+                    DefineStatement([
                         Preprocessor('#define'),
-                        Statement([Space(), V('a')]),
+                        Space(), V('a'),
                         Statement([
-                            Statement([
-                                Statement([V('_x')])
-                            ], parenthesis=True),
-                            Space(), BrokenEndOfLine()
-                        ]),
+                            Statement([V('_x')])
+                        ], parenthesis=True),
+                        Space(), BrokenEndOfLine(),
                         Statement([
                             Statement([V('_x'), Keyword('=='), N(2)])
                         ], parenthesis=True)
-                    ])
+                    ], variable_name='a',
+                        expression=[Statement([Statement([V('_x'), Keyword('=='), N(2)])], parenthesis=True)],
+                        args=['_x'])
                 ])
             ])
         self.assertEqualStatement(expected, result, code)

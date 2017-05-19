@@ -583,7 +583,7 @@ class Preprocessor(TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_ifdef_endif(self):
-        code = '#ifdef A\nA = 1;#endif'
+        code = '#ifdef A\nA = 1;\n#endif'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)

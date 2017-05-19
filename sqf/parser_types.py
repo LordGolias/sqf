@@ -50,3 +50,11 @@ class BrokenEndOfLine(ParserType):
 
     def __repr__(self):
         return '<\EOL>'
+
+
+class EndOfFile(ParserType):
+    def __str__(self):
+        return ''
+
+    def __repr__(self):
+        return '<\EOF>'
