@@ -553,6 +553,11 @@ class PreprocessorDefine(TestCase):
         self.assertEqual(len(analyzer.exceptions), 0)
         self.assertEqual(Array(), analyzer['z'])
 
+    def test_define_unused(self):
+        code = '\n#define x false\n'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+
 
 class Preprocessor(TestCase):
 
@@ -576,6 +581,12 @@ class Preprocessor(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 1), errors[0].position)
 
+    def test_include_with_semi_colon(self):
+        code = '#include "a.sqf";\n'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
     def test_macros(self):
         code = 'x call EFUNC(api,setMultiPushToTalkAssignment)'
         analyzer = analyze(parse(code))
@@ -583,10 +594,157 @@ class Preprocessor(TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_ifdef_endif(self):
-        code = '#ifdef A\nA = 1;\n#endif'
+        code = '#define A\n#ifdef A\na=1\n#endif'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['a']), Number)
+
+    def test_ifdef_endif_with_defines(self):
+        code = '#ifdef A\n#define DEBUG true\n#else\n#define DEBUG false\n#endif\nenableSaving [false, false];'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_double_ifdef(self):
+        code = '#ifdef A\n#include "A"\n#endif\n' \
+               '#ifdef B\n#include "B"\n#endif\n' \
+               'a = "";'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['a']), String)
+
+    def test_nested(self):
+        code = '''
+        #ifdef A
+        x=
+        #ifndef B
+        2
+        #else
+        ""
+        #endif
+        #endif
+        '''
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(type(analyzer['x']), Anything)
+
+        code = '#define A\n' + code
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(type(analyzer['x']), Number)
+
+        code = '#define B\n' + code
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(type(analyzer['x']), String)
+
+    def test_sequential(self):
+        code = '''
+        #ifndef A
+        x=
+        #else
+        y=
+        #endif
+        #ifndef B
+        2
+        #else
+        ""
+        #endif
+        '''
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(type(analyzer['x']), Number)
+        self.assertEqual(type(analyzer['y']), Anything)
+
+        code = '#define A\n' + code
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(type(analyzer['x']), Anything)
+        self.assertEqual(type(analyzer['y']), Number)
+
+        code = '#define B\n' + code
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(type(analyzer['x']), Anything)
+        self.assertEqual(type(analyzer['y']), String)
+
+    def test_some_cases(self):
+        code = 'call {\n#ifndef A\nx=2\n#endif\n}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+        code = '{\nx=1;\n\n    #ifdef A\nx=1;\n#endif\n} forEach z;\nz\n'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
+    def test_undef_else(self):
+        code = '\n#ifndef A\nx=1;\n#else\nx="";\n#endif\n'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['x']), Number)
+
+        code = '#define A\n' + code
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['x']), String)
+
+    def test_undef_else_2(self):
+        code = '#ifndef A\n' \
+               'x=\n' \
+               '#else\n' \
+               'y=\n' \
+               '#endif\n' \
+               '2'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['x']), Number)
+        self.assertEqual(type(analyzer['y']), Anything)
+
+        code = '#define A\n' + code
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['x']), Anything)
+        self.assertEqual(type(analyzer['y']), Number)
+
+    def test_ifdef_with_error_pos_in(self):
+        code = '#ifndef A\n' \
+               '2\n' \
+               '#else\n' \
+               '3\n' \
+               '#endif\n' \
+               '2'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((4, 1), errors[0].position)
+
+    def test_ifdef_with_error_pos_out(self):
+        code = '#ifndef A\n' \
+               '[sadasdsa]\n' \
+               '#endif\n' \
+               ' + 2'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((4, 2), errors[0].position)
+
+    def test_ifdef_with_error_in_code(self):
+        code = '{#ifndef A\n' \
+               '[sadasdsa]\n' \
+               '#endif\n' \
+               ' + 2}'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual((4, 2), errors[0].position)
 
     def test_same_name(self):
         analyzer = analyze(parse('LOG("")'))

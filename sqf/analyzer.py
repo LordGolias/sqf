@@ -1,8 +1,9 @@
 from copy import deepcopy
 
 from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, \
-    Number, Object, Preprocessor, Script, Anything
-from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType, DefineStatement, DefineResult
+    Number, Preprocessor, Script, Anything
+from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType, \
+    DefineStatement, DefineResult, IfDefResult
 from sqf.keywords import Keyword, PREPROCESSORS
 from sqf.expressions import UnaryExpression, BinaryExpression
 from sqf.exceptions import SQFParserError, SQFWarning
@@ -76,7 +77,11 @@ class Analyzer(BaseInterpreter):
         Given a single token, recursively evaluates and returns its value
         """
         assert(isinstance(token, BaseType))
-        if isinstance(token, DefineResult):
+        if isinstance(token, IfDefResult):
+            for x in token.result:
+                x.set_position(token.position)
+                result = self.value(self.execute_token(x))
+        elif isinstance(token, DefineResult):
             token.result.set_position(token.position)
             result = self.value(self.execute_token(token.result))
         elif isinstance(token, Statement):
@@ -242,7 +247,7 @@ class Analyzer(BaseInterpreter):
                     self.exception(SQFWarning(base_tokens[0].position,
                                               'Obfuscated statement. Consider explicitly set what is private.'))
                 else:
-                    self.add_privates(self.value(rhs))
+                    self.add_privates(value)
             elif isinstance(rhs, Variable):
                 var = String('"' + rhs.name + '"')
                 var.position = rhs.position
@@ -392,7 +397,7 @@ class Analyzer(BaseInterpreter):
             outcome.position = base_tokens[0].position
 
         if isinstance(outcome, InterpreterType) and \
-            outcome not in self.unevaluated_interpreter_tokens and type(outcome) not in (SwitchType, PrivateType):
+            outcome not in self.unevaluated_interpreter_tokens and type(outcome) not in (SwitchType, PrivateType, DefineStatement):
             # switch type can be not evaluated, e.g. for `case A; case B: {}`
             self.unevaluated_interpreter_tokens.append(outcome)
 

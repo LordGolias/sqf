@@ -1,6 +1,5 @@
-from sqf.exceptions import SQFError
-from sqf.parser_types import ParserType
-from sqf.base_type import BaseType, BaseTypeContainer
+from sqf.parser_types import ParserKeyword
+from sqf.base_type import BaseType, ParserType, BaseTypeContainer
 
 
 class Type(BaseType):
@@ -110,86 +109,6 @@ class Number(ConstantValue):
         return 'N%s' % self
 
 
-class Array(Type, BaseTypeContainer):
-    def __init__(self, tokens=None):
-        Type.__init__(self)
-        if tokens is not None:
-            assert(all(not isinstance(t, ParserType) for t in tokens))
-            if Keyword(',') in tokens:
-                raise SQFError('Keyword "," cannot be an item of an Array')
-            self._undefined = False
-        else:
-            self._undefined = True
-            tokens = []
-        BaseTypeContainer.__init__(self, tokens)
-
-    @property
-    def is_undefined(self):
-        return self._undefined
-
-    def __repr__(self):
-        return self._as_str(repr)
-
-    def _column_delta(self, place='begin'):
-        if place == 'begin':
-            return 1  # [
-        if place == 'middle':
-            return 1  # ,
-
-    def _as_str(self, func=str, up_to=None):
-        if self._undefined:
-            return '[undefined]'
-        return '[%s]' % ','.join(func(item) for item in self._tokens)
-
-    def __len__(self):
-        return len(self._tokens)
-
-    def __getitem__(self, other):
-        assert(not self._undefined)
-        return self._tokens[other]
-
-    @property
-    def value(self):
-        if self.is_undefined:
-            return None
-        return self._tokens
-
-    def extend(self, index):
-        assert(not self.is_undefined)
-        new_tokens = [Nothing()] * (index - len(self._tokens) + 1)
-        self._tokens += new_tokens
-
-    def append(self, token):
-        assert (not self.is_undefined)
-        self._tokens.append(token)
-
-    def resize(self, count):
-        assert (not self.is_undefined)
-        if count > len(self._tokens):
-            self.extend(count - 1)
-        else:
-            self._tokens = self._tokens[:count]
-
-    def reverse(self):
-        assert (not self.is_undefined)
-        self._tokens.reverse()
-
-    def add(self, other):
-        assert (not self.is_undefined)
-        self._tokens += other
-
-    def set(self, rhs_v):
-        assert (not self.is_undefined)
-        # https://community.bistudio.com/wiki/set
-        assert(isinstance(rhs_v, Array))
-        index = rhs_v.value[0].value
-        value = rhs_v.value[1]
-
-        if index >= len(self._tokens):
-            self.extend(index)
-        self._tokens[index] = value
-
-
 class Variable(Type):
     """
     A variable that holds values. It has a name (e.g. "_x").
@@ -218,15 +137,36 @@ class Variable(Type):
 
 
 class _Statement(BaseTypeContainer):
-    def __init__(self, tokens, parenthesis=None, ending=''):
+    def __init__(self, tokens, parenthesis=None, ending=None):
+        assert (ending in (None, ',', ';'))
+        assert (parenthesis in (None, '()', '[]', '{}'))
         assert (isinstance(tokens, list))
         for i, s in enumerate(tokens):
             assert(isinstance(s, (Type, Keyword, Preprocessor, Statement, ParserType)))
 
         self._parenthesis = parenthesis
-        self._ending = ending
+
+        if self._parenthesis:
+            tokens = [ParserKeyword(parenthesis[0])] + tokens + [ParserKeyword(parenthesis[1])]
 
         super().__init__(tokens)
+        self._ending = None
+        self.ending = ending
+
+    def prepend(self, tokens):
+        assert (isinstance(tokens, list))
+        for i, s in enumerate(tokens):
+            assert (isinstance(s, (Type, Keyword, Preprocessor, Statement, ParserType)))
+        self._tokens = tokens + self._tokens
+
+    @property
+    def content(self):
+        tokens = self.tokens.copy()
+        if self.ending:
+            del tokens[-1]
+        if self.parenthesis:
+            return tokens[1:-1]
+        return tokens
 
     @staticmethod
     def is_base_token(token):
@@ -238,30 +178,117 @@ class _Statement(BaseTypeContainer):
     def ending(self):
         return self._ending
 
+    @ending.setter
+    def ending(self, ending):
+        assert(ending in (None, ';', ','))
+        if self._ending is not None:
+            del self._tokens[-1]
+        if ending is not None:
+            self._tokens.append(ParserKeyword(ending))
+        self._ending = ending
+
     def __len__(self):
         return len(self._tokens)
 
     def __getitem__(self, other):
         return self._tokens[other]
 
-    def _column_delta(self, place='begin'):
-        if place == 'begin':
-            if self.parenthesis is not None:
-                return 1
-        return 0
-
     def _as_str(self, func=str):
-        result = (''.join(func(item) for item in self._tokens))
-
-        if self._parenthesis:
-            result = self._parenthesis[0] + result + self._parenthesis[1]
-        result += self.ending
-
-        return result
+        return ''.join(func(item) for item in self._tokens)
 
     @property
     def parenthesis(self):
         return self._parenthesis
+
+
+class Array(Type, BaseTypeContainer):
+
+    def __init__(self, tokens=None):
+        Type.__init__(self)
+        if tokens is not None:
+            self._values = tokens
+        else:
+            self._values = None
+            tokens = []
+        BaseTypeContainer.__init__(self, tokens)
+        self.update_tokens()
+
+    def update_tokens(self):
+        self._tokens = [ParserKeyword('[')] + list(self._with_commas()) + [ParserKeyword(']')]
+
+    def _with_commas(self):
+        if self._values is None:
+            return []
+        it = iter(self._values)
+        yield next(it)
+        for x in it:
+            yield ParserKeyword(',')
+            yield x
+
+    @property
+    def is_undefined(self):
+        return self._values is None
+
+    def _as_str(self, func=str):
+        if self.is_undefined:
+            return '[undefined]'
+        return ''.join(func(item) for item in self._tokens)
+
+    def __len__(self):
+        assert(not self.is_undefined)
+        return len(self._values)
+
+    def __getitem__(self, other):
+        assert(not self.is_undefined)
+        return self._values[other]
+
+    @property
+    def value(self):
+        return self._values
+
+    def __repr__(self):
+        return '%s' % self._as_str(repr)
+
+    def extend(self, index):
+        assert (not self.is_undefined)
+        new_tokens = [Nothing()] * (index - len(self._values) + 1)
+        self._values += new_tokens
+        self.update_tokens()
+
+    def append(self, token):
+        assert (not self.is_undefined)
+        self._values.append(token)
+        self.update_tokens()
+
+    def resize(self, count):
+        assert (not self.is_undefined)
+        if count > len(self._values):
+            self.extend(count - 1)
+        else:
+            self._values = self._values[:count]
+            self.update_tokens()
+
+    def reverse(self):
+        assert (not self.is_undefined)
+        self._values.reverse()
+        self.update_tokens()
+
+    def add(self, other):
+        assert (not self.is_undefined)
+        self._values += other
+        self.update_tokens()
+
+    def set(self, rhs_v):
+        assert (not self.is_undefined)
+        # https://community.bistudio.com/wiki/set
+        assert(isinstance(rhs_v, Array))
+        index = rhs_v.value[0].value
+        value = rhs_v.value[1]
+
+        if index >= len(self._values):
+            self.extend(index)
+        self._values[index] = value
+        self.update_tokens()
 
 
 class Statement(_Statement, BaseType):
@@ -269,7 +296,7 @@ class Statement(_Statement, BaseType):
     The main class for holding statements. It is a BaseType because it can be nested, and
     it is a _Statement because it can hold elements.
     """
-    def __init__(self, tokens, parenthesis=False, ending=''):
+    def __init__(self, tokens, parenthesis=False, ending=None):
         if parenthesis:
             parenthesis = '()'
         else:
@@ -287,9 +314,6 @@ class Code(_Statement, Type):
     def __init__(self, tokens=None):
         Type.__init__(self)
         if tokens is not None:
-            assert (all(not isinstance(t, ParserType) for t in tokens))
-            if Keyword(',') in tokens:
-                raise SQFError('Keyword "," cannot be an item of an Array')
             self._undefined = False
         else:
             self._undefined = True
@@ -372,8 +396,7 @@ class File(Code):
     Like code, but without parenthesis
     """
     def __init__(self, tokens):
-        super().__init__(tokens)
-        self._parenthesis = None
+        _Statement.__init__(self, tokens)
 
     def __repr__(self):
         return 'F<%s>' % self._as_str(repr)

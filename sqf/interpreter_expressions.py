@@ -241,7 +241,6 @@ def parse_switch(interpreter, code):
                 outcome_statement = values[2]
                 conditions.append((case_condition, outcome_statement))
 
-
     return conditions
 
 

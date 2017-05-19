@@ -19,6 +19,16 @@ def get_coord(string):
 assert(get_coord('aa') == (1, 3))
 
 
+def get_all_tokens(nested_tokens):
+    tokens = []
+    for token in nested_tokens:
+        if isinstance(token, BaseTypeContainer):
+            tokens += get_all_tokens(token.tokens)
+        else:
+            tokens.append(token)
+    return tokens
+
+
 def get_diff(string):
     lines = string.split('\n')
     line = len(lines) - 1
@@ -48,20 +58,24 @@ class BaseType:
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    @property
-    def position(self):
-        if self._position is None:
-            raise Exception(self, type(self))
-        return self._position
-
     def set_position(self, position):
-        assert(isinstance(position, tuple))
+        assert (isinstance(position, tuple))
         assert (len(position) == 2)
         self._position = position
 
+    @property
+    def undefined_position(self):
+        return self._position is None
+
+    @property
+    def position(self):
+        if self.undefined_position:
+            raise Exception(self, type(self))
+        return self._position
+
     @position.setter
-    def position(self, self_position):
-        self.set_position(self_position)
+    def position(self, position):
+        self.set_position(position)
 
 
 class ParserType(BaseType):
@@ -90,15 +104,8 @@ class BaseTypeContainer(BaseType):
     def _as_str(self, func=str):
         raise NotImplementedError
 
-    def _column_delta(self, place='begin'):
-        """
-        Returns how much the column advances `place=` "begin" or "middle".
-        """
-        raise NotImplementedError
-
     def set_position(self, position):
         self._position = position
-        position = (position[0], position[1] + self._column_delta())
         for token in self._tokens:
             token.set_position(position)
 
@@ -111,7 +118,8 @@ class BaseTypeContainer(BaseType):
 
             position = (
                 position[0] + token_delta[0],
-                initial_column + token_delta[1] + self._column_delta('middle'))
+                initial_column + token_delta[1]
+            )
 
     @BaseType.position.setter
     def position(self, position):
@@ -120,6 +128,9 @@ class BaseTypeContainer(BaseType):
     @property
     def tokens(self):
         return self._tokens
+
+    def get_all_tokens(self):
+        return get_all_tokens(self.tokens)
 
     @property
     def base_tokens(self):

@@ -58,3 +58,15 @@ class EndOfFile(ParserType):
 
     def __repr__(self):
         return '<\EOF>'
+
+
+class ParserKeyword(ParserType):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
+    def __repr__(self):
+        return self.value

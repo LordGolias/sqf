@@ -375,7 +375,7 @@ class Switch(TestCase):
         # 2 defaults error
         with self.assertRaises(SQFParserError) as cm:
             interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
-            self.assertEqual((1, 14), cm.exception.position)
+        self.assertEqual((1, 14), cm.exception.position)
 
         # more than one code
         with self.assertRaises(SQFParserError) as cm:

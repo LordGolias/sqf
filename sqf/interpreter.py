@@ -166,7 +166,7 @@ def interpret(script, interpreter=None):
     statements = parse(script)
 
     file = File(statements._tokens)
-    file.set_position((1, 1))
+    file.position = (1, 1)
 
     outcome = interpreter.execute_code(file, extra_scope={'_this': Nothing()})
 

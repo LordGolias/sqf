@@ -3,7 +3,7 @@ from sqf.expressions import BinaryExpression, UnaryExpression
 from sqf.database import EXPRESSIONS
 
 # keywords that are not commands, but part of the language
-KEYWORDS = {'(', ')', '[', ']', '{', '}',',', '=', ';', '\\'}
+KEYWORDS = {'=', '\\'}
 
 PREPROCESSORS_UNARY = {'#ifdef', '#ifndef', '#undef', '#include'}
 PREPROCESSORS_NULLARY = {'#else', '#endif'}

@@ -1,4 +1,4 @@
-from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Namespace, _Statement, Nothing
+from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Namespace, _Statement, Nothing, Statement
 
 
 class InterpreterType(Type):
@@ -136,10 +136,10 @@ class WithType(_InterpreterType):
 
 
 class DefineStatement(_Statement, InterpreterType):
-    def __init__(self, tokens, variable_name, expression=None, args=None, ending=''):
+    def __init__(self, tokens, variable_name, expression=None, args=None):
         assert(isinstance(variable_name, str))
         assert(isinstance(tokens, list))
-        super().__init__(tokens, ending=ending)
+        super().__init__(tokens)
         self.variable_name = variable_name
         if expression is None:
             expression = [Nothing()]
@@ -152,6 +152,16 @@ class DefineStatement(_Statement, InterpreterType):
         return '#d<%s>' % self._as_str(repr)
 
 
+class IfDefStatement(_Statement, InterpreterType):
+
+    def __init__(self, tokens, statement_class=Statement):
+        super().__init__(tokens)
+        self.statement_class = statement_class
+
+    def __repr__(self):
+        return '#i<%s>' % self._as_str(repr)
+
+
 class DefineResult(_Statement, InterpreterType):
     """
     A statement whose some token was replaced by a #define.
@@ -160,10 +170,22 @@ class DefineResult(_Statement, InterpreterType):
 
     str(self) still returns the original tokens, but `result` can be used to evaluate the statement.
     """
-    def __init__(self, tokens, define_statement, result, ending=''):
-        super().__init__(tokens, ending=ending)
+    def __init__(self, tokens, define_statement, result):
+        super().__init__(tokens)
         self.define_statement = define_statement
+        assert (isinstance(result, (Type, Statement)))
         self.result = result
 
     def __repr__(self):
-        return '#dR|%s -> %s|' % (self.tokens, repr(self.result))
+        return '#dR|%s -> %s|' % (self.tokens, (''.join('%s' % self.result)).replace('\n', '\\n'))
+
+
+class IfDefResult(_Statement, InterpreterType):
+    def __init__(self, ifdef_statement, result):
+        super().__init__(ifdef_statement.tokens)
+        self.ifdef_statement = ifdef_statement
+        assert(isinstance(result, list))
+        self.result = result  # a list of statements
+
+    def __repr__(self):
+        return '#iR|%s -> %s|' % (self.tokens, (''.join('%s' % self.result)).replace('\n', '\\n'))
