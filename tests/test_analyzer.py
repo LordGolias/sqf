@@ -1139,6 +1139,13 @@ class UndefinedValues(TestCase):
         self.assertEqual(len(errors), 0)
         self.assertEqual(Anything, type(analyzer['_a']))
 
+    def test_private_undefined(self):
+        code = 'private (y apply {x select 0});'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertTrue('Obfuscated statement.' in errors[0].message)
+
     @expectedFailure
     def test_if_else_error(self):
         # this may lead to `compile 1`, which is wrong

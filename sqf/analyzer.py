@@ -237,7 +237,12 @@ class Analyzer(BaseInterpreter):
             if isinstance(rhs, String):
                 self.add_privates([rhs])
             elif isinstance(rhs, Array):
-                self.add_privates(self.value(rhs))
+                value = self.value(rhs)
+                if value.is_undefined:
+                    self.exception(SQFWarning(base_tokens[0].position,
+                                              'Obfuscated statement. Consider explicitly set what is private.'))
+                else:
+                    self.add_privates(self.value(rhs))
             elif isinstance(rhs, Variable):
                 var = String('"' + rhs.name + '"')
                 var.position = rhs.position

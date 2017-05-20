@@ -251,13 +251,13 @@ class _Statement(BaseTypeContainer):
         return 0
 
     def _as_str(self, func=str):
-        if self._parenthesis:
-            str_format = '{left}%s{right}'.format(left=self._parenthesis[0], right=self._parenthesis[1])
-        else:
-            str_format = '%s'
-        str_format += self.ending
+        result = (''.join(func(item) for item in self._tokens))
 
-        return str_format % (''.join(func(item) for item in self._tokens))
+        if self._parenthesis:
+            result = self._parenthesis[0] + result + self._parenthesis[1]
+        result += self.ending
+
+        return result
 
     @property
     def parenthesis(self):
