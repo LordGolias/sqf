@@ -205,6 +205,13 @@ class GeneralTestCase(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_foreach(self):
+        code = 'private _y = {if (_x == 1) exitWith{1};} forEach x;'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(type(analyzer['_y']), Anything)
+
     def test_getConfig(self):
         code = 'configFile >> "CfgWeapons" >> x >> "WeaponSlotsInfo" >> "mass"'
         analyzer = analyze(parse(code))

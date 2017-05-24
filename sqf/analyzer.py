@@ -9,7 +9,7 @@ from sqf.expressions import UnaryExpression, BinaryExpression
 from sqf.exceptions import SQFParserError, SQFWarning
 from sqf.base_interpreter import BaseInterpreter
 from sqf.database import EXPRESSIONS
-from sqf.common_expressions import COMMON_EXPRESSIONS
+from sqf.common_expressions import COMMON_EXPRESSIONS, ForEachExpression
 from sqf.expressions_cache import values_to_expressions, build_database
 from sqf.parser_types import Comment
 from sqf.parser import parse
@@ -322,6 +322,8 @@ class Analyzer(BaseInterpreter):
                     outcome = return_type()
                 if return_type == ForType:
                     outcome.copy(values[0])
+                elif isinstance(case_found, ForEachExpression):
+                    outcome = Anything()
             else:
                 # when a case is found but we cannot decide on the type, it is anything
                 outcome = Anything()
