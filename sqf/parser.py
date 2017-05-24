@@ -16,13 +16,16 @@ def rindex(the_list, value):
     return len(the_list) - the_list[::-1].index(value) - 1
 
 
-_LEVELS = {'[]': 0, '()': 0, '{}': 0, '#include': 0, '#define': 0, 'ifdef': 0}
+_LEVELS = {'[]': 0, '()': 0, '{}': 0, '#include': 0, '#define': 0, 'ifdef': 0, 'ifdef_open_close': 0}
 
 
 STOP_KEYWORDS = {
     'single': (ParserKeyword(';'),),
     'both': (ParserKeyword(';'), ParserKeyword(',')),
 }
+
+OPEN_PARENTHESIS = (ParserKeyword('['), ParserKeyword('('), ParserKeyword('{'))
+CLOSE_PARENTHESIS = (ParserKeyword(']'), ParserKeyword(')'), ParserKeyword('}'))
 
 
 def get_coord(tokens):
@@ -330,7 +333,15 @@ def parse_ifdef_block(expression, defines, coord_until_here):
 
 
 def is_finish_ifdef_condition(tokens, lvls):
-    return lvls['ifdef'] == sum(1 for token in tokens if token == Preprocessor('#endif')) > 0
+    return lvls['ifdef'] == sum(1 for token in tokens if token == Preprocessor('#endif')) > 0 and \
+        lvls['ifdef_open_close'] == 0
+
+
+def is_finish_ifdef_parenthesis(token, lvls):
+    for lvl_type in ('()', '[]', '{}'):
+        if lvls[lvl_type] != 0 and token == ParserKeyword(lvl_type[1]):
+            return True
+    return False
 
 
 def finish_ifdef(tokens, all_tokens, start, statements):
@@ -359,12 +370,67 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
     while i < len(all_tokens):
         token = all_tokens[i]
 
-        # try to match an expression and get the arguments
-        found = False
-        if lvls['ifdef'] == 0 and str(token) in defines:  # is a define
-            found, define_statement, arg_indexes = find_match_if_def(all_tokens, i, defines, token)
+        # begin #ifdef controls
+        if lvls['ifdef'] and token in OPEN_PARENTHESIS:
+            lvls['ifdef_open_close'] += 1
 
-            if found:
+        stop = False
+        if token in (Preprocessor('#ifdef'), Preprocessor('#ifndef')):
+            stop = True
+            lvls['ifdef'] += 1
+            expression, size = parse_block(all_tokens, _analyze_simple, i + 1, lvls, stop_statement,
+                                           defines=defines)
+            lvls['ifdef'] -= 1
+            if lvls['ifdef'] == 0:
+                assert (isinstance(expression, IfDefStatement))
+                replacing_expression = parse_ifdef_block(expression, defines, get_coord(all_tokens[:i - 1]))
+
+                new_all_tokens = sqf.base_type.get_all_tokens(tokens + replacing_expression)
+
+                result, _ = parse_block(new_all_tokens, analyze_tokens, 0, None, stop_statement,
+                                        defines=defines)
+
+                expression.prepend(tokens)
+
+                expression = IfDefResult(expression, result.tokens)
+                statements.append(expression)
+
+                len_expression = len(expression.get_all_tokens())
+
+                i += len_expression - len(tokens) - 1
+                tokens = []
+            else:
+                tokens.append(expression)
+                i += size + 1
+        # finish ifdef
+        elif is_finish_ifdef_condition(tokens, lvls) and (
+                    is_end_statement(token, stop_statement) or
+                    is_finish_ifdef_parenthesis(token, lvls)
+                ) or lvls['ifdef'] > 1 and token == Preprocessor('#endif'):
+
+            if token != EndOfFile() and token not in CLOSE_PARENTHESIS:
+                tokens.append(token)
+
+            if_def = finish_ifdef(tokens, all_tokens, start, statements)
+            return if_def, i - start
+        # parse during ifdef
+        elif lvls['ifdef'] != 0:
+            stop = True
+            tokens.append(token)
+
+        # end ifdef controls
+        if lvls['ifdef'] and token in (STOP_KEYWORDS['both'] + CLOSE_PARENTHESIS):
+            lvls['ifdef_open_close'] -= 1
+            if lvls['ifdef_open_close'] < 0:
+                lvls['ifdef_open_close'] = 0
+
+        if stop:
+            pass
+        # try to match a #defined and get the arguments
+        elif str(token) in defines:  # is a define
+            stop, define_statement, arg_indexes = find_match_if_def(all_tokens, i, defines, token)
+
+            if stop:
                 arg_number = len(define_statement.args)
 
                 extra_tokens_to_move = 1 + 2 * (arg_number != 0) + 2 * arg_number - 1 * (arg_number != 0)
@@ -401,16 +467,8 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                 i += original_tokens_taken - len(tokens) - 1
 
                 tokens = []
-        if found:
+        if stop:
             pass
-        elif (token in (ParserKeyword('}'), ParserKeyword(']'), ParserKeyword(')')) or is_end_statement(token, stop_statement)) and \
-                is_finish_ifdef_condition(tokens, lvls) or lvls['ifdef'] > 1 and token == Preprocessor('#endif'):
-
-            if not (token == EndOfFile() or token in (ParserKeyword('}'), ParserKeyword(']'), ParserKeyword(')')) and
-                is_finish_ifdef_condition(tokens, lvls)):
-                tokens.append(token)
-            if_def = finish_ifdef(tokens, all_tokens, start, statements)
-            return if_def, i - start
         elif token == ParserKeyword('['):
             lvls['[]'] += 1
             expression, size = parse_block(all_tokens, analyze_tokens, i + 1, lvls, stop_statement='single', defines=defines)
@@ -459,41 +517,14 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
 
             return Code(statements), i - start
         # end of statement when not in preprocessor states
-        elif all(lvls[lvl_type] == 0 for lvl_type in ('#define', '#include', 'ifdef')) and is_end_statement(token, stop_statement):
+        elif all(lvls[lvl_type] == 0 for lvl_type in ('#define', '#include')) and is_end_statement(token, stop_statement):
             if type(token) != EndOfFile:
                 tokens.append(token)
             if tokens:
                 statements.append(analyze_tokens(tokens))
 
             tokens = []
-        # handling of preprocessor states
-        elif token in (Preprocessor('#ifdef'), Preprocessor('#ifndef')):
-            lvls['ifdef'] += 1
-            expression, size = parse_block(all_tokens, _analyze_simple, i + 1, lvls, stop_statement,
-                                           defines=defines)
-            lvls['ifdef'] -= 1
-            if lvls['ifdef'] == 0:
-                assert(isinstance(expression, IfDefStatement))
-                replacing_expression = parse_ifdef_block(expression, defines, get_coord(all_tokens[:i-1]))
-
-                new_all_tokens = sqf.base_type.get_all_tokens(tokens + replacing_expression)
-
-                result, _ = parse_block(new_all_tokens, analyze_tokens, 0, None, stop_statement,
-                                        defines=defines)
-
-                expression.prepend(tokens)
-
-                expression = IfDefResult(expression, result.tokens)
-                statements.append(expression)
-
-                len_expression = len(expression.get_all_tokens())
-
-                i += len_expression - len(tokens) - 1
-                tokens = []
-            else:
-                tokens.append(expression)
-                i += size + 1
-        elif lvls['ifdef'] == 0 and token in (Preprocessor('#define'), Preprocessor('#include')):
+        elif token in (Preprocessor('#define'), Preprocessor('#include')):
             # notice that `token` is ignored here. It will be picked up in the end
             if tokens:
                 # a pre-processor starts a new statement

@@ -1259,6 +1259,13 @@ class TestIfDefStatement(ParserTestCase):
         code = '#ifdef A\n{ []; {}; };\n#endif\n{};'
         self.assertEqual(code, str(parse(code)))
 
+    def test_ifdef_with_code(self):
+        # formally, this is correct, but we currently do not parse it.
+        # Regardless, the error is a SQF error which is better than crash.
+        code = 'if x then {\n#ifdef A\n} else {\n#endif\n};'
+        with self.assertRaises(SQFParenthesisError):
+            parse(code)
+
 
 class TestDefineStatement(ParserTestCase):
 
