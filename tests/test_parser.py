@@ -1266,6 +1266,10 @@ class TestIfDefStatement(ParserTestCase):
         with self.assertRaises(SQFParenthesisError):
             parse(code)
 
+    def test_ifdef_array_multiple(self):
+        code = '#ifndef A\n[];\n#endif\n[true, true, true];'
+        self.assertEqual(code, str(parse(code)))
+
 
 class TestDefineStatement(ParserTestCase):
 

@@ -419,7 +419,7 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
             tokens.append(token)
 
         # end ifdef controls
-        if lvls['ifdef'] and token in (STOP_KEYWORDS['both'] + CLOSE_PARENTHESIS):
+        if lvls['ifdef'] and token in (STOP_KEYWORDS['single'] + CLOSE_PARENTHESIS):
             lvls['ifdef_open_close'] -= 1
             if lvls['ifdef_open_close'] < 0:
                 lvls['ifdef_open_close'] = 0
