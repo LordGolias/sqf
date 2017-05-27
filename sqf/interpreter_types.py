@@ -151,17 +151,12 @@ class DefineStatement(_Statement, InterpreterType):
         self.args = args
 
     def __repr__(self):
-        return '#d<%s>' % self._as_str(repr)
+        return '#d|%s\%s/ -> %s|' % (self._as_str(repr), self.args, self.expression)
 
 
-class IfDefStatement(_Statement, InterpreterType):
-
-    def __init__(self, tokens, statement_class=Statement):
-        super().__init__(tokens)
-        self.statement_class = statement_class
-
+class IncludeStatement(_Statement, InterpreterType):
     def __repr__(self):
-        return '#i<%s>' % self._as_str(repr)
+        return '#in<%s>' % self._as_str(repr)
 
 
 class DefineResult(_Statement, InterpreterType):
@@ -179,15 +174,14 @@ class DefineResult(_Statement, InterpreterType):
         self.result = result
 
     def __repr__(self):
-        return '#dR|%s -> %s|' % (self.tokens, (''.join('%s' % self.result)).replace('\n', '\\n'))
+        return '#dR|%s -> %s|' % (self.tokens, repr(self.result))
 
 
 class IfDefResult(_Statement, InterpreterType):
-    def __init__(self, ifdef_statement, result):
-        super().__init__(ifdef_statement.tokens)
-        self.ifdef_statement = ifdef_statement
-        assert(isinstance(result, list))
-        self.result = result  # a list of statements
+    def __init__(self, tokens, result):
+        super().__init__(tokens)
+        assert(isinstance(result, _Statement))
+        self.result = result  # a statement
 
     def __repr__(self):
-        return '#iR|%s -> %s|' % (self.tokens, (''.join('%s' % self.result)).replace('\n', '\\n'))
+        return '#iR|%s -> %s|' % (self.tokens, self.result)

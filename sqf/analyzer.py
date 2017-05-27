@@ -101,9 +101,8 @@ class Analyzer(BaseInterpreter):
 
         assert(isinstance(token, BaseType))
         if isinstance(token, IfDefResult):
-            for x in token.result:
-                x.set_position(token.position)
-                result = self.value(self.execute_token(x))
+            token.result.set_position(token.position)
+            result = self.value(self.execute_token(token.result))
         elif isinstance(token, DefineResult):
             token.result.set_position(token.position)
             result = self.value(self.execute_token(token.result))

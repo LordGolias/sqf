@@ -5,7 +5,7 @@ from sqf.parser_exp import parse_exp
 from sqf.exceptions import SQFParenthesisError, SQFParserError
 from sqf.types import String, Statement, Code, Array, Boolean, Variable as V, \
     Number as N, BaseTypeContainer, Keyword, Preprocessor, Nothing
-from sqf.interpreter_types import DefineStatement, IfDefStatement, DefineResult, IfDefResult
+from sqf.interpreter_types import DefineStatement, IncludeStatement, DefineResult, IfDefResult
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine, ParserKeyword
 from sqf.parser import parse, parse_strings_and_comments, identify_token
 from sqf.base_tokenizer import tokenize
@@ -91,8 +91,8 @@ class TestExpParser(TestCase):
 class ParserTestCase(TestCase):
     
     def assertEqualStatement(self, expected, result, code):
-        self.assertEqual(expected, result)
         self.assertEqual(code, str(result))
+        self.assertEqual(expected, result)
         self.assertCorrectPositions(result, code)
 
     def assertCorrectPositions(self, result, code):
@@ -279,8 +279,9 @@ class ParseCode(ParserTestCase):
             parse('({_a = 2);};')
 
     def test_no_close_parenthesis(self):
-        with self.assertRaises(SQFParenthesisError):
-            parse('_a = (x + 2')
+        with self.assertRaises(SQFParenthesisError) as m:
+            parse('_a = (x=2; x + 2')
+        self.assertEqual((1, 7), m.exception.position)
 
     def test_analyze_expression(self):
         code = '_h = _civs spawn _fPscareC;'
@@ -429,8 +430,7 @@ class ParseCode(ParserTestCase):
         code = '1,2'
         expected = \
             Statement([
-                Statement([
-                    N(1)], ending=','),
+                Statement([N(1)], ending=','),
                 Statement([N(2)])
             ])
         self.assertEqualStatement(expected, parse(code), code)
@@ -1009,13 +1009,12 @@ class ParsePreprocessor(ParserTestCase):
         expected = \
             Statement([
                 Statement([
-                    Statement([
-                        Preprocessor('#include'),
-                        Statement([Space(), String('"macros.hpp"')]),
+                    IncludeStatement([
+                        Preprocessor('#include'), Space(), String('"macros.hpp"'), EndOfLine('\n'),
                     ])
                 ]),
                 Statement([
-                    Statement([EndOfLine('\n'), V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
+                    Statement([V("_x"), Space()]), Keyword('='), Statement([Space(), N(1)])
                 ])
             ])
 
@@ -1075,9 +1074,7 @@ class TestIfDefStatement(ParserTestCase):
 
         tokens = [Preprocessor('#ifdef'), Space(), V('A'), EndOfLine('\n'), Preprocessor('#endif')]
 
-        expression = IfDefStatement(tokens)
-
-        expected = Statement([IfDefResult(expression, [])])
+        expected = Statement([IfDefResult(tokens, Statement([]))])
         self.assertEqualStatement(expected, result, code)
 
     def test_not_closed(self):
@@ -1100,59 +1097,49 @@ class TestIfDefStatement(ParserTestCase):
                   Space(), V('A'), EndOfLine('\n'), Keyword('-'), EndOfLine('\n'), Preprocessor('#endif'),
                   EndOfLine('\n'), N(2)]
 
-        expression = IfDefStatement(tokens)
-
         result_exp = Statement([
+            N(1), Keyword('+'),
             Statement([
-                N(1), Keyword('+'),
-                Statement([
-                    EndOfLine('\n'), EndOfLine('\n'), N(2)
-                ])
+                EndOfLine('\n'), EndOfLine('\n'), N(2)
             ])
         ])
 
-        expected = Statement([IfDefResult(expression, result_exp.tokens)])
+        expected = Statement([IfDefResult(tokens, result_exp)])
         self.assertEqualStatement(expected, result, code)
 
     def test_nested(self):
-        code = '#ifdef A\n#ifdef B\n1\n#endif\n#endif'
+        code = '#ifdef A\n#ifdef B\n1\n#endif\n#endif\n'
         original = code
         result = parse(code)
+        self.assertEqual(code, str(result))
 
-        statementB = IfDefStatement([
-                      Preprocessor('#ifdef'), Space(), V('B'), EndOfLine('\n'), N(1),
-                      EndOfLine('\n'), Preprocessor('#endif')
-                  ])
+        tokensB = [Preprocessor('#ifdef'), Space(), V('B'), EndOfLine('\n'), N(1), EndOfLine('\n'),
+                   Preprocessor('#endif')]
 
-        tokens = [Preprocessor('#ifdef'), Space(), V('A'), EndOfLine('\n'),
-                  statementB,
-                  EndOfLine('\n'), Preprocessor('#endif')
-                  ]
+        tokensA = [Preprocessor('#ifdef'), Space(), V('A'), EndOfLine('\n')] + tokensB + [
+                   EndOfLine('\n'), Preprocessor('#endif'), EndOfLine('\n')]
 
-        statementA = IfDefStatement(tokens)
-
-        expected = Statement([IfDefResult(statementA, [])])
+        expected = Statement([IfDefResult(tokensA, Statement([EndOfLine('\n')]))])
         self.assertEqualStatement(expected, result, code)
 
         # A is defined, B is not
         code = '#define A\n' + original
         result = parse(code)
-        statementB1 = \
-            IfDefStatement([
-                EndOfLine('\n'), EndOfLine('\n'), Preprocessor('#ifdef'), Space(), V('B'), EndOfLine('\n'), N(1),
-                EndOfLine('\n'), Preprocessor('#endif')
-        ])
-        expected_exp = [
-            IfDefResult(statementB1, [Statement([EndOfLine('\n'), EndOfLine('\n')])])
+        self.assertEqual(code, str(result))
+        tokensB1 = [
+            EndOfLine('\n'), Preprocessor('#ifdef'), Space(), V('B'), EndOfLine('\n'), N(1),
+            EndOfLine('\n'), Preprocessor('#endif'), EndOfLine('\n'), EndOfLine('\n')
         ]
+        expected_exp = IfDefResult(tokensB1, Statement([EndOfLine('\n'), EndOfLine('\n'), EndOfLine('\n')]))
         self.assertEqual(expected_exp, result[1].result)
 
         # both defined
         code = '#define B\n#define A\n' + original
         result = parse(code)
-        expectedA = [Statement([EndOfLine('\n'), EndOfLine('\n'), EndOfLine('\n'), N(1), EndOfLine('\n')])]
-        expected_exp = [IfDefResult(statementB1, expectedA)]
-        self.assertEqual(expected_exp, result[3].result)
+        expectedA = Statement([EndOfLine('\n'), EndOfLine('\n'), N(1),
+                               EndOfLine('\n'), EndOfLine('\n'), EndOfLine('\n')])
+        expected_exp = IfDefResult(tokensB1, expectedA)
+        self.assertEqual(expected_exp, result[2].result)
 
     def test_if_else(self):
         code = '#ifdef A\n#else\nB\n#endif'
@@ -1161,32 +1148,33 @@ class TestIfDefStatement(ParserTestCase):
         tokens = [Preprocessor('#ifdef'), Space(), V('A'), EndOfLine('\n'),
                   Preprocessor('#else'), EndOfLine('\n'), V('B'), EndOfLine('\n'), Preprocessor('#endif')]
 
-        expression = IfDefStatement(tokens)
+        expected_exp = Statement([EndOfLine('\n'), V('B'), EndOfLine('\n')])
 
-        expected_exp = [Statement([EndOfLine('\n'), V('B'), EndOfLine('\n')])]
-
-        expected = Statement([IfDefResult(expression, expected_exp)])
+        expected = Statement([IfDefResult(tokens, expected_exp)])
         self.assertEqualStatement(expected, result, code)
 
     def test_if_with_define(self):
         code = '#ifdef A3W_DEBUG\n#define DEBUG true\n#else\n#define DEBUG false\n#endif\n[1,2];s;'
         result = parse(code)
-        self.assertEqual([
-            Statement([EndOfLine('\n')]),
-            Statement([DefineStatement(
-                [Preprocessor('#define'), Space(), V('DEBUG'), Space(), Boolean(False)], 'DEBUG',
-                expression=[Boolean(False)]
-                )]),
-            Statement([EndOfLine('\n'), EndOfLine('\n'), Array([Statement([N(1)]), Statement([N(2)])])], ending=';')
-        ], result[0].result)
+        self.assertEqual(code, str(result))
+
+        expected_result = Statement([
+                EndOfLine('\n'),
+                DefineStatement([
+                    Preprocessor('#define'), Space(), V('DEBUG'), Space(), Boolean(False), EndOfLine('\n')], 'DEBUG',
+                    expression=[Boolean(False), EndOfLine('\n')]
+                )]
+        )
+
+        self.assertEqual(expected_result, result[0].result)
 
     def test_if_with_include(self):
         code = '#ifdef A\n#include "A"\n#endif\nx="1";'
         result = parse(code)
-        self.assertEqual(result[0].result, [
+        self.assertEqual(result[0].result,
             Statement([
                 Statement([EndOfLine('\n'), V('x')]), Keyword('='), String('"1"')], ending=';')
-        ])
+        )
 
     def test_sequential_if(self):
         code = '#ifdef A\n#include "A"\n#endif\n' \
@@ -1195,31 +1183,29 @@ class TestIfDefStatement(ParserTestCase):
         result = parse(code)
 
         tokensB = [
+            EndOfLine('\n'),
             Preprocessor('#ifdef'), Space(), V('B'), EndOfLine('\n'),
             Preprocessor('#include'), Space(), String('"B"'), EndOfLine('\n'),
             Preprocessor('#endif'),
             EndOfLine('\n'), V('x'), Space(), Keyword('='), Space(), String('"1"'), ParserKeyword(';')
         ]
-        statementB = IfDefStatement(tokensB)
 
         tokensA = [
             Preprocessor('#ifdef'), Space(), V('A'), EndOfLine('\n'),
             Preprocessor('#include'), Space(), String('"A"'), EndOfLine('\n'),
-            Preprocessor('#endif'), EndOfLine('\n'),
-            statementB,
-        ]
-        statementA = IfDefStatement(tokensA)
+            Preprocessor('#endif')
+        ] + tokensB
 
         self.assertEqual(code, str(result))
         self.assertEqual(tokensA, result[0].tokens)
 
-        expectedB = [Statement([
-            Statement([EndOfLine('\n'), V('x'), Space()]),
-            Keyword('='),
-            Statement([Space(), String('"1"')])
-        ], ending=';')]
+        expectedB = Statement([
+                Statement([EndOfLine('\n'), EndOfLine('\n'), V('x'), Space()]),
+                Keyword('='),
+                Statement([Space(), String('"1"')])
+            ], ending=';')
 
-        expectedA = Statement([IfDefResult(statementA, [IfDefResult(statementB, expectedB)])])
+        expectedA = Statement([IfDefResult(tokensA, IfDefResult(tokensB, expectedB))])
         self.assertEqualStatement(expectedA, result, code)
 
     def test_with_define_and_next(self):
@@ -1262,12 +1248,27 @@ class TestIfDefStatement(ParserTestCase):
     def test_ifdef_with_code(self):
         # formally, this is correct, but we currently do not parse it.
         # Regardless, the error is a SQF error which is better than crash.
-        code = 'if x then {\n#ifdef A\n} else {\n#endif\n};'
+        code = 'if x then {\n#ifndef A\n} else {\n#endif\n};'
         with self.assertRaises(SQFParenthesisError):
             parse(code)
 
     def test_ifdef_array_multiple(self):
         code = '#ifndef A\n[];\n#endif\n[true, true, true];'
+        self.assertEqual(code, str(parse(code)))
+
+    def test_ifdef_with_different_parenthesis_after(self):
+        code = '#ifdef A\n#endif{(){};{} {};};'
+        self.assertEqual(code, str(parse(code)))
+
+    def test_ifdef_many(self):
+        code = '''{
+#ifdef A
+#endif
+{
+#ifdef B
+#endif
+};
+};'''
         self.assertEqual(code, str(parse(code)))
 
 
@@ -1280,10 +1281,9 @@ class TestDefineStatement(ParserTestCase):
                 Statement([
                     DefineStatement([
                         Preprocessor('#define'),
-                        Space(), V('a')
-                    ], 'a'),
-                ]),
-                Statement([EndOfLine('\n')])
+                        Space(), V('a'), EndOfLine('\n')
+                    ], 'a')
+                ])
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
@@ -1294,25 +1294,24 @@ class TestDefineStatement(ParserTestCase):
                 Statement([
                     DefineStatement([
                         Preprocessor('#define'),
-                        Space(), V('a'), Space(), N(1)
-                    ], 'a', [N(1)]),
-                ]),
-                Statement([EndOfLine('\n')])
+                        Space(), V('a'), Space(), N(1), EndOfLine('\n')
+                    ], 'a', [N(1), EndOfLine('\n')]),
+                ])
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
     def test_define_with_parenthesis(self):
         code = '#define a ();\n'
 
-        expression = [Statement([], parenthesis=True), ParserKeyword(';')]
+        expression = [ParserKeyword('('), ParserKeyword(')'), ParserKeyword(';'), EndOfLine('\n')]
         expected = \
             Statement([
                 Statement([
                     DefineStatement([
                         Preprocessor('#define'),
                         Space(), V('a'), Space(),
-                    ] + expression, 'a', expression)]),
-                Statement([EndOfLine('\n')])
+                    ] + expression, 'a', expression)
+                ]),
                 ])
         self.assertEqualStatement(expected, parse(code), code)
 
@@ -1334,21 +1333,15 @@ class TestDefineStatement(ParserTestCase):
     def test_define_with_argument_and_line_break(self):
         code = "#define a(_x) \\\n(_x==2)"
         result = parse(code)
+
+        expression = [ParserKeyword('('), V('_x'), Keyword('=='), N(2), ParserKeyword(')')]
+        tokens = [Preprocessor('#define'), Space(), V('a'), ParserKeyword('('), V('_x'), ParserKeyword(')'), Space(), BrokenEndOfLine()] + expression
+
         expected = \
             Statement([
                 Statement([
-                    DefineStatement([
-                        Preprocessor('#define'),
-                        Space(), V('a'),
-                        Statement([
-                            Statement([V('_x')])
-                        ], parenthesis=True),
-                        Space(), BrokenEndOfLine(),
-                        Statement([
-                            Statement([V('_x'), Keyword('=='), N(2)])
-                        ], parenthesis=True)
-                    ], variable_name='a',
-                        expression=[Statement([Statement([V('_x'), Keyword('=='), N(2)])], parenthesis=True)],
+                    DefineStatement(tokens, variable_name='a',
+                        expression=expression,
                         args=['_x'])
                 ])
             ])
@@ -1367,56 +1360,12 @@ class TestDefineStatement(ParserTestCase):
             Statement([
                 Statement([
                     DefineStatement([
-                        Preprocessor('#define'), Space(), Keyword('IN'), Space(), N(2)], 'IN',
-                        [N(2)]
+                        Preprocessor('#define'), Space(), Keyword('IN'), Space(), N(2), EndOfLine('\n')], 'IN',
+                        [N(2), EndOfLine('\n')]
                     )
-                ]),
-                Statement([EndOfLine('\n')])
+                ])
             ])
         self.assertEqualStatement(expected, result, code)
-
-    def test_define2(self):
-        code = '#define a (if (true) then { \\\n\t} \\\n);\n'
-
-        expression = Statement([
-                            Statement([
-                                Statement([
-                                    Keyword('if'),
-                                    Statement([
-                                        Space(),
-                                        Statement([
-                                            Statement([
-                                                Boolean(True)
-                                            ])
-                                        ], parenthesis=True),
-                                        Space()
-                                    ]),
-                                ]),
-                                Keyword('then'),
-                                Statement([
-                                    Space(),
-                                    Code([
-                                        Statement([
-                                            Space(), BrokenEndOfLine(), Tab()
-                                        ]),
-                                    ]),
-                                    Space(), BrokenEndOfLine()
-                                ]),
-                            ]),
-                        ], parenthesis=True)
-        expression = [expression, ParserKeyword(';')]
-
-        expected = \
-            Statement([
-                Statement([
-                    DefineStatement([
-                        Preprocessor('#define'),
-                        Space(), V('a'), Space()] + expression,
-                                    'a', expression),
-                ]),
-                Statement([EndOfLine('\n')])
-            ])
-        self.assertEqualStatement(expected, parse(code), code)
 
     def test_define_with_comment_after(self):
         code = '#define A 2 // foo\nx = a'
@@ -1425,11 +1374,11 @@ class TestDefineStatement(ParserTestCase):
             Statement([
                 Statement([
                     DefineStatement([
-                        Preprocessor('#define'), Space(), V('A'), Space(), N(2), Space()], 'A',
-                        expression=[N(2), Space()]),
+                        Preprocessor('#define'), Space(), V('A'), Space(), N(2), Space(), Comment('// foo\n')], 'A',
+                        expression=[N(2), Space(), Comment('// foo\n')]),
                 ]),
                 Statement([
-                    Statement([Comment('// foo\n'), V('x'), Space()]),
+                    Statement([V('x'), Space()]),
                     Keyword('='),
                     Statement([Space(), V('a')])
                 ])
@@ -1441,90 +1390,95 @@ class TestDefineResult(ParserTestCase):
 
     def test_undefined(self):
         define = DefineStatement([
-            Preprocessor('#define'), Space(), V('A')], 'A')
+            Preprocessor('#define'), Space(), V('A'), EndOfLine('\n')], 'A')
 
         # the code with the define
-        code = str(Statement([define])) + '\nx=A'
+        code = str(Statement([define])) + 'x=A'
 
         result = parse(code)
 
         # the expected statement after replacing the define
-        expected_statement = Statement([Statement([EndOfLine('\n'), V('x')]), Keyword('='), Nothing()])
+        expected_statement = Statement([V('x'), Keyword('='), Nothing()])
 
         expected = \
             Statement([
                 Statement([define]),
-                DefineResult([EndOfLine('\n'), V('x'), Keyword('='), V('A')], define, expected_statement)])
+                DefineResult([V('x'), Keyword('='), V('A')], define, expected_statement)])
         self.assertEqualStatement(expected, result, code)
 
     def test_constant_literal(self):
         define = DefineStatement([
-                        Preprocessor('#define'), Space(), V('A'), Space(), N(2)], 'A',
-                        expression=[N(2)])
+                        Preprocessor('#define'), Space(), V('A'), Space(), N(2), EndOfLine('\n')], 'A',
+                        expression=[N(2), EndOfLine('\n')])
 
         # the code with the define
-        code = str(Statement([define])) + '\nx = A'
+        code = str(Statement([define])) + 'x = A'
 
         result = parse(code)
 
         # the expected statement after replacing the define
         expected_statement = Statement([
-            Statement([EndOfLine('\n'), V('x'), Space()]),
+            Statement([V('x'), Space()]),
             Keyword('='),
-            Statement([Space(), N(2)])
+            Statement([Space(), N(2), EndOfLine('\n')])
         ])
 
         expected = Statement([
             Statement([define]),
-            DefineResult([EndOfLine('\n'), V('x'), Space(), Keyword('='), Space(), V('A')], define, expected_statement)])
+            DefineResult([V('x'), Space(), Keyword('='), Space(), V('A')], define, expected_statement)])
         self.assertEqualStatement(expected, result, code)
 
     def test_constant_op(self):
         define = DefineStatement([
-                        Preprocessor('#define'), Space(), V('P'), Space(), Keyword('+')], 'P',
-                        expression=[Keyword('+')])
+                        Preprocessor('#define'), Space(), V('P'), Space(), Keyword('+'), EndOfLine('\n')], 'P',
+                        expression=[Keyword('+'), EndOfLine('\n')])
 
         # the code with the define
-        code = str(Statement([define])) + '\n1 P 1'
+        code = str(Statement([define])) + '1 P 1'
 
         result = parse(code)
 
         # the expected statement after replacing the define
         expected_statement = Statement([
-            Statement([EndOfLine('\n'), N(1), Space()]),
+            Statement([N(1), Space()]),
             Keyword('+'),
-            Statement([Space(), N(1)])
+            Statement([EndOfLine('\n'), Space(), N(1)])
         ])
         expected = Statement([Statement([define]),
-                              DefineResult([EndOfLine('\n'), N(1), Space(), V('P'), Space(), N(1)], define, expected_statement)])
+                              DefineResult([N(1), Space(), V('P'), Space(), N(1)], define, expected_statement)])
+
+        self.assertEqual(expected[1].result, result[1].result)
+        self.assertEqual(expected[1].tokens, result[1].tokens)
+        self.assertEqual(expected[1].define_statement, result[1].define_statement)
 
         self.assertEqualStatement(expected, result, code)
 
     def test_constant_fnc(self):
         # define with parenthesis
-        define_code = '#define A (x+2)'
+        define_code = '#define A (x+2)\n'
 
         define = parse(define_code)[0][0]
         assert (isinstance(define, DefineStatement))
 
         # the code with the define
-        code = define_code + '\nx*A'
+        code = define_code + 'x*A'
 
         result = parse(code)
 
         # the expected statement after replacing the define
         expected_statement = Statement([
-            Statement([EndOfLine('\n'), V('x')]),
+            V('x'),
             Keyword('*'),
             Statement([
                 Statement([
-                    V('x'),
-                    Keyword('+'),
-                    N(2)])], parenthesis=True)
+                    Statement([V('x'), Keyword('+'), N(2)])
+                ], parenthesis=True),
+                EndOfLine('\n')
+            ])
         ])
 
         expected = Statement([Statement([define]),
-                              DefineResult([EndOfLine('\n'), V('x'), Keyword('*'), V('A')], define, expected_statement)])
+                              DefineResult([V('x'), Keyword('*'), V('A')], define, expected_statement)])
         self.assertEqualStatement(expected, result, code)
 
     def test_parenthesis_after(self):
@@ -1538,142 +1492,163 @@ class TestDefineResult(ParserTestCase):
             parse(code)
 
     def test_define_array_bit(self):
-        define = parse('#define A 1,2')[0][0]
+        define = parse('#define A 1,2\n')[0][0]
         assert (isinstance(define, DefineStatement))
 
         # the code with the define
-        code = str(Statement([define])) + '\nx=[A]'
+        code = str(Statement([define])) + 'x=[A]'
         result = parse(code)
 
         # the expected statement after replacing the define
-        expected_statement = Array([Statement([N(1)]), Statement([N(2)])
+        expected_statement = Statement([
+            V('x'),
+            Keyword('='),
+            Array([Statement([N(1)]), Statement([N(2), EndOfLine('\n')])])
         ])
+
         expected = \
             Statement([
                 Statement([define]),
-                Statement([
-                    Statement([EndOfLine('\n'), V('x')]),
+                DefineResult([
+                    V('x'),
                     Keyword('='),
-                    DefineResult([Array([Statement([V('A')])])], define, expected_statement)
-                ])
+                    ParserKeyword('['), V('A'), ParserKeyword(']')
+                ], define, expected_statement)
             ])
 
+        self.assertEqual(code, str(result))
         self.assertEqualStatement(expected, result, code)
 
     def test_define_fnc_1(self):
-        define = parse('#define A(x) x==2')[0][0]
+        define = parse('#define A(x) x==2\n')[0][0]
         assert(isinstance(define, DefineStatement))
 
         # the code with the define
-        code = str(Statement([define])) + '\nx=A(3)'
+        code = str(Statement([define])) + 'x=A(3)'
 
         result = parse(code)
 
         # the expected statement after replacing the define
         expected_statement = Statement([
-            Statement([EndOfLine('\n'), V('x')]),
+            V('x'),
             Keyword('='),
-            Statement([N(3), Keyword('=='), N(2)])
+            Statement([N(3), Keyword('=='),
+                       Statement([N(2), EndOfLine('\n')])])
         ])
         expected = \
             Statement([
                 Statement([define]),
-                DefineResult([EndOfLine('\n'), V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(')')],
+                DefineResult([V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(')')],
                     define, expected_statement)
             ])
 
         self.assertEqualStatement(expected, result, code)
 
     def test_define_fnc_2(self):
-        define = parse('#define A(x,y) x==y')[0][0]
+        define = parse('#define A(x,y) x==y\n')[0][0]
         assert(isinstance(define, DefineStatement))
 
         # the code with the define
-        code = str(Statement([define])) + '\nx=A(3,2)'
+        code = str(Statement([define])) + 'x=A(3,2)'
 
         result = parse(code)
 
         # the expected statement after replacing the define
         expected_statement = Statement([
-            Statement([EndOfLine('\n'), V('x')]),
+            V('x'),
             Keyword('='),
-            Statement([N(3), Keyword('=='), N(2)])
+            Statement([
+                N(3), Keyword('=='),
+                Statement([N(2), EndOfLine('\n')])
+            ])
         ])
         expected = \
             Statement([
                 Statement([define]),
-                DefineResult([EndOfLine('\n'), V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(','), N(2), ParserKeyword(')')],
+                DefineResult([V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(','), N(2), ParserKeyword(')')],
                     define, expected_statement)
             ])
 
         self.assertEqualStatement(expected, result, code)
 
     def test_define_in_define(self):
-        define = parse('#define A (call y)')[0][0]
-        define1 = parse(str(Statement([define])) + '\n#define B (A==2)')[2][0]
-        assert(isinstance(define, DefineStatement))
+        defines = parse('#define A (call y)\n#define B (A==2)\n')
+        define = defines[0][0]
+        define1 = defines[1][0]
+        assert (isinstance(define, DefineStatement))
         assert (isinstance(define1, DefineStatement))
 
         # the code with the defines
-        code = str(Statement([define])) + '\n' + str(Statement([define1])) + '\nz||B'
+        code = str(Statement([define])) + str(Statement([define1])) + 'z||B'
         result = parse(code)
 
         self.assertEqual(code, str(result))
+
+        self.assertEqual(result[0][0], define)
+        self.assertEqual(result[1][0], define1)
 
         # the expected statement on the second define after replacing the first define
         expected_statement = \
             Statement([
                 Statement([
                     Statement([
-                        Keyword('call'),
-                        Statement([Space(), V('y')])])
-                ], parenthesis=True),
+                        Statement([
+                            Keyword('call'),
+                            Statement([Space(), V('y')])])
+                    ], parenthesis=True),
+                    EndOfLine('\n')
+                ]),
                 Keyword('=='), N(2)
             ])
 
         # the expected statement on the expression after replacing by the second define
-        expected_statement1 = \
+        expected_statement = \
             Statement([
-                Statement([EndOfLine('\n'), V('z')]), Keyword('||'),
+                V('z'), Keyword('||'),
                 Statement([
-                    DefineResult([V('A'), Keyword('=='), N(2)],
-                                 define, expected_statement)], parenthesis=True)
+                    Statement([
+                        Statement([
+                            Statement([
+                                Statement([
+                                    Statement([
+                                        Keyword('call'),
+                                        Statement([Space(), V('y')])
+                                    ])
+                                ], parenthesis=True),
+                                EndOfLine('\n')
+                            ]),
+                            Keyword('=='), N(2)
+                        ])
+                    ], parenthesis=True),
+                    EndOfLine('\n')
+                ])
             ])
 
-        self.assertEqual(result[2][0], define1)
-
-        expected = \
-            Statement([
-                Statement([define]),
-                Statement([EndOfLine('\n')]),
-                Statement([define1]),
-                DefineResult([EndOfLine('\n'), V('z'), Keyword('||'), V('B')],
-                             define1, expected_statement1),
-            ])
-
-        self.assertEqualStatement(expected, result, code)
+        self.assertEqual(expected_statement, result[2].result.result)
 
     def test_define_fnc_with_statement(self):
-        define = parse('#define A(_x) (_x==2)')[0][0]
+        define = parse('#define A(_x) (_x==2)\n')[0][0]
 
         # the code with the define
-        code = str(Statement([define])) + '\nx=A(3)'
+        code = str(Statement([define])) + 'x=A(3)'
 
         result = parse(code)
 
         # the expected statement after replacing the define
         expected_statement = Statement([
-            Statement([EndOfLine('\n'), V('x')]),
+            V('x'),
             Keyword('='),
             Statement([
-                Statement([N(3), Keyword('=='), N(2)])
-            ], parenthesis=True)
+                Statement([
+                    Statement([N(3), Keyword('=='), N(2)])
+                ], parenthesis=True),
+                EndOfLine('\n')])
         ])
 
         expected = \
             Statement([
                 Statement([define]),
-                DefineResult([EndOfLine('\n'), V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(')')],
+                DefineResult([V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(')')],
                              define, expected_statement)
             ])
 
