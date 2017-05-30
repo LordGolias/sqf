@@ -782,6 +782,12 @@ class Preprocessor(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
 
+    def test_undefined_define_with_space(self):
+        code = ' AS_Pset("destroyedLocations", x - y);'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 0)
+
 
 class Arrays(TestCase):
 

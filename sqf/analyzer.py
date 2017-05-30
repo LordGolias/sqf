@@ -29,6 +29,17 @@ for exp in COMMON_EXPRESSIONS:
 EXPRESSIONS_MAP = build_database(EXPRESSIONS)
 
 
+def is_undefined_define(base_tokens):
+    if len(base_tokens) == 2:
+        if isinstance(base_tokens[0], Statement):
+            first = base_tokens[0].base_tokens[0]
+        else:
+            first = base_tokens[0]
+        return str(first)[0].isupper() and str(base_tokens[1])[0] == '('
+
+    return False
+
+
 class UnexecutedCode:
     """
     A piece of code that needs to be re-run on a contained env to check for issues.
@@ -280,17 +291,13 @@ class Analyzer(BaseInterpreter):
         elif len(base_tokens) == 1 and type(base_tokens[0]) in (Variable, Array):
             return self.execute_token(base_tokens[0])
         # heuristic for defines (that are thus syntactically correct):
-        #   - global variable followed by a parenthesis statement
-        #   - first token string is all upper
         #   - is keyword but upper cased
-        elif len(base_tokens) == 1 and type(base_tokens[0]) == Keyword and str(base_tokens[0]).isupper():
+        #   - first token string starts uppercased
+        elif len(base_tokens) == 1 and type(base_tokens[0]) == Keyword and str(base_tokens[0])[0].isupper():
             outcome = Variable(str(base_tokens[0]))
             outcome.position = base_tokens[0].position
             return outcome
-        elif len(base_tokens) == 2 and (
-                            type(base_tokens[0]) == Variable and base_tokens[0].is_global or
-                            str(base_tokens[0]).isupper()) and \
-                str(base_tokens[1])[0] == '(':
+        elif is_undefined_define(base_tokens):
             outcome = Anything()
             outcome.position = base_tokens[0].position
             return outcome
