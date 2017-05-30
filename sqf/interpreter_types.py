@@ -167,9 +167,8 @@ class DefineResult(_Statement, InterpreterType):
 
     str(self) still returns the original tokens, but `result` can be used to evaluate the statement.
     """
-    def __init__(self, tokens, define_statement, result):
+    def __init__(self, tokens, result):
         super().__init__(tokens)
-        self.define_statement = define_statement
         assert (isinstance(result, (Type, Statement)))
         self.result = result
 

@@ -1403,7 +1403,7 @@ class TestDefineResult(ParserTestCase):
         expected = \
             Statement([
                 Statement([define]),
-                DefineResult([V('x'), Keyword('='), V('A')], define, expected_statement)])
+                DefineResult([V('x'), Keyword('='), V('A')], expected_statement)])
         self.assertEqualStatement(expected, result, code)
 
     def test_constant_literal(self):
@@ -1425,7 +1425,7 @@ class TestDefineResult(ParserTestCase):
 
         expected = Statement([
             Statement([define]),
-            DefineResult([V('x'), Space(), Keyword('='), Space(), V('A')], define, expected_statement)])
+            DefineResult([V('x'), Space(), Keyword('='), Space(), V('A')], expected_statement)])
         self.assertEqualStatement(expected, result, code)
 
     def test_constant_op(self):
@@ -1445,11 +1445,10 @@ class TestDefineResult(ParserTestCase):
             Statement([EndOfLine('\n'), Space(), N(1)])
         ])
         expected = Statement([Statement([define]),
-                              DefineResult([N(1), Space(), V('P'), Space(), N(1)], define, expected_statement)])
+                              DefineResult([N(1), Space(), V('P'), Space(), N(1)], expected_statement)])
 
         self.assertEqual(expected[1].result, result[1].result)
         self.assertEqual(expected[1].tokens, result[1].tokens)
-        self.assertEqual(expected[1].define_statement, result[1].define_statement)
 
         self.assertEqualStatement(expected, result, code)
 
@@ -1478,7 +1477,7 @@ class TestDefineResult(ParserTestCase):
         ])
 
         expected = Statement([Statement([define]),
-                              DefineResult([V('x'), Keyword('*'), V('A')], define, expected_statement)])
+                              DefineResult([V('x'), Keyword('*'), V('A')], expected_statement)])
         self.assertEqualStatement(expected, result, code)
 
     def test_parenthesis_after(self):
@@ -1513,7 +1512,7 @@ class TestDefineResult(ParserTestCase):
                     V('x'),
                     Keyword('='),
                     ParserKeyword('['), V('A'), ParserKeyword(']')
-                ], define, expected_statement)
+                ], expected_statement)
             ])
 
         self.assertEqual(code, str(result))
@@ -1539,7 +1538,7 @@ class TestDefineResult(ParserTestCase):
             Statement([
                 Statement([define]),
                 DefineResult([V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(')')],
-                    define, expected_statement)
+                    expected_statement)
             ])
 
         self.assertEqualStatement(expected, result, code)
@@ -1566,12 +1565,12 @@ class TestDefineResult(ParserTestCase):
             Statement([
                 Statement([define]),
                 DefineResult([V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(','), N(2), ParserKeyword(')')],
-                    define, expected_statement)
+                    expected_statement)
             ])
 
         self.assertEqualStatement(expected, result, code)
 
-    def test_define_in_define(self):
+    def test_nested_define(self):
         defines = parse('#define A (call y)\n#define B (A==2)\n')
         define = defines[0][0]
         define1 = defines[1][0]
@@ -1626,6 +1625,21 @@ class TestDefineResult(ParserTestCase):
 
         self.assertEqual(expected_statement, result[2].result.result)
 
+    def test_sequential_define(self):
+        code = '#define x 1\n#define y 2\nz = x+y+3+4;'
+        result = parse(code)
+        self.assertEqual(code, str(result))
+
+    def test_sequential_define2(self):
+        code = '#define x 1\n#define y 2\nz = (x+y+3+4);'
+        result = parse(code)
+        self.assertEqual(code, str(result))
+
+    def test_sequential_define3(self):
+        code = '#define x 1\n#define y 2\nz = x+(y+3+4);'
+        result = parse(code)
+        self.assertEqual(code, str(result))
+
     def test_define_fnc_with_statement(self):
         define = parse('#define A(_x) (_x==2)\n')[0][0]
 
@@ -1649,7 +1663,7 @@ class TestDefineResult(ParserTestCase):
             Statement([
                 Statement([define]),
                 DefineResult([V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(')')],
-                             define, expected_statement)
+                             expected_statement)
             ])
 
         self.assertEqualStatement(expected, result, code)

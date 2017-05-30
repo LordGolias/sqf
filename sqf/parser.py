@@ -38,6 +38,15 @@ CLOSE_TO_OPEN = {
 PARENTHESIS_STATES = {'[]', '()', '{}'}
 
 
+def get_all_tokens(states):
+    tokens = []
+    for state in states:
+        if state['state'] in PARENTHESIS_STATES:
+            tokens.append(ParserKeyword(state['state'][0]))
+        tokens += sqf.base_type.get_all_tokens(state['tokens'])
+    return tokens
+
+
 def get_coord(tokens):
     return sqf.base_type.get_coord(''.join([str(x) for x in tokens]))
 
@@ -83,24 +92,37 @@ def identify_token(token):
         return Variable(token)
 
 
-def replace_in_expression(expression, args, arg_indexes, all_tokens):
+def replace_in_expression(expression, args, arg_indexes, remaining_tokens):
     """
     Recursively replaces matches of `args` in expression (a list of Types).
     """
     replacing_expression = []
     for token in expression:
         if isinstance(token, Statement):
-            new_expression = replace_in_expression(token.content, args, arg_indexes, all_tokens)
+            new_expression = replace_in_expression(token.content, args, arg_indexes, remaining_tokens)
             token = Statement(new_expression, ending=token.ending, parenthesis=token.parenthesis)
             replacing_expression.append(token)
         else:
             for arg, arg_index in zip(args, arg_indexes):
                 if str(token) == arg:
-                    replacing_expression.append(all_tokens[arg_index])
+                    replacing_expression.append(remaining_tokens[arg_index])
                     break
             else:
                 replacing_expression.append(token)
     return replacing_expression
+
+
+def get_new_remaining_tokens(define_expression, args, arg_indexes, remaining_tokens, i):
+    replacing_expression = replace_in_expression(define_expression, args, arg_indexes, remaining_tokens)
+
+    replacing_len = len(sqf.base_type.get_all_tokens(replacing_expression))
+    arg_number = len(args)
+
+    replaced_len = 1 + 2 * (arg_number != 0) + 2 * arg_number - 1 * (arg_number != 0)
+
+    new_remaining_tokens = replacing_expression + remaining_tokens[i + replaced_len:]
+
+    return new_remaining_tokens, replaced_len, replacing_len
 
 
 def parse_strings_and_comments(all_tokens):
@@ -218,12 +240,6 @@ def get_ifdef_tokens(tokens, defines, coord_until_here):
     except ValueError:
         else_i = None
     endif_i = rindex(tokens, Preprocessor('#endif'))
-    try:
-        # if there is an if_def statement before #endif, the remaining tokens are transferred to it
-        nested_if_def = next(i for i, x in enumerate(tokens))
-    except StopIteration:
-        nested_if_def = None
-    nested_if_def = None
 
     variable, eol_i = get_ifdef_variable(tokens, ifdef_i, coord_until_here)
 
@@ -233,13 +249,9 @@ def get_ifdef_tokens(tokens, defines, coord_until_here):
     if is_def and is_ifdef or not is_def and not is_ifdef:
         if else_i is None:
             to = endif_i
-            if nested_if_def is not None and nested_if_def < endif_i:
-                to = nested_if_def + 1
             replacing_expression = tokens[eol_i:to]
         else:
             to = else_i
-            if nested_if_def is not None and nested_if_def < else_i:
-                to = nested_if_def + 1
             replacing_expression = tokens[eol_i:to]
     elif else_i is not None:
         replacing_expression = tokens[else_i + 1:endif_i]
@@ -261,6 +273,7 @@ assert is_last_endif([Preprocessor('#ifdef'), Preprocessor('#ifdef'), Preprocess
 
 
 def parse_single(i, token, states, defines, remaining_tokens):
+    print('parse_single', repr(token), states[-1]['state'])
     if states[-1]['state'] == 'ignore' and states[-1]['length']:
         token = None  # => do not add this token
 
@@ -273,25 +286,27 @@ def parse_single(i, token, states, defines, remaining_tokens):
         states.append({'state': state_name, 'tokens': [], 'statements': []})
         token = None
 
-    elif states[-1]['state'] != 'ifdef' and states[-1]['state'] != 'preprocessor' and str(token) in defines:  # is a define
-        stop, define_statement, arg_indexes = find_define_match(remaining_tokens, i, defines, token)
+    elif states[-1]['state'] != 'ifdef' and \
+         states[-1]['state'] != 'preprocessor' and str(token) in defines:  # is a define
+        found, define_statement, arg_indexes = find_define_match(remaining_tokens, i, defines, token)
 
-        if stop:
-            arg_number = len(define_statement.args)
+        if found:
+            new_remaining_tokens, replaced_len, replacing_len = get_new_remaining_tokens(
+                define_statement.expression, define_statement.args, arg_indexes, remaining_tokens, i)
 
-            tokens_to_replace = 1 + 2 * (arg_number != 0) + 2 * arg_number - 1 * (arg_number != 0)
-
-            replacing_expression = replace_in_expression(define_statement.expression, define_statement.args,
-                                                         arg_indexes, remaining_tokens)
-
-            # iterate until finding the end of a statement
-            new_tokens = replacing_expression + remaining_tokens[i + tokens_to_replace:]
-            if new_tokens[-1] != EndOfFile():
-                new_tokens.append(EndOfFile())
+            if new_remaining_tokens[-1] != EndOfFile():
+                new_remaining_tokens.append(EndOfFile())
             j_sum = 0
-            for j, token_j in enumerate(new_tokens):
+
+            finished_with_tokens = False
+            for j, token_j in enumerate(new_remaining_tokens):
                 j_sum += len(sqf.base_type.get_all_tokens(Statement([token_j])))
-                token = parse_single(j, token_j, states, defines, new_tokens)
+                if str(token_j) in defines:
+                    finished_with_tokens = True
+                    print(repr(token_j))
+                    break
+
+                token = parse_single(j, token_j, states, defines, new_remaining_tokens)
 
                 if is_end_statement(token, states[-1]['state']) or \
                         isinstance(token, (DefineStatement, IncludeStatement)):
@@ -301,30 +316,42 @@ def parse_single(i, token, states, defines, remaining_tokens):
                         tokens.append(token)
                     if tokens:
                         statements.append(_analyze_tokens(tokens))
-                    states[-1]['tokens'] = []
                     break
 
                 if token is not None and type(token) != EndOfFile:
                     states[-1]['tokens'].append(token)
 
-            # pick last statement and convert it to a DefineResult
-            result = states[-1]['statements'][-1]
+            tokens = get_all_tokens(states)
+            print('tokens', tokens)
+            print('original', states[0].get('original', []))
 
-            replacing_len = len(sqf.base_type.get_all_tokens(replacing_expression))
+            # the tokens collected so far from previous replacements of define
+            modified = states[0].get('modified', [])
+            print('modified', modified)
+            # the tokens before
+            tokens_before = tokens[:-j_sum + 1 - len(modified)]
+            print('before', tokens_before)
+            tokens_middle = remaining_tokens[i:i + replaced_len]
+            tokens_after = tokens[len(tokens_before) + len(modified) + replacing_len:]
+            states[0]['modified'] = states[0].get('modified', []) + tokens
+            states[0]['original'] = states[0].get('original', []) + tokens_before + tokens_middle + tokens_after
+            ignore_length = len(tokens_middle) + len(tokens_after)
+            print(finished_with_tokens, states[0]['original'])
 
-            tokens_before = result.get_all_tokens()[:-j_sum + 1]
-            tokens_middle = remaining_tokens[i:i + tokens_to_replace]
-            tokens_after = result.get_all_tokens()[len(tokens_before) + replacing_len:]
+            if finished_with_tokens:
+                states.append({'state': 'ignore', 'length': 2, 'tokens': []})
+            else:
+                # pick last statement and convert it to a DefineResult
+                result = states[-1]['statements'][-1]
 
-            original_tokens = tokens_before + tokens_middle + tokens_after
+                states[-1]['statements'][-1] = DefineResult(states[0]['original'], result)
+                del states[0]['original']
+                del states[0]['modified']
+                states[-1]['tokens'] = []
 
-            ignore_length = len(tokens_middle + tokens_after)
-
-            states[-1]['statements'][-1] = DefineResult(original_tokens, define_statement, result)
-
-            # ignore the tokens used after this one
-            states.append({'state': 'ignore', 'length': ignore_length, 'tokens': []})
-            token = None
+                # ignore the tokens used after this one
+                states.append({'state': 'ignore', 'length': ignore_length, 'tokens': []})
+                token = None
 
     if states[-1]['state'] == 'preprocessor' and type(token) in (EndOfLine, Comment, EndOfFile):
         if type(token) != EndOfFile:
