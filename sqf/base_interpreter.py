@@ -105,7 +105,9 @@ class BaseInterpreter:
 
     def add_privates(self, variables):
         for variable in variables:
-            assert(isinstance(variable, String))
+            if not isinstance(variable, String):
+                self.exception(SQFParserError(variable.position, 'Variable in private must be a string (is %s)' % type(variable)))
+                continue
             name = variable.value
 
             if not name.startswith('_'):

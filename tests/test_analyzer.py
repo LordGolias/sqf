@@ -82,6 +82,12 @@ class GeneralTestCase(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual((1, 9), errors[0].position)
 
+    def test_private_var_error(self):
+        code = 'private [x,y];'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 2)
+
     def test__this(self):
         analyzer = analyze(parse('private _nr = _this select 0;'))
         errors = analyzer.exceptions
