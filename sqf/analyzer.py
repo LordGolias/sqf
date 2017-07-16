@@ -66,7 +66,7 @@ class Analyzer(BaseInterpreter):
         super().__init__(all_vars)
         self.exceptions = []
 
-        self.privates = []
+        self.privates = set()
         self.unevaluated_interpreter_tokens = []
         self._unexecuted_codes = {}
         self._executed_codes = set()
@@ -265,7 +265,7 @@ class Analyzer(BaseInterpreter):
                 self.add_privates([var])
                 outcome = PrivateType(rhs)
                 outcome.position = rhs.position
-                self.privates.append(outcome)
+                self.privates.add(outcome)
             else:
                 self.exception(SQFParserError(base_tokens[0].position, '`private` used incorrectly'))
             return outcome

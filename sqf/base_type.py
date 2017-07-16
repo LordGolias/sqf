@@ -49,14 +49,19 @@ class BaseType:
     def __init__(self):
         self._position = None
 
+    @property
+    def _key(self):
+        # idiom described in https://stackoverflow.com/a/2909119/931303
+        return tuple(x for x in sorted(self.__dict__.items()) if x[0] != '_position')
+
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return equal_dicts(self.__dict__, other.__dict__, ('_position',))
-        else:
-            return False
+        return isinstance(other, self.__class__) and self._key == other._key
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self._key)
 
     def set_position(self, position):
         assert (isinstance(position, tuple))
