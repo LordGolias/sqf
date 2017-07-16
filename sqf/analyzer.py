@@ -71,6 +71,8 @@ class Analyzer(BaseInterpreter):
         self._unexecuted_codes = {}
         self._executed_codes = set()
 
+        self._var_uses = {}
+
         # a counter used by `self.assign` to identify if a variable is deleted (assigned to Anything) or not.
         self.delete_scope_level = 0
 
@@ -87,6 +89,9 @@ class Analyzer(BaseInterpreter):
         """
         Given a single token, recursively evaluates and returns its value
         """
+        if namespace_name is None:
+            namespace_name = self.current_namespace.name
+
         assert(isinstance(token, BaseType))
         if isinstance(token, IfDefResult):
             for x in token.result:
@@ -100,13 +105,19 @@ class Analyzer(BaseInterpreter):
         elif isinstance(token, Variable):
             scope = self.get_scope(token.name, namespace_name)
             if scope.level == 0 and not token.is_global:
-                self.exception(SQFWarning(token.position, 'Local variable "%s" is not from this scope (not private)' % token))
+                self.exception(
+                    SQFWarning(token.position, 'Local variable "%s" is not from this scope (not private)' % token))
 
             try:
                 result = scope[token.name]
             except KeyError:
                 result = self.private_default_class()
             result.position = token.position
+
+            key = '%s_%s_%s' % (namespace_name, scope.level, scope.normalize(token.name))
+            if key in self._var_uses:
+                self._var_uses[key]['count'] += 1
+
         elif isinstance(token, Array) and not token.is_undefined:
             result = Array([self.value(self.execute_token(s)) for s in token.value])
             result.position = token.position
@@ -169,18 +180,31 @@ class Analyzer(BaseInterpreter):
         outcome = super().execute_code(code, params, extra_scope, namespace_name)
         self.delete_scope_level -= delete_mode
 
-        # collect `private` statements that have a variable but were not collected by the assignment operator
         if isinstance(code, File):
             for key in self._unexecuted_codes:
                 self.execute_unexecuted_code(key)
 
+            # collect `private` statements that have a variable but were not collected by the assignment operator
             for private in self.privates:
                 self.exception(SQFWarning(private.position, 'private argument must be a string.'))
 
             for token in self.unevaluated_interpreter_tokens:
                 self.exception(SQFWarning(token.position, 'helper type "%s" not evaluated' % token.__class__.__name__))
 
+            # collect variables that were not used
+            for key in self._var_uses:
+                if self._var_uses[key]['count'] == 0:
+                    variable = self._var_uses[key]['variable']
+                    self.exception(
+                        SQFWarning(variable.position, 'Variable "%s" not used' % variable.value))
+
         return outcome
+
+    def _add_private(self, variable):
+        super()._add_private(variable)
+        scope = self.current_scope
+        key = '%s_%s_%s' % (self.current_namespace.name, scope.level, scope.normalize(variable.value))
+        self._var_uses[key] = {'count': 0, 'variable': variable}
 
     def assign(self, lhs, rhs_v):
         """

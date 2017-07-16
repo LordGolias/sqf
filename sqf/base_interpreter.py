@@ -103,6 +103,10 @@ class BaseInterpreter:
             namespace = self.namespace(namespace_name)
         return namespace.get_scope(name)
 
+    def _add_private(self, variable):
+        assert isinstance(variable, String)
+        self.current_scope[variable.value] = Nothing()
+
     def add_privates(self, variables):
         """
         Privatizes a list of variables by initializing them on the scope (as Nothing).
@@ -111,11 +115,11 @@ class BaseInterpreter:
             if not isinstance(variable, String):
                 self.exception(SQFParserError(variable.position, 'Variable in private must be a string (is %s)' % type(variable)))
                 continue
-            name = variable.value
 
-            if not name.startswith('_'):
-                self.exception(SQFParserError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % name))
-            self.current_scope[name] = Nothing()
+            if not variable.value.startswith('_'):
+                self.exception(SQFParserError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % variable.value))
+                continue
+            self._add_private(variable)
 
     def execute_other(self, statement):
         pass

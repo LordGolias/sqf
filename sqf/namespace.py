@@ -7,17 +7,21 @@ class Scope:
     def __init__(self, level, values=None):
         if values is None:
             values = {}
-        self.values = {key.lower(): values[key] for key in values}
+        self.values = {self.normalize(key): values[key] for key in values}
         self.level = level
 
     def __contains__(self, name):
-        return name.lower() in self.values
+        return self.normalize(name) in self.values
 
     def __getitem__(self, name):
-        return self.values[name.lower()]
+        return self.values[self.normalize(name)]
 
     def __setitem__(self, name, value):
-        self.values[name.lower()] = value
+        self.values[self.normalize(name)] = value
+
+    @staticmethod
+    def normalize(name):
+        return name.lower()
 
 
 class Namespace:
