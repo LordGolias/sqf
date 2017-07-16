@@ -51,7 +51,7 @@ class BaseType:
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return equal_dicts(self.__dict__, other.__dict__, ('_parent', '_parent_index', '_position'))
+            return equal_dicts(self.__dict__, other.__dict__, ('_position',))
         else:
             return False
 
