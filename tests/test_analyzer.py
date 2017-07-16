@@ -1,6 +1,6 @@
 from unittest import TestCase, expectedFailure
 
-from sqf.types import Number, String, Boolean, Array, Code, Anything
+from sqf.types import Number, String, Boolean, Array, Code, Anything, Nothing
 from sqf.parser import parse
 from sqf.analyzer import analyze, Analyzer
 
@@ -992,7 +992,7 @@ class Params(TestCase):
         analyzer = analyze(parse('params [["_x", 0], "_y"]'))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
-        self.assertEqual(Anything(), analyzer['_x'])
+        self.assertEqual(Nothing(), analyzer['_x'])
 
     def test_params_with_prefix(self):
         analyzer = analyze(parse('[] params ["_x"]'))
@@ -1304,7 +1304,7 @@ class UndefinedValues(TestCase):
         self.assertEqual(Anything, type(analyzer['_x']))
 
     def test_if_else_private(self):
-        code = 'private "_a"; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
+        code = 'private _a = ""; if (_a == "") then {_a = {true};} else {_a = compile _a;};'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 0)
@@ -1322,6 +1322,11 @@ class UndefinedValues(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
         self.assertTrue('Obfuscated statement.' in errors[0].message)
+
+    def test_private_is_nothing(self):
+        code = 'private "_a";'
+        analyzer = analyze(parse(code))
+        self.assertEqual(Nothing(), analyzer['_a'])
 
     @expectedFailure
     def test_if_else_error(self):
