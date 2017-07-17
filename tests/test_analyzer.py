@@ -429,16 +429,16 @@ class GeneralTestCase(TestCase):
         self.assertEqual(Code(), analyzer['x'])
 
     def test_with_namespace_simple(self):
-        code = 'with uinamespace do {_x; x = 2}'
+        code = 'with uinamespace do {x = 2}'
         analyzer = analyze(parse(code))
-        self.assertEqual(len(analyzer.exceptions), 1)
-        self.assertEqual(Anything, type(analyzer['x']))  # missionnamespace is empty
-        self.assertEqual(Number, type(analyzer.namespace('uinamespace')['x']))
+        self.assertEqual(len(analyzer.exceptions), 0)
+        self.assertEqual(Anything(), analyzer['x'])  # missionnamespace is empty
+        self.assertEqual(Number(), analyzer.namespace('uinamespace')['x'])
 
     def test_with_namespace(self):
         code = 'with uinamespace do {with missionnamespace do {x = 2}}'
         analyzer = analyze(parse(code))
-        self.assertEqual(Number, type(analyzer['x']))  # missionnamespace is empty
+        self.assertEqual(Number, type(analyzer['x']))  # missionnamespace was used
         self.assertNotIn('x', analyzer.namespace('uinamespace'))
 
 
@@ -1365,8 +1365,13 @@ class SpecialComment(TestCase):
 
 
 class UnusedVariables(TestCase):
-    def test_form1(self):
+    def test_simple(self):
         code = 'private _unit = 2;'
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
+
+    def test_nested(self):
+        code = 'private _x = {}; private _y = {call _x}; call _y'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)

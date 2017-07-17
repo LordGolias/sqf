@@ -71,7 +71,7 @@ class Analyzer(BaseInterpreter):
         self._unexecuted_codes = {}
         self._executed_codes = set()
 
-        self._var_uses = {}
+        self.variable_uses = {}
 
         # a counter used by `self.assign` to identify if a variable is deleted (assigned to Anything) or not.
         self.delete_scope_level = 0
@@ -115,8 +115,8 @@ class Analyzer(BaseInterpreter):
             result.position = token.position
 
             key = '%s_%s_%s' % (namespace_name, scope.level, scope.normalize(token.name))
-            if key in self._var_uses:
-                self._var_uses[key]['count'] += 1
+            if key in self.variable_uses:
+                self.variable_uses[key]['count'] += 1
 
         elif isinstance(token, Array) and not token.is_undefined:
             result = Array([self.value(self.execute_token(s)) for s in token.value])
@@ -160,6 +160,7 @@ class Analyzer(BaseInterpreter):
 
         analyzer = Analyzer()
         analyzer._namespaces = container.namespaces
+        analyzer.variable_uses = self.variable_uses
         analyzer.delete_scope_level = container.delete_scope_level
 
         file = File(container.code._tokens)
@@ -185,18 +186,22 @@ class Analyzer(BaseInterpreter):
                 self.execute_unexecuted_code(key)
 
             # collect `private` statements that have a variable but were not collected by the assignment operator
+            # this check is made at the scope level
             for private in self.privates:
                 self.exception(SQFWarning(private.position, 'private argument must be a string.'))
 
+            # this check is made at the scope level
             for token in self.unevaluated_interpreter_tokens:
                 self.exception(SQFWarning(token.position, 'helper type "%s" not evaluated' % token.__class__.__name__))
 
-            # collect variables that were not used
-            for key in self._var_uses:
-                if self._var_uses[key]['count'] == 0:
-                    variable = self._var_uses[key]['variable']
-                    self.exception(
-                        SQFWarning(variable.position, 'Variable "%s" not used' % variable.value))
+            # this check is made at script level
+            if not delete_mode:
+                # collect variables that were not used
+                for key in self.variable_uses:
+                    if self.variable_uses[key]['count'] == 0:
+                        variable = self.variable_uses[key]['variable']
+                        self.exception(
+                            SQFWarning(variable.position, 'Variable "%s" not used' % variable.value))
 
         return outcome
 
@@ -204,7 +209,7 @@ class Analyzer(BaseInterpreter):
         super()._add_private(variable)
         scope = self.current_scope
         key = '%s_%s_%s' % (self.current_namespace.name, scope.level, scope.normalize(variable.value))
-        self._var_uses[key] = {'count': 0, 'variable': variable}
+        self.variable_uses[key] = {'count': 0, 'variable': variable}
 
     def assign(self, lhs, rhs_v):
         """
