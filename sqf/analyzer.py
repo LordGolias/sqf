@@ -55,7 +55,7 @@ class UnexecutedCode:
 
 class Analyzer(BaseInterpreter):
     """
-    The Analyzer. This is sesentially an interpreter that
+    The Analyzer. This is an interpreter that:
     * runs SQF statements that accepts unknown types
     * Stores exceptions instead of rising them.
     * Runs code that is declared but not called.
@@ -69,7 +69,7 @@ class Analyzer(BaseInterpreter):
         self.privates = set()
         self.unevaluated_interpreter_tokens = []
         self._unexecuted_codes = {}
-        self._executed_codes = set()
+        self._executed_codes = {}  # executed code -> result
 
         self.variable_uses = {}
 
@@ -82,8 +82,15 @@ class Analyzer(BaseInterpreter):
     def exception(self, exception):
         self.exceptions.append(exception)
 
-    def code_key(self, code):
-        return code.position, str(code), self.current_namespace.name
+    @staticmethod
+    def code_key(code):
+        return code.position, str(code)
+
+    @staticmethod
+    def exe_code_key(code, extra_scope):
+        if extra_scope is None:
+            extra_scope = {}
+        return str(code), tuple((x, type(extra_scope[x])) for x in sorted(extra_scope.keys()))
 
     def value(self, token, namespace_name=None):
         """
@@ -166,20 +173,27 @@ class Analyzer(BaseInterpreter):
         file = File(container.code._tokens)
         file.position = container.position
 
-        analyzer.execute_code(file, namespace_name=container.namespace_name, delete_mode=True)
+        this = Anything()
+        this.position = container.position
+
+        analyzer.execute_code(file, extra_scope={'_this': this},
+                              namespace_name=container.namespace_name, delete_mode=True)
 
         self.exceptions.extend(analyzer.exceptions)
 
-    def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace', delete_mode=False):
+    def execute_code(self, code, extra_scope=None, namespace_name='missionnamespace', delete_mode=False):
         key = self.code_key(code)
+        exe_code_key = self.exe_code_key(code, extra_scope)
 
         if key in self._unexecuted_codes:
             del self._unexecuted_codes[key]
-        self._executed_codes.add(key)
-
-        self.delete_scope_level += delete_mode
-        outcome = super().execute_code(code, params, extra_scope, namespace_name)
-        self.delete_scope_level -= delete_mode
+        if exe_code_key in self._executed_codes:
+            outcome = self._executed_codes[exe_code_key]
+        else:
+            self.delete_scope_level += delete_mode
+            outcome = super().execute_code(code, extra_scope, namespace_name)
+            self.delete_scope_level -= delete_mode
+            self._executed_codes[exe_code_key] = outcome
 
         if isinstance(code, File):
             for key in self._unexecuted_codes:
@@ -204,6 +218,11 @@ class Analyzer(BaseInterpreter):
                             SQFWarning(variable.position, 'Variable "%s" not used' % variable.value))
 
         return outcome
+
+    def _parse_params_args(self, arguments, base_token):
+        if isinstance(arguments, Anything):
+            return [Anything() for _ in range(len(base_token))]
+        return super()._parse_params_args(arguments, base_token)
 
     def _add_private(self, variable):
         super()._add_private(variable)
@@ -360,6 +379,8 @@ class Analyzer(BaseInterpreter):
                     outcome.copy(values[0])
                 elif isinstance(case_found, ForEachExpression):
                     outcome = Anything()
+                elif case_found.keyword == Keyword('call'):
+                    outcome = Anything()
             else:
                 # when a case is found but we cannot decide on the type, it is anything
                 outcome = Anything()
@@ -478,6 +499,6 @@ def analyze(statement, analyzer=None):
     arg = Anything()
     arg.position = (1, 1)
 
-    analyzer.execute_code(file, params=arg)
+    analyzer.execute_code(file, extra_scope={'_this': arg})
 
     return analyzer

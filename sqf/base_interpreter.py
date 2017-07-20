@@ -1,6 +1,6 @@
 from sqf.types import Statement, Code, Nothing, Anything, Variable, Array, String, Type, File
 from sqf.keywords import Keyword
-from sqf.exceptions import SQFParserError
+from sqf.exceptions import SQFParserError, SQFWarning
 import sqf.namespace
 
 
@@ -46,19 +46,50 @@ class BaseInterpreter:
     def __contains__(self, name):
         return name in self.get_scope(name)
 
+    def _parse_params_args(self, arguments, base_token):
+        """
+        How param argument should be interpreted when it is not an array nor Nothing
+        """
+        return [arguments]
+
     def _add_params(self, token):
         self.add_privates([token[0]])
 
-    def add_params(self, base_token):
+    def add_params(self, base_token, arguments=None):
         assert (isinstance(base_token, Array))
-        for token in base_token:
+
+        if arguments is None or isinstance(arguments, Nothing):
+            arguments = self['_this']
+        if isinstance(arguments, Array):
+            arguments = arguments.value
+        else:
+            arguments = self._parse_params_args(arguments, base_token)
+
+        if len(arguments) > len(base_token):
+            self.exception(
+                SQFWarning(base_token.position,
+                           '`params` lhs (%d elements) is larger than rhs (%d elements).'
+                           ' Some arguments are ignored.' % (len(arguments), len(base_token))))
+
+        for i, token in enumerate(base_token):
             if isinstance(token, String):
                 if token.value == '':
                     continue
                 self.add_privates([token])
+                if i >= len(arguments):
+                    self.exception(SQFWarning(token.position,
+                                   '`params` mandatory argument %s is missing in rhs' % token))
+                else:
+                    self.current_scope[token.value] = arguments[i]
             elif isinstance(token, Array):
                 if len(token) in (2, 3, 4):
+                    if i < len(arguments) and not isinstance(arguments[i], Nothing):
+                        argument = arguments[i]
+                    else:
+                        argument = token[1]
+
                     self._add_params(token)
+                    self.current_scope[token[0].value] = argument
                 else:
                     self.exception(
                         SQFParserError(base_token.position, '`params` array element must have 2-4 elements'))
@@ -124,7 +155,7 @@ class BaseInterpreter:
     def execute_other(self, statement):
         pass
 
-    def execute_code(self, code, params=None, extra_scope=None, namespace_name='missionnamespace'):
+    def execute_code(self, code, extra_scope=None, namespace_name='missionnamespace'):
         assert (isinstance(code, Code))
 
         # store the old namespace
@@ -135,16 +166,12 @@ class BaseInterpreter:
         # change to the executing namespace
         self.current_namespace = namespace
 
-        if params is None:
-            params = self.private_default_class()
-            params.position = code.position
         if extra_scope is None:
             extra_scope = {}
-        extra_scope['_this'] = params
         namespace.add_scope(extra_scope)
 
         # execute the code
-        outcome = Nothing()
+        outcome = self.private_default_class()
         outcome.position = code.position
         for statement in code.base_tokens:
             token = self.execute_token(statement)

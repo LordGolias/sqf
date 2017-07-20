@@ -163,5 +163,8 @@ COMMON_EXPRESSIONS = [
     IfThenExitWithExpression(),
 
     UnaryExpression(Keyword('params'), Array, Boolean, lambda rhs_v, i: i.add_params(rhs_v)),
-    BinaryExpression(Type, Keyword('params'), Array, Boolean, lambda lhs_v, rhs_v, i: i.add_params(rhs_v)),
+    BinaryExpression(Type, Keyword('params'), Array, Boolean, lambda lhs_v, rhs_v, i: i.add_params(rhs_v, lhs_v)),
+
+    UnaryExpression(Keyword('call'), Code, None, lambda rhs_v, i: i.execute_code(rhs_v)),
+    BinaryExpression(Type, Keyword('call'), Code, None, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, extra_scope={"_this": lhs_v})),
 ]

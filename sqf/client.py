@@ -26,7 +26,7 @@ class Client:
         if broadcast:
             if var_name in self._listening_variables:
                 self._interpreter.execute_code(self._listening_variables[var_name],
-                                               params=Array([String('"'+var_name+'"'), value]))
+                                               extra_scope={'_this': Array([String('"'+var_name+'"'), value])})
 
     @property
     def is_server(self):
