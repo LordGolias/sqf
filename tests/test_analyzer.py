@@ -1304,3 +1304,8 @@ class UnusedVariables(TestCase):
         code = 'private _x = {}; private _y = {call _x}; call _y'
         analyzer = analyze(parse(code))
         self.assertEqual(analyzer.exceptions, [])
+
+    def test_with_globals(self):
+        code = 'private _x = ""; AF(_x)'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
