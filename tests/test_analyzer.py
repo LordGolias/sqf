@@ -1273,6 +1273,16 @@ class UndefinedValues(TestCase):
         analyzer = analyze(parse(code))
         self.assertEqual(analyzer.exceptions, [])
 
+    def test_if_then(self):
+        code = 'if false then x;'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
+    def test_if_then_else(self):
+        code = 'if false then x else y;'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
 
 class SpecialComment(TestCase):
     def test_string1(self):

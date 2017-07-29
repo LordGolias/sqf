@@ -104,8 +104,10 @@ class IfType(_InterpreterType):
 
 
 class ElseType(_InterpreterType):
-    def __init__(self, then, else_):
+    def __init__(self, then=None, else_=None):
         super().__init__(then)
+        if then is None:
+            condition = Boolean()
         assert (isinstance(then, Code))
         assert (isinstance(else_, Code))
         self.else_ = else_
