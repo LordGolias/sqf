@@ -976,6 +976,11 @@ class Params(TestCase):
         # `_this select 0` is Anything because `_this` only has the type
         self.assertEqual(Anything(), analyzer['x'])
 
+    def test_undefined_array(self):
+        code = '(boundingBoxReal x) params ["_x", "_y"]; _x + _y'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
 
 class SpecialContext(TestCase):
     def test_insensitive__foreachindex(self):

@@ -60,7 +60,7 @@ class BaseInterpreter:
 
         if arguments is None or isinstance(arguments, Nothing):
             arguments = self['_this']
-        if isinstance(arguments, Array):
+        if isinstance(arguments, Array) and not arguments.is_undefined:
             arguments = arguments.value
         else:
             arguments = self._parse_params_args(arguments, base_token)

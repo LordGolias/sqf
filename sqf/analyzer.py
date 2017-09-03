@@ -220,7 +220,7 @@ class Analyzer(BaseInterpreter):
         return outcome
 
     def _parse_params_args(self, arguments, base_token):
-        if isinstance(arguments, Anything):
+        if isinstance(arguments, Anything) or (isinstance(arguments, Array) and arguments.is_undefined):
             return [Anything() for _ in range(len(base_token))]
         return super()._parse_params_args(arguments, base_token)
 
