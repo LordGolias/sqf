@@ -1307,6 +1307,17 @@ class SpecialComment(TestCase):
         self.assertEqual(len(errors), 2)
         self.assertEqual(errors[0].message, 'warning:USES_VARIABLES comment must be `//USES_VARIABLES ["var1",...]`')
 
+    def test_var_type(self):
+        code = '//USES_VARIABLES ["_x"];\n' \
+               '_x isKindOf "sdas"'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
+    def test_with_space(self):
+        code = '//USES_VARIABLES ["_x", "_y"];'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
 
 class UnusedVariables(TestCase):
     def test_simple(self):

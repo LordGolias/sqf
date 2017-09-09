@@ -492,6 +492,11 @@ class Analyzer(BaseInterpreter):
                     array = parsed_statement[0][0]
                     assert(isinstance(array, Array))
                     self.add_privates(self.value(array))
+                    # these are unknown values.
+                    for token in array.value:
+                        if isinstance(token, Statement):
+                            token = token.base_tokens[0]
+                        self.current_scope[token.value] = Anything()
                 except Exception:
                     self.exception(SQFWarning(statement.position, '{0} comment must be `//{0} ["var1",...]`'.format(matches[0])))
 
