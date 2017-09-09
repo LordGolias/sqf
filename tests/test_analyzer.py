@@ -391,6 +391,12 @@ class GeneralTestCase(TestCase):
         analyzer = analyze(parse(code))
         self.assertEqual(Code(), analyzer['x'])
 
+    def test_recursive_assign(self):
+        code = 'private _x = {call _x}'
+        analyzer = analyze(parse(code))
+        self.assertEqual(Code(), analyzer['_x'])
+        self.assertEqual(analyzer.exceptions, [])
+
     def test_with_namespace_simple(self):
         code = 'with uinamespace do {x = 2}'
         analyzer = analyze(parse(code))

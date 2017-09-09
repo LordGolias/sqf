@@ -326,11 +326,15 @@ class Analyzer(BaseInterpreter):
             else:
                 lhs = self.get_variable(base_tokens[0])
 
-            rhs_v = self.value(base_tokens[2])
-
             if not isinstance(lhs, Variable):
                 self.exception(SQFParserError(base_tokens[0].position, 'lhs of assignment operator must be a variable'))
             else:
+                # if the rhs_v is code and calls `lhs` (recursion) it will assume lhs is anything (and not Nothing)
+                scope = self.get_scope(lhs.name)
+                if lhs.name not in scope or isinstance(scope[lhs.name], Nothing):
+                    scope[lhs.name] = Anything()
+
+                rhs_v = self.value(base_tokens[2])
                 self.assign(lhs, rhs_v)
                 if not statement.ending:
                     outcome = rhs_v
