@@ -3,6 +3,8 @@ This script is used to write `sqf/dababase.py`, that contains all valid SQF expr
 It reads a file from here:
 
 https://raw.githubusercontent.com/intercept/intercept/master/src/client/headers/client/sqf_pointers_declaration.hpp
+
+Note that operators with symbols aren't present in this file (!=, ==, ^, etc.) and will need to have their entries restored after running
 """
 import urllib.request, urllib.error
 
@@ -178,7 +180,6 @@ from sqf.interpreter_types import WhileType, \
 
 with open('sqf/database.py', 'w') as f:
     f.write(preamble + '\n\n\n')
-    f.write('EXPRESSIONS = [\n')
-    for exp in expressions:
-        f.write('    %s,\n' % exp)
-    f.write(']\n')
+    f.write('EXPRESSIONS = [\n    ')
+    f.write(',\n    '.join(expressions))
+    f.write('\n]\n')
