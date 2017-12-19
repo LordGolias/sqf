@@ -276,7 +276,7 @@ class GeneralTestCase(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0].message,
-                         'error:Unary operator "parseNumber" only accepts argument '
+                         'error:Unary operator "parsenumber" only accepts argument '
                          'of types [String,Boolean] (rhs is Number)')
 
     def test_error_message_binary(self):
