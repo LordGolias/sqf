@@ -159,14 +159,17 @@ class Analyzer(BaseInterpreter):
 
         return result
 
-    def execute_unexecuted_code(self, code_key):
+    def execute_unexecuted_code(self, code_key, extra_scope=None, own_namespace=False):
         """
         Executes a code in a dedicated env and put consequence exceptions in self.
+
+        own_namespace: whether the execution uses the current local variables or no variables
         """
         container = self._unexecuted_codes[code_key]
 
         analyzer = Analyzer()
-        analyzer._namespaces = container.namespaces
+        if not own_namespace:
+            analyzer._namespaces = container.namespaces
         analyzer.variable_uses = self.variable_uses
         analyzer.delete_scope_level = container.delete_scope_level
 
@@ -176,7 +179,7 @@ class Analyzer(BaseInterpreter):
         this = Anything()
         this.position = container.position
 
-        analyzer.execute_code(file, extra_scope={'_this': this},
+        analyzer.execute_code(file, extra_scope=extra_scope,
                               namespace_name=container.namespace_name, delete_mode=True)
 
         self.exceptions.extend(analyzer.exceptions)
@@ -412,7 +415,12 @@ class Analyzer(BaseInterpreter):
             for value, t_or_v in zip(values, case_found.types_or_values):
                 # execute all pieces of code
                 if t_or_v == Code and isinstance(value, Code) and self.code_key(value) not in self._executed_codes:
-                    self.execute_code(value, extra_scope=extra_scope, namespace_name=self.current_namespace.name, delete_mode=True)
+                    if case_found.keyword == Keyword('spawn'):
+                        self.execute_unexecuted_code(self.code_key(value), extra_scope, True)
+                        # this code was executed, so it does not need to be evaluated on an un-executed env.
+                        del self._unexecuted_codes[self.code_key(value)]
+                    else:
+                        self.execute_code(value, extra_scope=extra_scope, namespace_name=self.current_namespace.name, delete_mode=True)
 
                 # remove evaluated interpreter tokens
                 if isinstance(value, InterpreterType) and value in self.unevaluated_interpreter_tokens:

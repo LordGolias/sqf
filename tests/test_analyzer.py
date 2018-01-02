@@ -1057,6 +1057,13 @@ class SpecialContext(TestCase):
         analyzer = analyze(parse(code))
         self.assertEqual(len(analyzer.exceptions), 0)
 
+    def test_spawn_local_vars(self):
+        # spawn should not use local variables because they may become undefined (error 1). Likewise,
+        # the local variable becomes unused (error 2).
+        code = 'private _x = 1; [] spawn {x = _x}'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 2)
+
 
 class UndefinedValues(TestCase):
     """
