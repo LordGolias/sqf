@@ -3,37 +3,23 @@
 
 # SQF linter
 
-This project contains a parser, compiler, static analyzer and interpreter for 
+This project contains a parser, static analyzer and interpreter for
 SQF (Arma scripting language), written in Python.
 It can be used to:
 
-* syntax-check SQF
-* static analyze SQF
-* execute SQF on a virtual environment
+* syntax-check and static analyze SQF files and projects
+* execute SQF on a limited virtual environment
 
 ## Problem it solves
 
-One of the major bottlenecks in scripting in SQF is the time spent 
+One of the major bottlenecks of scripting in SQF is the time spent
 testing it in-game, by running the game.
 
-Often, these scripts contain simple errors (missing ";") that everyone would 
-love to avoid restarting the mission because of them.
+Often, these scripts contain errors (missing ";", wrong usage of `params`) that everyone would
+love to find without restarting the mission.
 
-This package allows to parse SQF in Python to check for syntactic errors,
-wrong types, problems in variables scopes, etc.
-
-The interpreter is able to run scripts on an emulated (and limited) environment of the simulation.
-The interpreter is obviously *not intended* to run Arma simulation; it is
-aimed for you, moder, run tests of your scripts (e.g. Unit Tests) 
-without having to run the game.
-
-### Parser example
-
-    >>> code = '[1, 2, 3]'
-    >>> sqf.parser.parse(code)
-    Statement([Statement([
-        Array([Statement([N(1)]), Statement([Space(), N(2)]), Statement([Space(), N(3)])])
-    ])])
+This package allows to parse SQF to check for syntactic errors,
+wrong types, problems in variables scopes, and many more subtle issues of SQF.
 
 ### Analyzer examples
 
@@ -47,7 +33,22 @@ without having to run the game.
     >>> analyzer.exceptions[0]
     SQFWarning((1, 14), 'Local variable "_z" is not from this scope (not private)')
 
+### Parser example
+
+Behind the curtains, the analyzer uses a parser to convert SQF code in a set of statements:
+
+    >>> code = '[1, 2, 3]'
+    >>> sqf.parser.parse(code)
+    Statement([Statement([
+        Array([Statement([N(1)]), Statement([Space(), N(2)]), Statement([Space(), N(3)])])
+    ])])
+
 ### Interpreter example
+
+The interpreter is able to run scripts on an emulated (and limited) environment.
+The interpreter is obviously *not intended* to run Arma simulation; it is
+aimed for you, moder, run tests of your scripts (e.g. Unit Tests)
+without having to run the game.
 
     from sqf.interpreter import interpret
     interpreter, outcome = interpret('_x = [1, 2]; _y = _x; reverse _y;')
@@ -64,35 +65,17 @@ This code is written in Python 3 and has no dependencies. You can install it usi
 ## Tests and coverage
 
 The code is heavily tested (coverage 98%+), and the tests
-can be found in `tests.py`. Run them using standard Python unittest.
+can be found in `tests`. Run them using standard Python unittest:
+
+    python -m unittest discover
 
 ## Compatibility with editors
 
+This package is compatible with known editors, and can be used to efficiently write SQF
+with them. See the respective projects for more details:
+
 * [atom-linter](https://atomlinter.github.io/): [linter-sqf](https://github.com/LordGolias/linter-sqf)
 * [sublimeLinter](http://www.sublimelinter.com/en/latest/): [SublimeLinter-contrib-sqflint](https://github.com/LordGolias/SublimeLinter-contrib-sqflint)
-
-The script `sqflint.py` is the public interface for linting.
-
-## Features
-
-### Implemented
-
-* Types: Number, String, Array, etc.
-* Comparison, arithmetic and logical operators
-* expressions and parenthesis
-* Control structures (e.g. `if`, `while`)
-* Variables, Assignment, Code blocks, Scopes and private
-* `_this` and `call`
-* Namespaces
-* Client and server interaction (e.g. `publicVariable`)
-* Comments
-* Parse `configFile`.
-
-### Not implementable
-
-* Positions
-* Most functions that affect objects, groups and positions (e.g. `create*`)
-* time simulation (e.g. `sleep`)
 
 ## Code organization
 
@@ -162,14 +145,6 @@ relevant tokens of SQF. E.g.
     ['/*', '_x', ' ', '=', ' ', '1', ';', '*/']
 
 The source can be found in `sqf.base_tokenizer`.
-
-### Others
-
-* keywords: `sqf.keywords`
-* types: `sqf.types`
-* interpreted expressions: `sqf.expressions`
-* namespaces: `sqf.namespaces`
-* Client and Server: `sqf.client`
 
 ## Licence
 
