@@ -1348,3 +1348,30 @@ class UnusedVariables(TestCase):
         code = 'private _x = ""; AF(_x)'
         analyzer = analyze(parse(code))
         self.assertEqual(analyzer.exceptions, [])
+
+
+class StringAsCodeFunctions(TestCase):
+    """
+    Tests functions that are passed a string which is compiled to code.
+    """
+    def test_isNil(self):
+        code = 'private _var = A getVariable "x"; x = isNil "_var";'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+
+    def test_isNil_undefined(self):
+        code = 'x = isNil "_var";'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 1)
+
+    def test_isNil_error(self):
+        code = 'x = isNil "(_var";'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 1)
+        self.assertTrue('Parenthesis "(" not closed' in analyzer.exceptions[0].message)
+
+    def test_configClass(self):
+        code = 'private _defaultCrew = getText (configFile >> "cfgVehicles" >> "All" >> "crew");' \
+               '"isClass _x && {getNumber (_x >> \'scope\') == 2} && {getText (_x >> \'crew\') != _defaultCrew}" configClasses (configFile >> "cfgVehicles")'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
