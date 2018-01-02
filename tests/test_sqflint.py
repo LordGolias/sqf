@@ -29,6 +29,17 @@ class ParseCode(TestCase):
         args = parse_args(['--directory', 'tests/test_dir'])
         self.assertEqual('tests/test_dir', args.directory)
 
+    def test_exit_code(self):
+        exit_code = main(['tests/test_dir/test.sqf'])
+        self.assertEqual(exit_code, 0)
+
+        # there are no errors, only a warning
+        exit_code = main(['tests/test_dir/test.sqf', '-e', 'e'])
+        self.assertEqual(exit_code, 0)
+
+        exit_code = main(['tests/test_dir/test.sqf', '-e', 'w'])
+        self.assertEqual(exit_code, 1)
+
     def test_filename_run(self):
         main(['tests/test_dir/test.sqf'])
         self.assertEqual(self.stdout.getvalue(),

@@ -4,7 +4,7 @@ import argparse
 
 from sqf.parser import parse
 import sqf.analyzer
-from sqf.exceptions import SQFParserError
+from sqf.exceptions import SQFParserError, SQFWarning
 
 
 class Writer:
@@ -15,19 +15,21 @@ class Writer:
         self.strings.append(message)
 
 
-def analyze(code, writer=sys.stdout):
+def analyze(code, writer, exceptions_list):
     try:
         result = parse(code)
     except SQFParserError as e:
         writer.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
+        exceptions_list += [e]
         return
 
     exceptions = sqf.analyzer.analyze(result).exceptions
     for e in exceptions:
         writer.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
+    exceptions_list += exceptions
 
 
-def analyze_dir(directory, writer):
+def analyze_dir(directory, writer, exceptions_list):
     """
     Analyzes a directory recursively
     """
@@ -39,7 +41,7 @@ def analyze_dir(directory, writer):
                 writer_helper = Writer()
 
                 with open(file_path) as f:
-                    analyze(f.read(), writer_helper)
+                    analyze(f.read(), writer_helper, exceptions_list)
 
                 if writer_helper.strings:
                     writer.write(os.path.relpath(file_path, directory) + '\n')
@@ -65,6 +67,10 @@ def parse_args(args):
                         help='The full path of the directory to recursively analyse sqf files on')
     parser.add_argument('-o', '--output', nargs='?', type=argparse.FileType('w'), default=None,
                         help='File path to redirect the output to (default to stdout)')
+    parser.add_argument('-e', '--exit', type=str, default='',
+                        help='How the parser should exit. \'\': exit code 0;\n'
+                             '\'e\': exit with code 1 when any error is found;\n'
+                             '\'w\': exit with code 1 when any error or warning is found.')
 
     return parser.parse_args(args)
 
@@ -77,22 +83,34 @@ def main(args):
     else:
         writer = args.output
 
+    exceptions_list = []
+
     if args.file is None and args.directory is None:
         code = sys.stdin.read()
-        analyze(code, writer)
+        analyze(code, writer, exceptions_list)
     elif args.file is not None:
         code = args.file.read()
         args.file.close()
-        analyze(code, writer)
+        analyze(code, writer, exceptions_list)
     else:
-        analyze_dir(args.directory, writer)
+        analyze_dir(args.directory, writer, exceptions_list)
 
     if args.output is not None:
         writer.close()
 
+    exit_code = 0
+    if args.exit == 'e':
+        errors = [e for e in exceptions_list if isinstance(e, SQFParserError)]
+        exit_code = int(len(errors) != 0)
+    elif args.exit == 'w':
+        errors_and_warnings = [e for e in exceptions_list if isinstance(e, (SQFWarning, SQFParserError))]
+        exit_code = int(len(errors_and_warnings) != 0)
+    return int(exit_code)
+
+
 def _main():
-    main(sys.argv[1:])
+    return main(sys.argv[1:])
 
 
 if __name__ == "__main__":
-    _main()
+    sys.exit(_main())
