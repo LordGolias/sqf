@@ -55,7 +55,8 @@ STRING_TO_TYPE_RETURN['any'] = Anything
 WRONG_RETURN_TYPES = {
     'attachedto': Object,
     'getclientstatenumber': Number,
-    'handgunmagazine': Array
+    'handgunmagazine': Array,
+    'ammoonpylon': Anything
 }
 
 
