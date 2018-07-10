@@ -177,6 +177,7 @@ from sqf.interpreter_types import WhileType, \
 # Expressions that use symbols are hardcoded since they aren't present in the parsed file
 symbols = r'''
 EXPRESSIONS = [
+    BinaryExpression(Array, Keyword('#'), Number, Anything),
     BinaryExpression(Number, Keyword('!='), Number, Boolean),
     BinaryExpression(String, Keyword('!='), String, Boolean),
     BinaryExpression(Object, Keyword('!='), Object, Boolean),
