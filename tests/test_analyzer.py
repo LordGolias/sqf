@@ -1370,6 +1370,11 @@ class StringAsCodeFunctions(TestCase):
         self.assertEqual(len(analyzer.exceptions), 1)
         self.assertTrue('Parenthesis "(" not closed' in analyzer.exceptions[0].message)
 
+    def test_isNil_function(self):
+        code = 'x = isNil format []\n'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
     def test_configClass(self):
         code = 'private _defaultCrew = getText (configFile >> "cfgVehicles" >> "All" >> "crew");' \
                '"isClass _x && {getNumber (_x >> \'scope\') == 2} && {getText (_x >> \'crew\') != _defaultCrew}" configClasses (configFile >> "cfgVehicles")'

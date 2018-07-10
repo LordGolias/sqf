@@ -391,14 +391,17 @@ class Analyzer(BaseInterpreter):
                    case_found.keyword == Keyword('configClasses'):
                     code_position = {'isnil': 1, 'configclasses': 0}[case_found.keyword.unique_token]
                     extra_scope = {'isnil': None, 'configclasses': {'_x': Anything()}}[case_found.keyword.unique_token]
-                    try:
-                        code = Code([parse(values[code_position].value)])
-                        code.position = values[code_position].position
-                        self.execute_code(code, extra_scope=extra_scope)
-                    except SQFParserError as e:
-                        self.exceptions.append(
-                            SQFParserError(values[code_position].position,
-                                           'Error while parsing a string to code: %s' % e.message))
+
+                    # when the string is undefined, there is no need to evaluate it.
+                    if not values[code_position].is_undefined:
+                        try:
+                            code = Code([parse(values[code_position].value)])
+                            code.position = values[code_position].position
+                            self.execute_code(code, extra_scope=extra_scope)
+                        except SQFParserError as e:
+                            self.exceptions.append(
+                                SQFParserError(values[code_position].position,
+                                               'Error while parsing a string to code: %s' % e.message))
                 # finally, execute the statement
                 outcome = case_found.execute(values, self)
             elif len(possible_expressions) == 1 or all_equal([x.return_type for x in possible_expressions]):
