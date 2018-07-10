@@ -217,7 +217,7 @@ class Array(Type, BaseTypeContainer):
         self._tokens = [ParserKeyword('[')] + list(self._with_commas()) + [ParserKeyword(']')]
 
     def _with_commas(self):
-        if self._values is None:
+        if self._values in [None, []]:
             return []
         it = iter(self._values)
         yield next(it)
