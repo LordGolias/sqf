@@ -43,6 +43,8 @@ def get_lbp(token):
         return 2
     elif n_token in set(x.value for x in OP_COMPARISON):
         return 3
+    elif n_token == '#':
+        return 10
     elif n_token in {'*', '/', '%', 'mod', 'atan2'}:
         return 7
     elif n_token in {'+', 'max', 'min', '-'}:
