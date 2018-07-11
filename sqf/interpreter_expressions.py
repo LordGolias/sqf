@@ -367,6 +367,9 @@ INTERPRETER_EXPRESSIONS = [
     BinaryExpression(Array, Keyword('select'), Boolean, None, _select),
     BinaryExpression(Array, Keyword('select'), Array, Array, _select_array),
 
+    # select
+    BinaryExpression(Array, Keyword('#'), Number, None, _select),
+
     BinaryExpression(Array, Keyword('find'), Type, Number, Action(_find)),
     BinaryExpression(String, Keyword('find'), String, Number,
                      Action(lambda lhs_v, rhs_v: lhs_v.value.find(rhs_v.value))),
