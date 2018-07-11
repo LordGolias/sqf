@@ -483,3 +483,15 @@ class Operators(TestCase):
     def test_assign_array(self):
         interpreter = interpret('_y = [];')[0]
         self.assertEqual(Array([]), interpreter['_y'])
+
+    def test_precedence_hash(self):
+        outcome = interpret('[0, 20]#0 + 1')[1]
+        self.assertEqual(Number(1), outcome)
+
+    def test_alt_syntax_hash(self):
+        # only supports index selection
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('[0,1] # {_x != 0}')
+
+        with self.assertRaises(SQFParserError) as cm:
+            interpret('[0,1] # [0,1]')

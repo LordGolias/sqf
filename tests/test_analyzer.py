@@ -270,6 +270,19 @@ class GeneralTestCase(TestCase):
         analyzer = analyze(parse(code))
         self.assertEqual(analyzer.exceptions, [])
 
+    def test_precedence_hash(self):
+        code = '5 * [0,1]#1'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
+        code = 'alive [objNull]#0'
+        analyzer = analyze(parse(code))
+        errors = analyzer.exceptions
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].message,
+                         'error:Unary operator "alive" only accepts argument of types'
+                         ' [Object] (rhs is Array)')
+
     def test_error_message_unary(self):
         code = 'parseNumber 1'
         analyzer = analyze(parse(code))
