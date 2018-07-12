@@ -7,7 +7,7 @@ KEYWORDS = {'=', '\\'}
 
 PREPROCESSORS_UNARY = {'#ifdef', '#ifndef', '#undef', '#include'}
 PREPROCESSORS_NULLARY = {'#else', '#endif'}
-PREPROCESSORS = {'#define'}.union(PREPROCESSORS_UNARY).union(PREPROCESSORS_NULLARY)
+PREPROCESSORS = {'##','#define'}.union(PREPROCESSORS_UNARY).union(PREPROCESSORS_NULLARY)
 
 KEYWORDS = KEYWORDS.union(PREPROCESSORS)
 
