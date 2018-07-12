@@ -73,23 +73,45 @@ def identify_token(token):
         return Variable(token)
 
 
+def preprocessor_stringify(token, is_variable=True):
+    # Verify that token starts with appropriate char and is alphanumeric
+    if not (is_variable or re.match(r'[a-zA-Z_]\w*', str(token))):
+        # todo: need to fix the coordinates for errors here
+        raise SQFParserError(get_coord(""), 'Stringification failed on invalid characters')
+
+    # todo: check for invalid string created (missing ")
+    return String("\"" + str(token) + "\"")
+
 def replace_in_expression(expression, args, arg_indexes, all_tokens):
     """
     Recursively replaces matches of `args` in expression (a list of Types).
     """
     replacing_expression = []
+    stringify = False # Handle # preprocessor command
     for token in expression:
+        if token == Preprocessor('#'):
+            stringify = True
+            continue
+
         if isinstance(token, Statement):
             new_expression = replace_in_expression(token.content, args, arg_indexes, all_tokens)
-            token = Statement(new_expression, ending=token.ending, parenthesis=token.parenthesis)
-            replacing_expression.append(token)
+            new_token = Statement(new_expression, ending=token.ending, parenthesis=token.parenthesis)
         else:
             for arg, arg_index in zip(args, arg_indexes):
                 if str(token) == arg:
-                    replacing_expression.append(all_tokens[arg_index])
+                    if stringify:
+                        new_token = preprocessor_stringify(all_tokens[arg_index])
+                        stringify = False
+                    else:
+                        new_token = all_tokens[arg_index]
                     break
             else:
-                replacing_expression.append(token)
+                if stringify:
+                    new_token = preprocessor_stringify(token, is_variable=False)
+                    stringify = False
+                else:
+                    new_token = token
+        replacing_expression.append(new_token)
     return replacing_expression
 
 
