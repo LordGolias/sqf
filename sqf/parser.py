@@ -207,11 +207,6 @@ def _analyze_define(tokens):
 
     valid_indexes = [i for i in range(len(tokens)) if not isinstance(tokens[i], ParserType)]
 
-    # The # sqf command is superseded by the preprocessor directive's stringification command
-    for i in valid_indexes:
-        if tokens[i] == Keyword('#'):
-            tokens[i] = Preprocessor('#')
-
     if len(valid_indexes) < 2:
         raise SQFParserError(get_coord(str(tokens[0])), '#define needs at least one argument')
     variable = str(tokens[valid_indexes[1]])
@@ -541,6 +536,9 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
 
             statements.append(expression)
             i += size
+        elif token == Keyword('#') and lvls['#define'] != 0:
+            # The # sqf command is superseded by the preprocessor directive's stringification command
+            tokens.append(Preprocessor('#'))
         elif type(token) in (EndOfLine, Comment, EndOfFile) and any(lvls[x] != 0 for x in {'#define', '#include'}):
             tokens.insert(0, all_tokens[start - 1])  # pick the token that triggered the statement
             if tokens[0] == Preprocessor('#define'):
