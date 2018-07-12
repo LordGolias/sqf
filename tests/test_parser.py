@@ -1066,13 +1066,6 @@ class ParsePreprocessor(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
-    def test_hash(self):
-        # hash should be considered by the preprocessor in a define
-        code = '#define QUOTE(A) #A'
-        result = parse(code)
-        self.assertEqual(result[0][0][5], Preprocessor('#'))
-        self.assertTrue(result[0][0][5] != Keyword('#'))
-
 class TestIfDefStatement(ParserTestCase):
 
     def test_basic(self):
@@ -1442,6 +1435,13 @@ class TestDefineStatement(ParserTestCase):
             ])
         self.assertEqualStatement(expected, result, code)
 
+    def test_stringify_identification(self):
+        # hash should be considered by the preprocessor in a define
+        code = '#define QUOTE(A) #A'
+        result = parse(code)
+        self.assertEqual(result[0][0][5], Preprocessor('#'))
+        self.assertTrue(result[0][0][5] != Keyword('#'))
+
 
 class TestDefineResult(ParserTestCase):
 
@@ -1680,6 +1680,48 @@ class TestDefineResult(ParserTestCase):
             Statement([
                 Statement([define]),
                 DefineResult([EndOfLine('\n'), V('x'), Keyword('='), V('A'), ParserKeyword('('), N(3), ParserKeyword(')')],
+                             define, expected_statement)
+            ])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_stringify_static(self):
+        define = parse('#define A #quoteMe')[0][0]
+
+        # the code with the define
+        code = str(Statement([define])) + '\nA'
+
+        result = parse(code)
+
+        expected_statement = Statement([
+            Statement([EndOfLine('\n'), String('"quoteMe"')])
+        ])
+
+        expected = \
+            Statement([
+                Statement([define]),
+                DefineResult([EndOfLine('\n'), V('A')],
+                             define, expected_statement)
+            ])
+
+        self.assertEqualStatement(expected, result, code)
+
+    def test_concatenate_static(self):
+        define = parse('#define gvar global##Var')[0][0]
+
+        # the code with the define
+        code = str(Statement([define])) + '\ngvar'
+
+        result = parse(code)
+
+        expected_statement = Statement([
+            Statement([EndOfLine('\n'), V('globalVar')])
+        ])
+
+        expected = \
+            Statement([
+                Statement([define]),
+                DefineResult([EndOfLine('\n'), V('gvar')],
                              define, expected_statement)
             ])
 
