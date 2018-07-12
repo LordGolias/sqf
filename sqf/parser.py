@@ -207,6 +207,11 @@ def _analyze_define(tokens):
 
     valid_indexes = [i for i in range(len(tokens)) if not isinstance(tokens[i], ParserType)]
 
+    # The # sqf command is superseded by the preprocessor directive's stringification command
+    for i in valid_indexes:
+        if tokens[i] == Keyword('#'):
+            tokens[i] = Preprocessor('#')
+
     if len(valid_indexes) < 2:
         raise SQFParserError(get_coord(str(tokens[0])), '#define needs at least one argument')
     variable = str(tokens[valid_indexes[1]])
@@ -487,7 +492,6 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
             lvls['{}'] -= 1
             tokens.append(expression)
             i += size + 1
-
         elif token == ParserKeyword(']'):
             if lvls['[]'] == 0:
                 raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close right parenthesis without them opened.')
