@@ -89,7 +89,7 @@ class TestExpParser(TestCase):
 
 
 class ParserTestCase(TestCase):
-    
+
     def assertEqualStatement(self, expected, result, code):
         self.assertEqual(expected, result)
         self.assertEqual(code, str(result))
@@ -194,7 +194,7 @@ class ParseCode(ParserTestCase):
         result = parse(code)
         expected = Statement([Statement([
             Statement([V('_x'), Keyword('='), String('"AirS"')], ending=';')], parenthesis=True)])
-        
+
         self.assertEqualStatement(expected, result, code)
 
         code = '(_x="AirS";);'
@@ -328,7 +328,7 @@ class ParseCode(ParserTestCase):
         result = parse(code)
         expected = Statement([Statement([V('_is1'), Keyword('='),
                                          Code([Statement([V('_x'), Keyword('=='), N(1)])])], ending=';')])
-        
+
         self.assertEqualStatement(expected, result, code)
 
     def test_signed_precedence(self):
@@ -1066,6 +1066,12 @@ class ParsePreprocessor(ParserTestCase):
             ])
         self.assertEqualStatement(expected, parse(code), code)
 
+    def test_hash(self):
+        # hash should be considered by the preprocessor in a define
+        code = '#define QUOTE(A) #A'
+        result = parse(code)
+        self.assertEqual(result[0][0][5], Preprocessor('#'))
+        self.assertTrue(result[0][0][5] != Keyword('#'))
 
 class TestIfDefStatement(ParserTestCase):
 
