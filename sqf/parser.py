@@ -73,7 +73,7 @@ def identify_token(token):
         return Variable(token)
 
 
-def preprocessor_stringify(token, is_variable=True):
+def preprocessor_stringify(token, is_variable):
     # Verify that token starts with appropriate char and is alphanumeric
     if not (is_variable or re.match(r'[a-zA-Z_]\w*', str(token))):
         # todo: need to fix the coordinates for errors here
@@ -82,15 +82,19 @@ def preprocessor_stringify(token, is_variable=True):
     # todo: check for invalid string created (missing ")
     return String("\"" + str(token) + "\"")
 
+def preprocessor_concatenate(tokens):
+    # todo: any errors will report wrong coordinate
+    return parse("".join([str(t) for t in tokens]))
+
 def replace_in_expression(expression, args, arg_indexes, all_tokens):
     """
     Recursively replaces matches of `args` in expression (a list of Types).
     """
     replacing_expression = []
-    stringify = False # Handle # preprocessor command
+    commands = {'#': False, '##': False}
     for token in expression:
-        if token == Preprocessor('#'):
-            stringify = True
+        if token in (Preprocessor('#'), Preprocessor('##')):
+            commands[token.value] = True
             continue
 
         if isinstance(token, Statement):
@@ -99,18 +103,18 @@ def replace_in_expression(expression, args, arg_indexes, all_tokens):
         else:
             for arg, arg_index in zip(args, arg_indexes):
                 if str(token) == arg:
-                    if stringify:
-                        new_token = preprocessor_stringify(all_tokens[arg_index])
-                        stringify = False
-                    else:
-                        new_token = all_tokens[arg_index]
+                    new_token = all_tokens[arg_index]
                     break
             else:
-                if stringify:
-                    new_token = preprocessor_stringify(token, is_variable=False)
-                    stringify = False
-                else:
-                    new_token = token
+                new_token = token
+
+            if commands['#']:
+                new_token = preprocessor_stringify(new_token, is_variable=new_token != token)
+                commands['#'] = False
+            if commands['##']:
+                new_token = preprocessor_concatenate((replacing_expression.pop(), new_token))
+                commands['##'] = False
+
         replacing_expression.append(new_token)
     return replacing_expression
 
