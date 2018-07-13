@@ -1436,11 +1436,34 @@ class TestDefineStatement(ParserTestCase):
         self.assertEqualStatement(expected, result, code)
 
     def test_stringify_identification(self):
-        # hash should be considered by the preprocessor in a define
-        code = '#define QUOTE(A) #A'
+        # hash should be preprocessor in a define statement
+        # considered as a keyword otherwise
+        code = '#define QUOTE(A) #A\n[0]#0'
         result = parse(code)
-        self.assertEqual(result[0][0][5], Preprocessor('#'))
-        self.assertTrue(result[0][0][5] != Keyword('#'))
+        expected = Statement([
+            Statement([
+                DefineStatement([
+                        Preprocessor('#define'), Space(), V('QUOTE'),
+                        Statement([
+                            Statement([V('A')])
+                        ], parenthesis=True),
+                        Space(), Preprocessor('#'), V('A')
+                    ],
+                    variable_name='QUOTE',
+                    expression=[Preprocessor('#'), V('A')],
+                    args=['A']
+                )
+            ]),
+            Statement([
+                Statement([
+                    EndOfLine('\n'), Array([Statement([N(0)])])
+                ]),
+                Keyword('#'), N(0)
+            ])
+        ])
+        self.assertEqualStatement(expected, result, code)
+
+
 
 
 class TestDefineResult(ParserTestCase):
