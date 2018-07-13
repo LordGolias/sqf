@@ -76,7 +76,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(args):
+def parse_and_execute(args):
     args = parse_args(args)
 
     if args.output is None:
@@ -109,5 +109,9 @@ def main(args):
     return int(exit_code)
 
 
+def main():
+    return sys.exit(parse_and_execute(sys.argv))
+
+
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    main()
