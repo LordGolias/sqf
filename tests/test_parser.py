@@ -1717,7 +1717,7 @@ class TestDefineResult(ParserTestCase):
         result = parse(code)
 
         expected_statement = Statement([
-            Statement([EndOfLine('\n'), String('"quoteMe"')])
+            EndOfLine('\n'), String('"quoteMe"')
         ])
 
         expected = \
