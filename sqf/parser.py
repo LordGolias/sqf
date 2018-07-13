@@ -111,9 +111,10 @@ def replace_in_expression(expression, args, arg_indexes, all_tokens):
             if commands['#']:
                 new_token = preprocessor_stringify(new_token, is_variable=new_token != token)
                 commands['#'] = False
-            if commands['##']:
-                new_token = preprocessor_concatenate((replacing_expression.pop(), new_token))
-                commands['##'] = False
+
+        if commands['##']:
+            new_token = preprocessor_concatenate((replacing_expression.pop(), new_token))
+            commands['##'] = False
 
         replacing_expression.append(new_token)
     return replacing_expression
