@@ -76,7 +76,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def parse_and_execute(args):
+def entry_point(args):
     args = parse_args(args)
 
     if args.output is None:
@@ -110,7 +110,7 @@ def parse_and_execute(args):
 
 
 def main():
-    return sys.exit(parse_and_execute(sys.argv))
+    sys.exit(entry_point(sys.argv))
 
 
 if __name__ == "__main__":

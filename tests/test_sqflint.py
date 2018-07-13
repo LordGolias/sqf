@@ -4,7 +4,7 @@ import io
 from contextlib import contextmanager
 from unittest import TestCase
 
-from sqflint import parse_args, main
+from sqflint import parse_args, entry_point
 
 
 @contextmanager
@@ -25,7 +25,7 @@ class ParseCode(TestCase):
             sys.stdin = io.StringIO()
             sys.stdin.write('hint _x')
             sys.stdin.seek(0)
-            main([])
+            entry_point([])
 
         self.assertEqual(
             out.getvalue(),
@@ -36,7 +36,7 @@ class ParseCode(TestCase):
             sys.stdin = io.StringIO()
             sys.stdin.write('hint (_x')
             sys.stdin.seek(0)
-            main([])
+            entry_point([])
 
         self.assertEqual(
             out.getvalue(),
@@ -48,28 +48,28 @@ class ParseCode(TestCase):
 
     def test_exit_code(self):
         with captured_output():
-            exit_code = main(['tests/test_dir/test.sqf'])
+            exit_code = entry_point(['tests/test_dir/test.sqf'])
         self.assertEqual(exit_code, 0)
 
         # there are no errors, only a warning
         with captured_output():
-            exit_code = main(['tests/test_dir/test.sqf', '-e', 'e'])
+            exit_code = entry_point(['tests/test_dir/test.sqf', '-e', 'e'])
         self.assertEqual(exit_code, 0)
 
         with captured_output():
-            exit_code = main(['tests/test_dir/test.sqf', '-e', 'w'])
+            exit_code = entry_point(['tests/test_dir/test.sqf', '-e', 'w'])
         self.assertEqual(exit_code, 1)
 
     def test_filename_run(self):
         with captured_output() as (out, err):
-            main(['tests/test_dir/test.sqf'])
+            entry_point(['tests/test_dir/test.sqf'])
 
         self.assertEqual(out.getvalue(),
                          '[1,5]:warning:Local variable "_x" is not from this scope (not private)\n')
 
     def test_directory_run(self):
         with captured_output() as (out, err):
-            main(['--directory', 'tests/test_dir'])
+            entry_point(['--directory', 'tests/test_dir'])
 
         self.assertEqual(
             out.getvalue(),
@@ -77,7 +77,7 @@ class ParseCode(TestCase):
             'test1.sqf\n\t[1,5]:warning:Local variable "_y" is not from this scope (not private)\n')
 
     def test_directory_run_to_file(self):
-        main(['--directory', 'tests/test_dir', '-o', 'tests/result.txt'])
+        entry_point(['--directory', 'tests/test_dir', '-o', 'tests/result.txt'])
 
         with open('tests/result.txt') as f:
             result = f.read()
