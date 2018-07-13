@@ -108,9 +108,5 @@ def main(args):
     return int(exit_code)
 
 
-def _main():
-    return main(sys.argv[1:])
-
-
 if __name__ == "__main__":
-    sys.exit(_main())
+    sys.exit(main(sys.argv[1:]))
