@@ -34,6 +34,7 @@ def analyze_dir(directory, writer, exceptions_list):
     Analyzes a directory recursively
     """
     for root, dirs, files in os.walk(directory):
+        files.sort()
         for file in files:
             if file.endswith(".sqf"):
                 file_path = os.path.join(root, file)
