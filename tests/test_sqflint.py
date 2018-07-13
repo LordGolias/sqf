@@ -31,6 +31,17 @@ class ParseCode(TestCase):
             out.getvalue(),
             '[1,5]:warning:Local variable "_x" is not from this scope (not private)\n')
 
+    def test_parser_error(self):
+        with captured_output() as (out, err):
+            sys.stdin = io.StringIO()
+            sys.stdin.write('hint (_x')
+            sys.stdin.seek(0)
+            main([])
+
+        self.assertEqual(
+            out.getvalue(),
+            '[1,5]:error:Parenthesis "(" not closed\n')
+
     def test_directory(self):
         args = parse_args(['--directory', 'tests/test_dir'])
         self.assertEqual('tests/test_dir', args.directory)
