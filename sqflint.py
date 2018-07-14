@@ -110,7 +110,7 @@ def entry_point(args):
 
 
 def main():
-    sys.exit(entry_point(sys.argv))
+    sys.exit(entry_point(sys.argv[1:]))
 
 
 if __name__ == "__main__":
