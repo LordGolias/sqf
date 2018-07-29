@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='sqflint',
-    version='0.3.1',
+    version='0.3.2',
     author='Lord Golias',
     author_email='lord.golias1@gmail.com',
     description='Parser, static analyzer and interpreter of SQF (Arma)',
