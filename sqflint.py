@@ -29,15 +29,21 @@ def analyze(code, writer, exceptions_list):
     exceptions_list += exceptions
 
 
-def analyze_dir(directory, writer, exceptions_list):
+def analyze_dir(directory, writer, exceptions_list, exclude):
     """
     Analyzes a directory recursively
     """
     for root, dirs, files in os.walk(directory):
+        if any([root.startswith(s) for s in exclude.copy()]):
+            writer.write(root + ' EXCLUDED\n')
+            continue
         files.sort()
         for file in files:
             if file.endswith(".sqf"):
                 file_path = os.path.join(root, file)
+                if any([file_path.startswith(s) for s in exclude.copy()]):
+                    writer.write(file_path + ' EXCLUDED\n')
+                    continue
 
                 writer_helper = Writer()
 
@@ -59,7 +65,6 @@ def readable_dir(prospective_dir):
     else:
         raise Exception("readable_dir:{0} is not a readable dir".format(prospective_dir))
 
-
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Static Analyzer of SQF code")
     parser.add_argument('file', nargs='?', type=argparse.FileType('r'), default=None,
@@ -68,6 +73,7 @@ def parse_args(args):
                         help='The full path of the directory to recursively analyse sqf files on')
     parser.add_argument('-o', '--output', nargs='?', type=argparse.FileType('w'), default=None,
                         help='File path to redirect the output to (default to stdout)')
+    parser.add_argument('-x', '--exclude', action='append', nargs='?', help='Path that should be ignored', default=[])
     parser.add_argument('-e', '--exit', type=str, default='',
                         help='How the parser should exit. \'\': exit code 0;\n'
                              '\'e\': exit with code 1 when any error is found;\n'
@@ -94,7 +100,9 @@ def entry_point(args):
         args.file.close()
         analyze(code, writer, exceptions_list)
     else:
-        analyze_dir(args.directory, writer, exceptions_list)
+        directory = args.directory.rstrip('/')
+        exclude = list(map(lambda x: x if x.startswith('/') else os.path.join(directory, x), args.exclude))
+        analyze_dir(directory, writer, exceptions_list, exclude)
 
     if args.output is not None:
         writer.close()
