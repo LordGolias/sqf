@@ -1,1 +1,1 @@
-hint _x
+hint _0
