@@ -426,7 +426,7 @@ class Analyzer(BaseInterpreter):
             elif case_found.keyword == Keyword('catch'):
                 extra_scope = {'_exception': Anything()}
             elif case_found.keyword == Keyword('spawn'):
-                extra_scope = {'_thisScript': Script()}
+                extra_scope = {'_thisScript': Script(), '_this': values[0]}
             elif case_found.keyword == Keyword('do') and type(values[0]) == ForType:
                 extra_scope = {values[0].variable.value: Number()}
             for value, t_or_v in zip(values, case_found.types_or_values):

@@ -1052,10 +1052,20 @@ class SpecialContext(TestCase):
         analyzer = analyze(parse(code))
         self.assertEqual(analyzer.exceptions, [])
 
-    def test_spawn(self):
+    def test_spawn_thisScript(self):
         code = '[] spawn {x = _thisScript}'
         analyzer = analyze(parse(code))
         self.assertEqual(len(analyzer.exceptions), 0)
+
+    def test_spawn_this_typing_correct(self):
+        code = '"" spawn {hint _this}'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+
+    def test_spawn_this_typing_error(self):
+        code = '[] spawn {hint _this}'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 1)
 
     def test_spawn_local_vars(self):
         # spawn should not use local variables because they may become undefined (error 1). Likewise,
