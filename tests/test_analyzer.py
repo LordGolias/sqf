@@ -876,6 +876,7 @@ class NestedCode(TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual((2, 11), errors[0].position)
 
+    @expectedFailure
     def test_code_with_if(self):
         code = "x = {\ncall {if y;}\n}"
         analyzer = analyze(parse(code))
