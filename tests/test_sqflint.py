@@ -89,7 +89,7 @@ class ParseCode(TestCase):
 
     def test_directory_run_with_exclusion(self):
         with captured_output() as (out, err):
-            entry_point(['--directory', 'tests/test_dir', '--exclude', 'subdir', '-x', 'test1.sqf'])
+            entry_point(['--directory', 'tests/test_dir', '--exclude', 'subdir', '-x', 'test.\.sqf'])
 
         self.assertEqual(
             out.getvalue(),
