@@ -87,6 +87,10 @@ class TestExpParser(TestCase):
         test = ['1', '-', '1', '-', '1']
         self.assertEqual([['1', '-', '1'], '-', '1'], parse_exp(test))
 
+    def test_power_precedence(self):
+        test = ['a', '*', 'b', '^', 'c']
+        self.assertEqual(['a', '*', ['b', '^', 'c']], parse_exp(test))
+
 
 class ParserTestCase(TestCase):
     
