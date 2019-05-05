@@ -91,6 +91,10 @@ class TestExpParser(TestCase):
         test = ['a', '*', 'b', '^', 'c']
         self.assertEqual(['a', '*', ['b', '^', 'c']], parse_exp(test))
 
+    def test_hash_precedence(self):
+        test = ['a', '#', 'b', '^', 'c']
+        self.assertEqual(['a', '#', ['b', '^', 'c']], parse_exp(test))
+
 
 class ParserTestCase(TestCase):
     

@@ -1038,6 +1038,15 @@ class SpecialContext(TestCase):
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
 
+    def test_hash(self):
+        code = 'x # 2'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 0)
+
+        code = 'x # {_x == 2}'
+        analyzer = analyze(parse(code))
+        self.assertEqual(len(analyzer.exceptions), 2)
+
     def test_code_not_executed_in_loop(self):
         code = '{if ((_x select 0) == r && {(_x select 1) == r}) exitWith {};} forEach t;'
         analyzer = analyze(parse(code))
