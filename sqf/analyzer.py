@@ -419,7 +419,7 @@ class Analyzer(BaseInterpreter):
                 outcome = Anything()
 
             extra_scope = None
-            if case_found.keyword in (Keyword('select'), Keyword('apply'), Keyword('count')):
+            if case_found.keyword in (Keyword('select'), Keyword('apply'), Keyword('count'), Keyword('findif')):
                 extra_scope = {'_x': Anything()}
             elif case_found.keyword == Keyword('foreach'):
                 extra_scope = {'_foreachindex': Number(), '_x': Anything()}

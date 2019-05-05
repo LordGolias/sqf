@@ -994,6 +994,11 @@ class SpecialContext(TestCase):
         analyzer = analyze(parse(code))
         self.assertEqual(analyzer.exceptions, [])
 
+    def test_findif(self):
+        code = '[unit1, unit2, unit3] findIf {not alive _x};'
+        analyzer = analyze(parse(code))
+        self.assertEqual(analyzer.exceptions, [])
+
     def test_try_catch(self):
         code = 'try {hint _x} catch {hint _y; hint str _exception}'
         analyzer = analyze(parse(code))
