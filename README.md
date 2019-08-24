@@ -74,13 +74,13 @@ can be found in `tests`. Run them using standard Python unittest:
 This package is compatible with known editors, and can be used to efficiently write SQF
 with them. See the respective projects for more details:
 
-* [atom-linter](https://atomlinter.github.io/): [linter-sqf](https://github.com/LordGolias/linter-sqf)
-* [sublimeLinter](http://www.sublimelinter.com/en/latest/): [SublimeLinter-contrib-sqflint](https://github.com/LordGolias/SublimeLinter-contrib-sqflint)
+* [AtomLinter](https://atomlinter.github.io/): [linter-sqf](https://github.com/LordGolias/linter-sqf)
+* [SublimeLinter](http://www.sublimelinter.com/en/latest/): [SublimeLinter-contrib-sqflint](https://github.com/LordGolias/SublimeLinter-contrib-sqflint)
+* [ALE (Vim)](https://github.com/dense-analysis/ale): [vim-sqflint-ale](https://github.com/jonpas/vim-sqflint-ale)
 
 ## Code organization
 
-This code contains essentially 4 components, a **tokenizer**, 
-a **parser**, **analyzer** and **interpreter**:
+This code contains essentially 4 components, a **tokenizer**, a **parser**, **analyzer** and **interpreter**:
 
 ### Interpreter
 
