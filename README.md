@@ -76,7 +76,7 @@ with them. See the respective projects for more details:
 
 * [AtomLinter](https://atomlinter.github.io/): [linter-sqf](https://github.com/LordGolias/linter-sqf)
 * [SublimeLinter](http://www.sublimelinter.com/en/latest/): [SublimeLinter-contrib-sqflint](https://github.com/LordGolias/SublimeLinter-contrib-sqflint)
-* [ALE (Vim)](https://github.com/dense-analysis/ale): [vim-sqflint-ale](https://github.com/jonpas/vim-sqflint-ale)
+* [ALE](https://github.com/dense-analysis/ale): [vim-sqflint-ale](https://github.com/jonpas/vim-sqflint-ale)
 
 ## Code organization
 
