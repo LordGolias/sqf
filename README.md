@@ -123,7 +123,7 @@ The parser transforms a string into a nested `Statement`, i.e.
 a nested list of instances of `types`, operators, and keywords defined in SQF.
 For example,
 
-    >>> from sqf.parser import parser
+    >>> from sqf.parser import parse
     >>> script = '_x=2;'
     >>> result = parse(script)
     >>> result
