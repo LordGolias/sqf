@@ -1,8 +1,8 @@
 # This file is generated automatically by `build_database.py`. Change it there.
-from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
-from sqf.types import Keyword, Type, Nothing, Anything, String, Code, Array, Number, Boolean, Namespace, \
+from .expressions import BinaryExpression, UnaryExpression, NullExpression
+from .types import Keyword, Type, Nothing, Anything, String, Code, Array, Number, Boolean, Namespace, \
     Object, Config, Script, Control, Group, Display, Side, Task, Location, NetObject, DiaryReport, TeamMember
-from sqf.interpreter_types import WhileType, \
+from .interpreter_types import WhileType, \
     ForType, SwitchType, IfType, TryType, WithType
 
 

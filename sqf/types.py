@@ -1,5 +1,5 @@
-from sqf.parser_types import ParserKeyword
-from sqf.base_type import BaseType, ParserType, BaseTypeContainer
+from .parser_types import ParserKeyword
+from .base_type import BaseType, ParserType, BaseTypeContainer
 
 
 class Type(BaseType):

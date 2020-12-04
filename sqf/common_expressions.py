@@ -1,6 +1,6 @@
-from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Namespace
-from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType, WithType
-from sqf.expressions import BinaryExpression, UnaryExpression
+from .types import Keyword, Number, Array, Code, Type, Boolean, String, Namespace
+from .interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType, WithType
+from .expressions import BinaryExpression, UnaryExpression
 
 
 class WhileExpression(UnaryExpression):

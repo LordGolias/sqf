@@ -1,6 +1,6 @@
 import collections
 
-from sqf.types import Keyword
+from .types import Keyword
 
 
 def get_keyword(types_or_values):

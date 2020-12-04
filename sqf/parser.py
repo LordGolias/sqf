@@ -1,15 +1,15 @@
 from collections import defaultdict
 import re
 
-import sqf.base_type
-from sqf.base_tokenizer import tokenize
+from . import base_type
+from .base_tokenizer import tokenize
 
-from sqf.exceptions import SQFParenthesisError, SQFParserError
-from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace, Preprocessor, ParserType
-from sqf.keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
-from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine, EndOfFile, ParserKeyword
-from sqf.interpreter_types import DefineStatement, DefineResult, IfDefStatement, IfDefResult
-from sqf.parser_exp import parse_exp
+from .exceptions import SQFParenthesisError, SQFParserError
+from .types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace, Preprocessor, ParserType
+from .keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
+from .parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine, EndOfFile, ParserKeyword
+from .interpreter_types import DefineStatement, DefineResult, IfDefStatement, IfDefResult
+from .parser_exp import parse_exp
 
 
 def rindex(the_list, value):
@@ -29,7 +29,7 @@ CLOSE_PARENTHESIS = (ParserKeyword(']'), ParserKeyword(')'), ParserKeyword('}'))
 
 
 def get_coord(tokens):
-    return sqf.base_type.get_coord(''.join([str(x) for x in tokens]))
+    return base_type.get_coord(''.join([str(x) for x in tokens]))
 
 
 def add_coords(coord1, tokens):

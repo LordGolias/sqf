@@ -1,13 +1,13 @@
 import math
 
-from sqf.common_expressions import TryCatchExpression, ForEachExpression, \
+from .common_expressions import TryCatchExpression, ForEachExpression, \
     WhileDoExpression, ForFromToDoExpression, ForSpecDoExpression, SwitchDoExpression, \
     IfThenSpecExpression, IfThenElseExpression, IfThenExpression, IfThenExitWithExpression
-from sqf.types import Keyword, Namespace, Number, Array, Code, Type, Boolean, String, Nothing, Variable
-from sqf.exceptions import SQFParserError
-from sqf.keywords import OP_ARITHMETIC, OP_COMPARISON, OP_LOGICAL
-from sqf.expressions import BinaryExpression, UnaryExpression
-from sqf.interpreter_types import SwitchType
+from .types import Keyword, Namespace, Number, Array, Code, Type, Boolean, String, Nothing, Variable
+from .exceptions import SQFParserError
+from .keywords import OP_ARITHMETIC, OP_COMPARISON, OP_LOGICAL
+from .expressions import BinaryExpression, UnaryExpression
+from .interpreter_types import SwitchType
 
 
 OP_OPERATIONS = {
