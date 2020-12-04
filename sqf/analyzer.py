@@ -261,7 +261,7 @@ class Analyzer(BaseInterpreter):
                 rhs_t = Anything
         elif lhs_t != rhs_t and self.delete_scope_level >= scope.level:
             rhs_t = Anything
-
+            
         scope[lhs_name] = rhs_t()
 
         if scope.level == 0 and lhs_name.startswith('_'):

@@ -355,7 +355,7 @@ class Keyword(BaseType):
 
 
 class Namespace(Type):
-    def __init__(self, token):
+    def __init__(self, token=""):
         assert isinstance(token, str)
         super().__init__()
         self._token = token

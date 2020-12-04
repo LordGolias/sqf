@@ -497,6 +497,7 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                     statements[0]._tokens = [Array(_analyze_array(statements[0]._tokens, analyze_tokens, all_tokens[:i]))]
                     return statements[0], i - start
                 else:
+                    print("token", token)
                     raise SQFParserError(get_coord(all_tokens[:i]), 'A statement %s cannot be in an array' % Statement(statements))
 
             return Array(_analyze_array(tokens, analyze_tokens, all_tokens[:i])), i - start
