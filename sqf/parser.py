@@ -385,7 +385,7 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                 assert (isinstance(expression, IfDefStatement))
                 replacing_expression = parse_ifdef_block(expression, defines, get_coord(all_tokens[:i - 1]))
 
-                new_all_tokens = sqf.base_type.get_all_tokens(tokens + replacing_expression)
+                new_all_tokens = base_type.get_all_tokens(tokens + replacing_expression)
 
                 result, _ = parse_block(new_all_tokens, analyze_tokens, 0, None, stop_statement,
                                         defines=defines)
