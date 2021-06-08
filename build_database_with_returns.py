@@ -4,6 +4,7 @@ It reads a file from here:
 
 https://raw.githubusercontent.com/intercept/intercept/master/src/client/headers/client/sqf_pointers_declaration.hpp
 """
+import os
 import urllib.request
 
 from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType, WithType
@@ -14,6 +15,7 @@ from sqf.types import Code, Array, Boolean, Number, Type, Nothing, Anything, Str
 # The mapping of SQF types to our types
 STRING_TO_TYPE = {
     'array': Array,
+    'hashmap': Array,
     'scalar': Number,
     'bool': Boolean,
     'code': Code,
@@ -61,11 +63,8 @@ WRONG_RETURN_TYPES = {
 
 
 def _parse_type_names(type_names):
-    # Alternative types separated by _ char
-    types_names = type_names.split('_')
-
-    # Never care about NaN type (covered by scalar)
-    if 'nan' in types_names:
+    types_names = type_names.split('_')  # Alternative types separated by _ char
+    if 'nan' in types_names:  # Never care about NaN type (covered by scalar)
         types_names.remove('nan')
 
     # Remove parts of types that also get split
@@ -91,8 +90,7 @@ def _parse_return_type_names(return_type_names):
     return STRING_TO_TYPE_RETURN[return_type_name]
 
 
-url = 'https://raw.githubusercontent.com/intercept/intercept/master/src/' \
-      'client/headers/client/sqf_pointers_declaration.hpp'
+url = 'https://raw.githubusercontent.com/intercept/intercept/master/src/client/headers/client/sqf_pointers_declaration.hpp'
 data = urllib.request.urlopen(url).read().decode('utf-8').split('\n')
 
 
@@ -101,21 +99,25 @@ for line in data:
     if not line.startswith('static '):
         continue
 
+    print("_" * 50)
     sections = line.split('__')
+    print("sections: " + str(sections))
     num_sections = len(sections)
-
+    
     if num_sections not in [4, 5, 6]:
         print('Could\'t read line: ', line)
         continue
 
     # Name always comes first
     op_name = sections[1]
+    print("op_name: " + str(op_name))
 
     # Return type always comes last (some operators have incorrect values for whatever reason)
     if op_name in WRONG_RETURN_TYPES:
         return_type = WRONG_RETURN_TYPES[op_name]
     else:
         return_type = _parse_return_type_names(sections[num_sections-1][:-1])
+    print("return_type: " + str(return_type))
 
     # Adds any relevant initialization argument for the return type
     init_code = ''
@@ -129,10 +131,7 @@ for line in data:
             lhs_type = STRING_TO_TYPE[lhs_type_name]
             for rhs_type_name in _parse_type_names(sections[3]):
                 rhs_type = STRING_TO_TYPE[rhs_type_name]
-                expression = 'BinaryExpression(' \
-                             '{lhs_type}, ' \
-                             'Keyword(\'{keyword}\'), ' \
-                             '{rhs_type}, {return_type}{init_code})'.format(
+                expression = 'BinaryExpression({lhs_type}, Keyword(\'{keyword}\'), {rhs_type}, {return_type}{init_code})'.format(
                     lhs_type=lhs_type.__name__,
                     keyword=op_name,
                     rhs_type=rhs_type.__name__,
@@ -144,11 +143,13 @@ for line in data:
         if return_type in TYPE_TO_INIT_ARGS:
             init_code = ', action=lambda rhs, i: %s' % TYPE_TO_INIT_ARGS[return_type]
 
-        for rhs_type_name in _parse_type_names(sections[2]):
+        for i, rhs_type_name in enumerate(_parse_type_names(sections[2])):
+        
+            # if rhs_type_name not in STRING_TO_TYPE:
+                # continue
+                
             rhs_type = STRING_TO_TYPE[rhs_type_name]
-            expression = 'UnaryExpression(' \
-                         'Keyword(\'{keyword}\'), ' \
-                         '{rhs_type}, {return_type}{init_code})'.format(
+            expression = 'UnaryExpression(Keyword(\'{keyword}\'), {rhs_type}, {return_type}{init_code})'.format(
                 keyword=op_name,
                 rhs_type=rhs_type.__name__,
                 return_type=return_type.__name__,
@@ -159,13 +160,11 @@ for line in data:
         if return_type in TYPE_TO_INIT_ARGS:
             init_code = ', action=lambda i: %s' % TYPE_TO_INIT_ARGS[return_type]
 
-        expression = 'NullExpression(' \
-                     'Keyword(\'{keyword}\'), ' \
-                     '{return_type}{init_code})'.format(
-                keyword=op_name,
-                return_type=return_type.__name__,
-                init_code=init_code
-            )
+        expression = 'NullExpression(Keyword(\'{keyword}\'), {return_type}{init_code})'.format(
+            keyword=op_name,
+            return_type=return_type.__name__,
+            init_code=init_code
+        )
         expressions.append(expression)
 
 preamble = r'''# This file is generated automatically by `build_database.py`. Change it there.
@@ -232,8 +231,5 @@ EXPRESSIONS = [
 '''
 
 
-with open('sqf/database.py', 'w') as f:
-    f.write(preamble + '\n\n')
-    f.write(symbols + '    ')
-    f.write(',\n    '.join(expressions))
-    f.write('\n]\n')
+with open(os.path.join(os.path.dirname(__file__), 'sqf/database.py'), 'w') as f:
+    f.write(symbols + '    ' + ',\n    '.join(expressions) + '\n]\n')
