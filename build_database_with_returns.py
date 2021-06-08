@@ -230,6 +230,19 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('-'), Number, Number),
 '''
 
+import_input = """
+from .expressions import BinaryExpression, UnaryExpression, NullExpression
+from .types import Keyword, Type, Nothing, Anything, String, Code, Array, Number, Boolean, Namespace, Object, Config, Script, Control, Group, Display, Side, Task, Location, NetObject, DiaryReport, TeamMember
+from .interpreter_types import WhileType, ForType, SwitchType, IfType, TryType, WithType
+"""
 
+formatted_expressions = '    ' + ',\n    '.join(expressions)
+
+content = f"""
+{import_input}
+{symbols}{formatted_expressions}
+]
+
+"""
 with open(os.path.join(os.path.dirname(__file__), 'sqf/database.py'), 'w') as f:
-    f.write(symbols + '    ' + ',\n    '.join(expressions) + '\n]\n')
+    f.write(content)
