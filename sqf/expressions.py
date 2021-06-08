@@ -1,5 +1,5 @@
-from sqf.types import Keyword, Nothing, Anything, Type
-from sqf.interpreter_types import InterpreterType
+from .types import Keyword, Nothing, Anything, Type
+from .interpreter_types import InterpreterType
 
 
 class Expression:

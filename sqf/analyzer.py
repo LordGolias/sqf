@@ -1,18 +1,18 @@
 from copy import deepcopy
 
-from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, \
+from .types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, \
     Number, Preprocessor, Script, Anything
-from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType, \
+from .interpreter_types import InterpreterType, PrivateType, ForType, SwitchType, \
     DefineStatement, DefineResult, IfDefResult
-from sqf.keywords import Keyword, PREPROCESSORS
-from sqf.expressions import UnaryExpression, BinaryExpression
-from sqf.exceptions import SQFParserError, SQFWarning
-from sqf.base_interpreter import BaseInterpreter
-from sqf.database import EXPRESSIONS
-from sqf.common_expressions import COMMON_EXPRESSIONS, ForEachExpression, ElseExpression
-from sqf.expressions_cache import values_to_expressions, build_database
-from sqf.parser_types import Comment
-from sqf.parser import parse
+from .keywords import Keyword, PREPROCESSORS
+from .expressions import UnaryExpression, BinaryExpression
+from .exceptions import SQFParserError, SQFWarning
+from .base_interpreter import BaseInterpreter
+from .database import EXPRESSIONS
+from .common_expressions import COMMON_EXPRESSIONS, ForEachExpression, ElseExpression
+from .expressions_cache import values_to_expressions, build_database
+from .parser_types import Comment
+from .parser import parse
 
 
 def all_equal(iterable):
@@ -261,7 +261,7 @@ class Analyzer(BaseInterpreter):
                 rhs_t = Anything
         elif lhs_t != rhs_t and self.delete_scope_level >= scope.level:
             rhs_t = Anything
-
+            
         scope[lhs_name] = rhs_t()
 
         if scope.level == 0 and lhs_name.startswith('_'):

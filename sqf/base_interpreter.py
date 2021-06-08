@@ -1,7 +1,7 @@
-from sqf.types import Statement, Code, Nothing, Anything, Variable, Array, String, Type, File
-from sqf.keywords import Keyword
-from sqf.exceptions import SQFParserError, SQFWarning
-import sqf.namespace
+from .types import Statement, Code, Nothing, Anything, Variable, Array, String, Type, File
+from .keywords import Keyword
+from .exceptions import SQFParserError, SQFWarning
+from . import namespace
 
 
 class BaseInterpreter:
@@ -12,10 +12,10 @@ class BaseInterpreter:
 
     def __init__(self, all_vars=None):
         self._namespaces = {
-            'uinamespace': sqf.namespace.Namespace('uinamespace'),
-            'parsingnamespace': sqf.namespace.Namespace('parsingnamespace'),
-            'missionnamespace': sqf.namespace.Namespace('missionnamespace', all_vars),
-            'profilenamespace': sqf.namespace.Namespace('profilenamespace')
+            'uinamespace': namespace.Namespace('uinamespace'),
+            'parsingnamespace': namespace.Namespace('parsingnamespace'),
+            'missionnamespace': namespace.Namespace('missionnamespace', all_vars),
+            'profilenamespace': namespace.Namespace('profilenamespace')
         }
 
         self.current_namespace = self.namespace('missionnamespace')

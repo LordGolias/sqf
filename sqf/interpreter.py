@@ -1,11 +1,11 @@
-from sqf.types import Statement, Code, Number, Boolean, Nothing, Variable, Array, String, Type, File
-from sqf.interpreter_types import PrivateType
-from sqf.keywords import Keyword
-from sqf.parser import parse
-from sqf.exceptions import SQFParserError
-from sqf.common_expressions import COMMON_EXPRESSIONS as EXPRESSIONS
-from sqf.interpreter_expressions import INTERPRETER_EXPRESSIONS
-from sqf.base_interpreter import BaseInterpreter
+from .types import Statement, Code, Number, Boolean, Nothing, Variable, Array, String, Type, File
+from .interpreter_types import PrivateType
+from .keywords import Keyword
+from .parser import parse
+from .exceptions import SQFParserError
+from .common_expressions import COMMON_EXPRESSIONS as EXPRESSIONS
+from .interpreter_expressions import INTERPRETER_EXPRESSIONS
+from .base_interpreter import BaseInterpreter
 
 
 # Replace all expressions in `database` by expressions from `COMMON_EXPRESSIONS` with the same signature

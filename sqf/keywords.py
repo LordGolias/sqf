@@ -1,6 +1,6 @@
-from sqf.types import Keyword
-from sqf.expressions import BinaryExpression, UnaryExpression
-from sqf.database import EXPRESSIONS
+from .types import Keyword
+from .expressions import BinaryExpression, UnaryExpression
+from .database import EXPRESSIONS
 
 # keywords that are not commands, but part of the language
 KEYWORDS = {'=', '\\'}

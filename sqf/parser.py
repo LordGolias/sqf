@@ -1,15 +1,15 @@
 from collections import defaultdict
 import re
 
-import sqf.base_type
-from sqf.base_tokenizer import tokenize
+from . import base_type
+from .base_tokenizer import tokenize
 
-from sqf.exceptions import SQFParenthesisError, SQFParserError
-from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace, Preprocessor, ParserType
-from sqf.keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
-from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine, EndOfFile, ParserKeyword
-from sqf.interpreter_types import DefineStatement, DefineResult, IfDefStatement, IfDefResult
-from sqf.parser_exp import parse_exp
+from .exceptions import SQFParenthesisError, SQFParserError
+from .types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace, Preprocessor, ParserType
+from .keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
+from .parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine, EndOfFile, ParserKeyword
+from .interpreter_types import DefineStatement, DefineResult, IfDefStatement, IfDefResult
+from .parser_exp import parse_exp
 
 
 def rindex(the_list, value):
@@ -29,7 +29,7 @@ CLOSE_PARENTHESIS = (ParserKeyword(']'), ParserKeyword(')'), ParserKeyword('}'))
 
 
 def get_coord(tokens):
-    return sqf.base_type.get_coord(''.join([str(x) for x in tokens]))
+    return base_type.get_coord(''.join([str(x) for x in tokens]))
 
 
 def add_coords(coord1, tokens):
@@ -385,7 +385,7 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                 assert (isinstance(expression, IfDefStatement))
                 replacing_expression = parse_ifdef_block(expression, defines, get_coord(all_tokens[:i - 1]))
 
-                new_all_tokens = sqf.base_type.get_all_tokens(tokens + replacing_expression)
+                new_all_tokens = base_type.get_all_tokens(tokens + replacing_expression)
 
                 result, _ = parse_block(new_all_tokens, analyze_tokens, 0, None, stop_statement,
                                         defines=defines)
@@ -497,6 +497,7 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                     statements[0]._tokens = [Array(_analyze_array(statements[0]._tokens, analyze_tokens, all_tokens[:i]))]
                     return statements[0], i - start
                 else:
+                    print("token", token)
                     raise SQFParserError(get_coord(all_tokens[:i]), 'A statement %s cannot be in an array' % Statement(statements))
 
             return Array(_analyze_array(tokens, analyze_tokens, all_tokens[:i])), i - start

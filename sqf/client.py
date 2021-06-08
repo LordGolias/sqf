@@ -1,5 +1,5 @@
-from sqf.interpreter import Interpreter, interpret
-from sqf.types import Code, Array, String
+from .interpreter import Interpreter, interpret
+from .types import Code, Array, String
 
 
 class Client:

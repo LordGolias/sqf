@@ -1,5 +1,5 @@
-from sqf.parser_types import ParserKeyword
-from sqf.base_type import BaseType, ParserType, BaseTypeContainer
+from .parser_types import ParserKeyword
+from .base_type import BaseType, ParserType, BaseTypeContainer
 
 
 class Type(BaseType):
@@ -355,7 +355,7 @@ class Keyword(BaseType):
 
 
 class Namespace(Type):
-    def __init__(self, token):
+    def __init__(self, token=""):
         assert isinstance(token, str)
         super().__init__()
         self._token = token

@@ -1,4 +1,4 @@
-from sqf.base_type import ParserType
+from .base_type import ParserType
 
 
 class Comment(ParserType):

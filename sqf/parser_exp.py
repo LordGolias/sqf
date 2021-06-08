@@ -1,5 +1,5 @@
-from sqf.base_type import ParserType
-from sqf.keywords import BINARY_OPERATORS, UNARY_OPERATORS, OP_COMPARISON, PREPROCESSORS_UNARY
+from .base_type import ParserType
+from .keywords import BINARY_OPERATORS, UNARY_OPERATORS, OP_COMPARISON, PREPROCESSORS_UNARY
 
 
 class EndToken:
