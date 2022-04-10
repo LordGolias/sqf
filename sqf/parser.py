@@ -5,7 +5,7 @@ import sqf.base_type
 from sqf.base_tokenizer import tokenize
 
 from sqf.exceptions import SQFParenthesisError, SQFParserError
-from sqf.types import Statement, Code, Number, Boolean, Variable, Array, String, Keyword, Namespace, Preprocessor, ParserType
+from sqf.types import Statement, Code, Number, Boolean, Variable, Array, HashMap, String, Keyword, Namespace, Preprocessor, ParserType
 from sqf.keywords import KEYWORDS, NAMESPACES, PREPROCESSORS
 from sqf.parser_types import Comment, Space, Tab, EndOfLine, BrokenEndOfLine, EndOfFile, ParserKeyword
 from sqf.interpreter_types import DefineStatement, DefineResult, IfDefStatement, IfDefResult

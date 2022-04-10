@@ -1,4 +1,4 @@
-from sqf.types import Statement, Code, Number, Boolean, Nothing, Variable, Array, String, Type, File
+from sqf.types import Statement, Code, Number, Boolean, Nothing, Variable, Array, HashMap, String, Type, File
 from sqf.interpreter_types import PrivateType
 from sqf.keywords import Keyword
 from sqf.parser import parse
@@ -54,6 +54,9 @@ class Interpreter(BaseInterpreter):
             # empty statements are ignored
             result = Array([self.execute_token(s)[1]
                            for s in token.value if s])
+        elif isinstance(token, HashMap):
+            result = HashMap([self.execute_token(s)[1] for s in token.key if s])
+            result = HashMap([self.execute_token(s)[1] for s in token.value if s])
         elif token == Keyword('isServer'):
             result = Boolean(self.client.is_server)
         elif token == Keyword('isDedicated'):

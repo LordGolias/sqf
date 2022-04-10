@@ -3,7 +3,7 @@ import math
 from sqf.common_expressions import TryCatchExpression, ForEachExpression, \
     WhileDoExpression, ForFromToDoExpression, ForSpecDoExpression, SwitchDoExpression, \
     IfThenSpecExpression, IfThenElseExpression, IfThenExpression, IfThenExitWithExpression
-from sqf.types import Keyword, Namespace, Number, Array, Code, Type, Boolean, String, Nothing, Variable
+from sqf.types import Keyword, Namespace, Number, Array, HashMap, Code, Type, Boolean, String, Nothing, Variable
 from sqf.exceptions import SQFParserError
 from sqf.keywords import OP_ARITHMETIC, OP_COMPARISON, OP_LOGICAL
 from sqf.expressions import BinaryExpression, UnaryExpression
@@ -367,14 +367,20 @@ INTERPRETER_EXPRESSIONS = [
     # Binary
     BinaryExpression(Array, Keyword('set'), Array,
                      Nothing, Action(lambda lhs_v, rhs_v: lhs_v.set(rhs_v))),
+    BinaryExpression(HashMap, Keyword('set'), Array,
+                     Nothing, Action(lambda lhs_v, rhs_v: lhs_v.set(rhs_v))),
 
     # Array related
     BinaryExpression(Array, Keyword('resize'), Number,
                      Nothing, Action(lambda lhs_v, rhs_v: lhs_v.resize(rhs_v.value))),
     UnaryExpression(Keyword('count'), Array, Number,
                     Action(lambda x: len(x.value))),
+    UnaryExpression(Keyword('count'), HashMap, Number,
+                    Action(lambda x: len(x.value))),
     BinaryExpression(Type, Keyword('in'), Array, Boolean,
                      Action(lambda x, array: x in array.value)),
+    BinaryExpression(Type, Keyword('in'), HashMap, Boolean,
+                     Action(lambda x, map: map.has(x))),
 
     BinaryExpression(Array, Keyword('select'), Number, None, _select),
     BinaryExpression(Array, Keyword('select'), Boolean, None, _select),
@@ -395,6 +401,8 @@ INTERPRETER_EXPRESSIONS = [
                     Action(lambda rhs_v: [Number(ord(s)) for s in rhs_v.value])),
     UnaryExpression(Keyword('toString'), Array, String,
                     Action(lambda rhs_v: '"'+''.join(chr(s.value) for s in rhs_v.value)+'"')),
+    UnaryExpression(Keyword('toString'), HashMap, String,
+                    Action(lambda lhs_v: lhs_v.toString())),
 
     # code and namespaces
     UnaryExpression(Keyword('call'), Code, None,

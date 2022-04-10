@@ -1,5 +1,5 @@
-from sqf.types import Keyword, Number, Array, Code, Type, Boolean, String, Namespace
-from sqf.interpreter_types import WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType, WithType
+from sqf.types import Keyword, Number, Array, HashMap, Code, Type, Boolean, String, Namespace
+from sqf.interpreter_types import ForEachType, WhileType, ForType, ForSpecType, SwitchType, IfType, ElseType, TryType, WithType
 from sqf.expressions import BinaryExpression, UnaryExpression
 
 
@@ -57,7 +57,7 @@ class ForFromToDoExpression(BinaryExpression):
 
 class ForEachExpression(BinaryExpression):
     def __init__(self, action=None):
-        super().__init__(Code, Keyword('forEach'), Array, None, action)
+        super().__init__(Code, Keyword('forEach'), ForEachType, None, action)
 
 
 class SwitchExpression(UnaryExpression):

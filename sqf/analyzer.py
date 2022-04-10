@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from sqf.types import Statement, Code, Nothing, Variable, Array, String, Type, File, BaseType, \
+from sqf.types import Statement, Code, Nothing, Variable, Array, HashMap, String, Type, File, BaseType, \
     Number, Preprocessor, Script, Anything
 from sqf.interpreter_types import InterpreterType, PrivateType, ForType, SwitchType, \
     DefineStatement, DefineResult, IfDefResult
@@ -131,6 +131,12 @@ class Analyzer(BaseInterpreter):
             result = Array([self.value(self.execute_token(s))
                            for s in token.value])
             result.position = token.position
+        elif isinstance(token, HashMap) and not token.is_undefined:
+            result = HashMap([self.value(self.execute_token(s))
+                             for s in token.key])
+            result = HashMap([self.value(self.execute_token(s))
+                             for s in token.value])
+            result.position = token.position
         else:
             null_expressions = values_to_expressions(
                 [token], EXPRESSIONS_MAP, EXPRESSIONS)
@@ -157,6 +163,10 @@ class Analyzer(BaseInterpreter):
             # store it here
         elif isinstance(token, Array) and token.value is not None:
             result = Array([self.execute_token(s) for s in token.value])
+            result.position = token.position
+        elif isinstance(token, HashMap) and token.value is not None:
+            result = HashMap([self.execute_token(s) for s in token.key])
+            result = HashMap([self.execute_token(s) for s in token.value])
             result.position = token.position
         else:
             result = token
@@ -435,9 +445,9 @@ class Analyzer(BaseInterpreter):
 
             extra_scope = None
             if case_found.keyword in (Keyword('select'), Keyword('apply'), Keyword('count'), Keyword('findif')):
-                extra_scope = {'_x': Anything()}
+                extra_scope = {'_x': Anything(), '_y': Anything()}
             elif case_found.keyword == Keyword('foreach'):
-                extra_scope = {'_foreachindex': Number(), '_x': Anything()}
+                extra_scope = {'_foreachindex': Number(), '_x': Anything(), '_y': Anything()}
             elif case_found.keyword == Keyword('catch'):
                 extra_scope = {'_exception': Anything()}
             elif case_found.keyword == Keyword('spawn'):

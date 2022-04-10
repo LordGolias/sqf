@@ -8,12 +8,14 @@ import urllib.request
 
 from sqf.interpreter_types import ForType, IfType, SwitchType, WhileType, TryType, WithType
 from sqf.types import Code, Array, Boolean, Number, Type, Nothing, Anything, String, Namespace, \
-    Object, Config, Script, Control, Group, Display, Side, Task, Location, NetObject, DiaryReport, TeamMember
+    Object, Config, Script, Control, Group, Display, Side, Task, Location, NetObject, DiaryReport, TeamMember, \
+    HashMap
 
 
 # The mapping of SQF types to our types
 STRING_TO_TYPE = {
     'array': Array,
+    'hashmap': HashMap,
     'scalar': Number,
     'bool': Boolean,
     'code': Code,
@@ -170,7 +172,7 @@ for line in data:
 
 preamble = r'''# This file is generated automatically by `build_database.py`. Change it there.
 from sqf.expressions import BinaryExpression, UnaryExpression, NullExpression
-from sqf.types import Keyword, Type, Nothing, Anything, String, Code, Array, Number, Boolean, Namespace, \
+from sqf.types import Keyword, Type, Nothing, Anything, String, Code, HashMap, Array, Number, Boolean, Namespace, \
     Object, Config, Script, Control, Group, Display, Side, Task, Location, NetObject, DiaryReport, TeamMember
 from sqf.interpreter_types import WhileType, \
     ForType, SwitchType, IfType, TryType, WithType'''
@@ -228,6 +230,7 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('!'), Boolean, Boolean),
     UnaryExpression(Keyword('+'), Number, Number),
     UnaryExpression(Keyword('+'), Array, Array),
+    UnaryExpression(Keyword('+'), HashMap, HashMap),
     UnaryExpression(Keyword('-'), Number, Number),
 '''
 

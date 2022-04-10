@@ -298,6 +298,138 @@ class Array(Type, BaseTypeContainer):
         self.update_tokens()
 
 
+class HashMap(Type, BaseTypeContainer):
+    def __init__(self, tokens=None):
+        Type.__init__(self)
+        if tokens is not None and type(tokens) is list and all(type(token) is list for token in tokens):
+            self._keys = list(map(lambda x: x[0], tokens))
+            self._values = list(map(lambda x: x[1], tokens))
+        else:
+            self._keys = None
+            self._values = None
+            tokens = []
+        BaseTypeContainer.__init__(self, tokens)
+        self.update_tokens()
+
+    def update_tokens(self):
+        self._tokens = [ParserKeyword(
+            '[')] + list(self._with_commas()) + [ParserKeyword(']')]
+
+    def _with_commas(self):
+        if self._values in [None, []]:
+            return []
+        it = iter(self._values)
+        yield next(it)
+        for x in it:
+            yield ParserKeyword(',')
+            yield x
+
+    @property
+    def is_undefined(self):
+        return self._values is None or self._keys is None
+
+    def _as_str(self, func=str):
+        if self.is_undefined:
+            return '[undefined]'
+        return ''.join(func(item) for item in self._tokens)
+
+    def __len__(self):
+        assert(not self.is_undefined)
+        assert(len(self._keys) == len(self._values))
+        return len(self._values)
+
+    def __getitem__(self, key):
+        assert(not self.is_undefined)
+        assert(len(self._keys) == len(self._values))
+        index = self._keys.index(key)
+        return self._values[index]
+
+    @property
+    def key(self):
+        return self._keys
+
+    @property
+    def value(self):
+        return self._values
+
+    def __repr__(self):
+        return '%s' % self._as_str(repr)
+
+    def toString(self):
+        if self.is_undefined:
+            return '[]'
+        hashMapStr = '['
+        for i in range(0, len(self._keys)):
+            hashMapStr = f'{hashMapStr}["{self._keys[i].value}","{self._values[i].value}"]{"," if i - 1 < len(self._keys) else ""}'
+        hashMapStr = f'{hashMapStr}]'
+        return hashMapStr
+
+    def merge(self, rhs_v):
+        assert(not self.is_undefined)
+        assert(isinstance(rhs_v, HashMap) or isinstance(rhs_v, Array))
+
+        mergingHashMap = rhs_v if isinstance(rhs_v, HashMap) else rhs_v[0]
+        overwrite = True if isinstance(rhs_v, HashMap) else rhs_v[1].value
+
+        assert(not mergingHashMap.is_undefined)
+        for i in range(0, len(mergingHashMap.key)):
+            key = mergingHashMap.key[i]
+            if self.has(key) and overwrite:
+                index = self._keys.index(key)
+                self._values[index] = mergingHashMap.value[i]
+            elif not self.has(key):
+                self._keys.append(key)
+                self._values.append(mergingHashMap.value[i])
+
+    def keys(self):
+        assert(not self.is_undefined)
+        return self._keys
+
+    def count(self):
+        return self.__len__()
+
+    def has(self, rhs_v):
+        if self.is_undefined:
+            return False
+        key = rhs_v.value
+        return key in self._keys
+
+    def deleteAt(self, rhs_v):
+        assert (not self.is_undefined)
+        key = rhs_v.value
+        index = self._keys.index(key)
+        value = self._values[index]
+        del self._keys[index]
+        del self._values[index]
+        return value
+
+    def get(self, rhs_v):
+        assert (not self.is_undefined)
+        key = rhs_v.value
+        index = self._keys.index(key)
+        return self._values[index]
+
+    def getOrDefault(self, rhs_v):
+        assert (not self.is_undefined)
+        assert(isinstance(rhs_v, Array))
+        key = rhs_v.value[0].value
+        default = rhs_v.value[1]
+        index = self._keys.index(key)
+        value = self._values[index]
+        if (value is None or value.is_undefined):
+            return default
+        return value
+
+    def set(self, rhs_v):
+        assert (not self.is_undefined)
+        assert(isinstance(rhs_v, Array))
+        key = rhs_v.value[0].value
+        value = rhs_v.value[1]
+        index = self._keys.index(key)
+        self._values[index] = value
+        self.update_tokens()
+
+
 class Statement(_Statement, BaseType):
     """
     The main class for holding statements. It is a BaseType because it can be nested, and

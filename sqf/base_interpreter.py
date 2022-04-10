@@ -1,4 +1,4 @@
-from sqf.types import Statement, Code, Nothing, Anything, Variable, Array, String, Type, File
+from sqf.types import Statement, Code, Nothing, Anything, Variable, Array, HashMap, String, Type, File
 from sqf.keywords import Keyword
 from sqf.exceptions import SQFParserError, SQFWarning
 import sqf.namespace

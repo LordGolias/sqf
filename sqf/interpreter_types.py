@@ -1,4 +1,5 @@
-from sqf.types import Code, String, Number, Array, Type, Variable, Boolean, Namespace, _Statement, Nothing, Statement
+from operator import isub
+from sqf.types import Code, HashMap, String, Number, Array, Type, Variable, Boolean, Namespace, _Statement, Nothing, Statement
 
 
 class InterpreterType(Type):
@@ -77,6 +78,17 @@ class ForSpecType(_InterpreterType):
     def __init__(self, array):
         assert (isinstance(array, Array))
         super().__init__(array)
+
+    @property
+    def array(self):
+        return self.token
+
+
+class ForEachType(_InterpreterType):
+    def __init__(self, token):
+        assert (isinstance(token, Array) or isinstance(token, HashMap))
+        self._isHashMap = isinstance(token, HashMap)
+        super().__init__(token)
 
     @property
     def array(self):
