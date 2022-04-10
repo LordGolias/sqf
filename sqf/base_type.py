@@ -5,6 +5,8 @@ def get_coord(string):
     line = len(lines)
     column = len(lines[-1]) + 1
     return line, column
+
+
 assert(get_coord('aa') == (1, 3))
 
 
@@ -23,6 +25,8 @@ def get_diff(string):
     line = len(lines) - 1
     column = len(lines[-1])
     return line, column
+
+
 assert(get_diff('') == (0, 0))
 assert(get_diff('aa') == (0, 2))
 assert(get_diff('aa\n') == (1, 0))
@@ -35,6 +39,7 @@ class BaseType:
     This is used for identifying, in a script, the line and column of an error.
     It also defines the __eq__
     """
+
     def __init__(self):
         self._position = None
 
@@ -85,6 +90,7 @@ class BaseTypeContainer(BaseType):
         * `base_tokens` to get tokens that have functionality.
         * `string_up_to`: the string representation of this class up to an index.
     """
+
     def __init__(self, tokens):
         super().__init__()
         for i, s in enumerate(tokens):

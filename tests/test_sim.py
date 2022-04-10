@@ -10,7 +10,8 @@ class Sim(TestCase):
         sim = Simulation()
 
         id = sim.add_client(Client(sim))
-        sim.clients[id].execute('"x" addPublicVariableEventHandler {y = _this select 1};')
+        sim.clients[id].execute(
+            '"x" addPublicVariableEventHandler {y = _this select 1};')
 
         # broadcast at assignment and the PublicVariableEventHandler (PVEH)
         sim.server.execute('x = 123; publicVariable "x";')
@@ -19,7 +20,8 @@ class Sim(TestCase):
 
         # broadcast to a JIP client updates the var but does not trigger the PVEH
         id = sim.add_client(Client(sim))
-        sim.clients[id].execute('"x" addPublicVariableEventHandler {y = _this select 1};')
+        sim.clients[id].execute(
+            '"x" addPublicVariableEventHandler {y = _this select 1};')
 
         self.assertEqual(N(123), sim._clients[id]._interpreter['x'])
         self.assertEqual(Nothing(), sim._clients[id]._interpreter['y'])

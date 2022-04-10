@@ -20,14 +20,17 @@ def analyze(code, writer, exceptions_list):
     try:
         result = parse(code)
     except SQFParserError as e:
-        writer.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
+        writer.write('[%d,%d]:%s\n' %
+                     (e.position[0], e.position[1] - 1, e.message))
         exceptions_list += [e]
         return
 
     exceptions = sqf.analyzer.analyze(result).exceptions
     for e in exceptions:
-        writer.write('[%d,%d]:%s\n' % (e.position[0], e.position[1] - 1, e.message))
+        writer.write('[%d,%d]:%s\n' %
+                     (e.position[0], e.position[1] - 1, e.message))
     exceptions_list += exceptions
+
 
 def analyze_dir(directory, writer, exceptions_list, exclude):
     """
@@ -59,11 +62,14 @@ def analyze_dir(directory, writer, exceptions_list, exclude):
 
 def readable_dir(prospective_dir):
     if not os.path.isdir(prospective_dir):
-        raise Exception("readable_dir:{0} is not a valid path".format(prospective_dir))
+        raise Exception(
+            "readable_dir:{0} is not a valid path".format(prospective_dir))
     if os.access(prospective_dir, os.R_OK):
         return prospective_dir
     else:
-        raise Exception("readable_dir:{0} is not a readable dir".format(prospective_dir))
+        raise Exception(
+            "readable_dir:{0} is not a readable dir".format(prospective_dir))
+
 
 def parse_args(args):
     parser = argparse.ArgumentParser(description="Static Analyzer of SQF code")
@@ -73,7 +79,8 @@ def parse_args(args):
                         help='The full path of the directory to recursively analyse sqf files on')
     parser.add_argument('-o', '--output', nargs='?', type=argparse.FileType('w'), default=None,
                         help='File path to redirect the output to (default to stdout)')
-    parser.add_argument('-x', '--exclude', action='append', nargs='?', help='Path that should be ignored (regex)', default=[])
+    parser.add_argument('-x', '--exclude', action='append', nargs='?',
+                        help='Path that should be ignored (regex)', default=[])
     parser.add_argument('-e', '--exit', type=str, default='',
                         help='How the parser should exit. \'\': exit code 0;\n'
                              '\'e\': exit with code 1 when any error is found;\n'
@@ -101,7 +108,8 @@ def entry_point(args):
         analyze(code, writer, exceptions_list)
     else:
         directory = args.directory.rstrip('/')
-        exclude = list(map(lambda x: x if x.startswith('/') else os.path.join(directory, x), args.exclude))
+        exclude = list(map(lambda x: x if x.startswith(
+            '/') else os.path.join(directory, x), args.exclude))
         analyze_dir(directory, writer, exceptions_list, exclude)
 
     if args.output is not None:
@@ -112,7 +120,8 @@ def entry_point(args):
         errors = [e for e in exceptions_list if isinstance(e, SQFParserError)]
         exit_code = int(len(errors) != 0)
     elif args.exit == 'w':
-        errors_and_warnings = [e for e in exceptions_list if isinstance(e, (SQFWarning, SQFParserError))]
+        errors_and_warnings = [e for e in exceptions_list if isinstance(
+            e, (SQFWarning, SQFParserError))]
         exit_code = int(len(errors_and_warnings) != 0)
     return int(exit_code)
 

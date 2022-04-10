@@ -7,11 +7,13 @@ class Expression:
     A generic class to represent an expression. The expression matches according to the
     types of their elements, listed in `types`.
     """
+
     def __init__(self, types_or_values, return_type):
         self.types_or_values = tuple(types_or_values)
         self.return_type = return_type
         for t_or_v in self.types_or_values:
-            assert (isinstance(t_or_v, (Type, Keyword)) or issubclass(t_or_v, Type))
+            assert (isinstance(t_or_v, (Type, Keyword))
+                    or issubclass(t_or_v, Type))
         assert(return_type is None or issubclass(return_type, Type))
 
     def is_match(self, values, exact=True):
@@ -28,8 +30,8 @@ class Expression:
                     return False
             else:  # it is a type
                 if not (isinstance(value, t_or_v) or
-                            (not exact and type(value) == Anything and
-                             not issubclass(t_or_v, InterpreterType))):
+                        (not exact and type(value) == Anything and
+                         not issubclass(t_or_v, InterpreterType))):
                     return False
         return True
 
@@ -69,9 +71,9 @@ class UnaryExpression(Expression):
         assert (isinstance(op, Keyword))
         super().__init__([op, rhs_type], return_type)
         if action is None and return_type is None:
-            action = lambda rhs, i: i.private_default_class()
+            def action(rhs, i): return i.private_default_class()
         elif action is None:
-            action = lambda rhs, i: None
+            def action(rhs, i): return None
         self.action = action
 
     def execute(self, values, interpreter):
@@ -88,9 +90,9 @@ class BinaryExpression(Expression):
         assert(isinstance(op, Keyword))
         super().__init__([lhs_type, op, rhs_type], return_type)
         if action is None and return_type is None:
-            action = lambda lhs, rhs, i: i.private_default_class()
+            def action(lhs, rhs, i): return i.private_default_class()
         elif action is None:
-            action = lambda lhs, rhs, i: None
+            def action(lhs, rhs, i): return None
         self.action = action
 
     def execute(self, values, interpreter):
@@ -108,7 +110,7 @@ class NullExpression(Expression):
         assert(return_type is not None)
         super().__init__([op], return_type)
         if action is None:
-            action = lambda i: None
+            def action(i): return None
         self.action = action
 
     def execute(self, values, interpreter):

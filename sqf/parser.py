@@ -16,7 +16,8 @@ def rindex(the_list, value):
     return len(the_list) - the_list[::-1].index(value) - 1
 
 
-_LEVELS = {'[]': 0, '()': 0, '{}': 0, '#include': 0, '#define': 0, 'ifdef': 0, 'ifdef_open_close': 0}
+_LEVELS = {'[]': 0, '()': 0, '{}': 0, '#include': 0, '#define': 0,
+           'ifdef': 0, 'ifdef_open_close': 0}
 
 
 STOP_KEYWORDS = {
@@ -25,7 +26,8 @@ STOP_KEYWORDS = {
 }
 
 OPEN_PARENTHESIS = (ParserKeyword('['), ParserKeyword('('), ParserKeyword('{'))
-CLOSE_PARENTHESIS = (ParserKeyword(']'), ParserKeyword(')'), ParserKeyword('}'))
+CLOSE_PARENTHESIS = (ParserKeyword(']'), ParserKeyword(')'),
+                     ParserKeyword('}'))
 
 
 def get_coord(tokens):
@@ -80,8 +82,10 @@ def replace_in_expression(expression, args, arg_indexes, all_tokens):
     replacing_expression = []
     for token in expression:
         if isinstance(token, Statement):
-            new_expression = replace_in_expression(token.content, args, arg_indexes, all_tokens)
-            token = Statement(new_expression, ending=token.ending, parenthesis=token.parenthesis)
+            new_expression = replace_in_expression(
+                token.content, args, arg_indexes, all_tokens)
+            token = Statement(new_expression, ending=token.ending,
+                              parenthesis=token.parenthesis)
             replacing_expression.append(token)
         else:
             for arg, arg_index in zip(args, arg_indexes):
@@ -100,7 +104,8 @@ def parse_strings_and_comments(all_tokens):
     string = ''  # the buffer for the activated mode
     tokens = []  # the final result
     in_double = False
-    mode = None  # [None, "string_single", "string_double", "comment_line", "comment_bulk"]
+    # [None, "string_single", "string_double", "comment_line", "comment_bulk"]
+    mode = None
 
     for i, token in enumerate(all_tokens):
         if mode == "string_double":
@@ -188,7 +193,8 @@ def _analyze_array(tokens, analyze_tokens, tokens_until):
         if token == ParserKeyword(','):
             first_comma_found = True
             if not part:
-                raise SQFParserError(get_coord(tokens_until), 'Array cannot have an empty element')
+                raise SQFParserError(
+                    get_coord(tokens_until), 'Array cannot have an empty element')
             result.append(analyze_tokens(part))
             part = []
         else:
@@ -196,7 +202,8 @@ def _analyze_array(tokens, analyze_tokens, tokens_until):
 
     # an empty array is a valid array
     if part == [] and first_comma_found:
-        raise SQFParserError(get_coord(tokens_until), 'Array cannot have an empty element')
+        raise SQFParserError(get_coord(tokens_until),
+                             'Array cannot have an empty element')
     elif tokens:
         result.append(analyze_tokens(part))
     return result
@@ -205,10 +212,12 @@ def _analyze_array(tokens, analyze_tokens, tokens_until):
 def _analyze_define(tokens):
     assert(tokens[0] == Preprocessor('#define'))
 
-    valid_indexes = [i for i in range(len(tokens)) if not isinstance(tokens[i], ParserType)]
+    valid_indexes = [i for i in range(
+        len(tokens)) if not isinstance(tokens[i], ParserType)]
 
     if len(valid_indexes) < 2:
-        raise SQFParserError(get_coord(str(tokens[0])), '#define needs at least one argument')
+        raise SQFParserError(
+            get_coord(str(tokens[0])), '#define needs at least one argument')
     variable = str(tokens[valid_indexes[1]])
     if len(valid_indexes) == 2:
         return DefineStatement(tokens, variable)
@@ -271,7 +280,8 @@ def get_ifdef_variable(tokens, ifdef_i, coord_until_here):
             variable = str(token)
     if variable is not None and eol_i is not None:
         return variable, eol_i
-    raise SQFParserError(add_coords(coord_until_here, tokens[:ifdef_i]), '#ifdef statement must contain a variable')
+    raise SQFParserError(add_coords(
+        coord_until_here, tokens[:ifdef_i]), '#ifdef statement must contain a variable')
 
 
 def parse_ifdef_block(expression, defines, coord_until_here):
@@ -295,7 +305,8 @@ def parse_ifdef_block(expression, defines, coord_until_here):
     endif_i = rindex(tokens, Preprocessor('#endif'))
     try:
         # if there is an if_def statement before #endif, the remaining tokens are transferred to it
-        nested_if_def = next(i for i, x in enumerate(tokens) if type(x) == IfDefStatement and i < endif_i)
+        nested_if_def = next(i for i, x in enumerate(
+            tokens) if type(x) == IfDefStatement and i < endif_i)
     except StopIteration:
         nested_if_def = None
 
@@ -320,7 +331,8 @@ def parse_ifdef_block(expression, defines, coord_until_here):
 
     try:
         # if there is an if_def statement after the #endif, the remaining tokens are transferred to it
-        if_def_i = next(i for i, x in enumerate(tokens) if type(x) == IfDefStatement and i > endif_i)
+        if_def_i = next(i for i, x in enumerate(tokens)
+                        if type(x) == IfDefStatement and i > endif_i)
         next_if_def = tokens[if_def_i]
         replacing_expression.append(next_if_def)
         remaining_tokens = tokens[if_def_i + 1:]
@@ -345,7 +357,8 @@ def is_finish_ifdef_parenthesis(token, lvls):
 
 
 def finish_ifdef(tokens, all_tokens, start, statements):
-    tokens.insert(0, all_tokens[start - 1])  # pick the token that triggered the statement
+    # pick the token that triggered the statement
+    tokens.insert(0, all_tokens[start - 1])
     assert (len(statements) == 0)
     return IfDefStatement(tokens)
 
@@ -383,9 +396,11 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
             lvls['ifdef'] -= 1
             if lvls['ifdef'] == 0:
                 assert (isinstance(expression, IfDefStatement))
-                replacing_expression = parse_ifdef_block(expression, defines, get_coord(all_tokens[:i - 1]))
+                replacing_expression = parse_ifdef_block(
+                    expression, defines, get_coord(all_tokens[:i - 1]))
 
-                new_all_tokens = sqf.base_type.get_all_tokens(tokens + replacing_expression)
+                new_all_tokens = sqf.base_type.get_all_tokens(
+                    tokens + replacing_expression)
 
                 result, _ = parse_block(new_all_tokens, analyze_tokens, 0, None, stop_statement,
                                         defines=defines)
@@ -404,9 +419,9 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                 i += size + 1
         # finish ifdef
         elif is_finish_ifdef_condition(tokens, lvls) and (
-                    is_end_statement(token, stop_statement) or
-                    is_finish_ifdef_parenthesis(token, lvls)
-                ) or lvls['ifdef'] > 1 and token == Preprocessor('#endif'):
+            is_end_statement(token, stop_statement) or
+            is_finish_ifdef_parenthesis(token, lvls)
+        ) or lvls['ifdef'] > 1 and token == Preprocessor('#endif'):
 
             if token != EndOfFile() and token not in CLOSE_PARENTHESIS:
                 tokens.append(token)
@@ -428,12 +443,14 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
             pass
         # try to match a #defined and get the arguments
         elif str(token) in defines:  # is a define
-            stop, define_statement, arg_indexes = find_match_if_def(all_tokens, i, defines, token)
+            stop, define_statement, arg_indexes = find_match_if_def(
+                all_tokens, i, defines, token)
 
             if stop:
                 arg_number = len(define_statement.args)
 
-                extra_tokens_to_move = 1 + 2 * (arg_number != 0) + 2 * arg_number - 1 * (arg_number != 0)
+                extra_tokens_to_move = 1 + 2 * \
+                    (arg_number != 0) + 2 * arg_number - 1 * (arg_number != 0)
 
                 replaced_expression = all_tokens[i:i + extra_tokens_to_move]
 
@@ -442,7 +459,7 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                                                              arg_indexes, all_tokens)
 
                 new_all_tokens = all_tokens[:i - len(tokens)] + tokens + replacing_expression + all_tokens[
-                                                                                                i + extra_tokens_to_move:]
+                    i + extra_tokens_to_move:]
 
                 new_start = i - len(tokens)
 
@@ -450,9 +467,11 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                                                stop_statement, defines=defines)
 
                 # the all_tokens of the statement before replacement
-                original_tokens_taken = len(replaced_expression) - len(replacing_expression) + size
+                original_tokens_taken = len(
+                    replaced_expression) - len(replacing_expression) + size
 
-                original_tokens = all_tokens[i - len(tokens):i - len(tokens) + original_tokens_taken]
+                original_tokens = all_tokens[i -
+                                             len(tokens):i - len(tokens) + original_tokens_taken]
 
                 if isinstance(expression, Statement):
                     expression = expression.content[0]
@@ -461,7 +480,8 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                     del original_tokens[-1]
                     original_tokens_taken -= 1
 
-                expression = DefineResult(original_tokens, define_statement, expression)
+                expression = DefineResult(
+                    original_tokens, define_statement, expression)
                 statements.append(expression)
 
                 i += original_tokens_taken - len(tokens) - 1
@@ -471,38 +491,45 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
             pass
         elif token == ParserKeyword('['):
             lvls['[]'] += 1
-            expression, size = parse_block(all_tokens, analyze_tokens, i + 1, lvls, stop_statement='single', defines=defines)
+            expression, size = parse_block(
+                all_tokens, analyze_tokens, i + 1, lvls, stop_statement='single', defines=defines)
             lvls['[]'] -= 1
             tokens.append(expression)
             i += size + 1
         elif token == ParserKeyword('('):
             lvls['()'] += 1
-            expression, size = parse_block(all_tokens, analyze_tokens, i + 1, lvls, stop_statement, defines=defines)
+            expression, size = parse_block(
+                all_tokens, analyze_tokens, i + 1, lvls, stop_statement, defines=defines)
             lvls['()'] -= 1
             tokens.append(expression)
             i += size + 1
         elif token == ParserKeyword('{'):
             lvls['{}'] += 1
-            expression, size = parse_block(all_tokens, analyze_tokens, i + 1, lvls, stop_statement, defines=defines)
+            expression, size = parse_block(
+                all_tokens, analyze_tokens, i + 1, lvls, stop_statement, defines=defines)
             lvls['{}'] -= 1
             tokens.append(expression)
             i += size + 1
 
         elif token == ParserKeyword(']'):
             if lvls['[]'] == 0:
-                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close right parenthesis without them opened.')
+                raise SQFParenthesisError(get_coord(
+                    all_tokens[:i]), 'Trying to close right parenthesis without them opened.')
 
             if statements:
                 if isinstance(statements[0], DefineResult):
-                    statements[0]._tokens = [Array(_analyze_array(statements[0]._tokens, analyze_tokens, all_tokens[:i]))]
+                    statements[0]._tokens = [Array(_analyze_array(
+                        statements[0]._tokens, analyze_tokens, all_tokens[:i]))]
                     return statements[0], i - start
                 else:
-                    raise SQFParserError(get_coord(all_tokens[:i]), 'A statement %s cannot be in an array' % Statement(statements))
+                    raise SQFParserError(get_coord(
+                        all_tokens[:i]), 'A statement %s cannot be in an array' % Statement(statements))
 
             return Array(_analyze_array(tokens, analyze_tokens, all_tokens[:i])), i - start
         elif token == ParserKeyword(')'):
             if lvls['()'] == 0:
-                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close parenthesis without opened parenthesis.')
+                raise SQFParenthesisError(get_coord(
+                    all_tokens[:i]), 'Trying to close parenthesis without opened parenthesis.')
 
             if tokens:
                 statements.append(analyze_tokens(tokens))
@@ -510,7 +537,8 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
             return Statement(statements, parenthesis=True), i - start
         elif token == ParserKeyword('}'):
             if lvls['{}'] == 0:
-                raise SQFParenthesisError(get_coord(all_tokens[:i]), 'Trying to close brackets without opened brackets.')
+                raise SQFParenthesisError(
+                    get_coord(all_tokens[:i]), 'Trying to close brackets without opened brackets.')
 
             if tokens:
                 statements.append(analyze_tokens(tokens))
@@ -532,16 +560,19 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
                 tokens = []
 
             lvls[token.value] += 1
-            expression, size = parse_block(all_tokens, analyze_tokens, i + 1, lvls, stop_statement, defines=defines)
+            expression, size = parse_block(
+                all_tokens, analyze_tokens, i + 1, lvls, stop_statement, defines=defines)
             lvls[token.value] -= 1
 
             statements.append(expression)
             i += size
         elif type(token) in (EndOfLine, Comment, EndOfFile) and any(lvls[x] != 0 for x in {'#define', '#include'}):
-            tokens.insert(0, all_tokens[start - 1])  # pick the token that triggered the statement
+            # pick the token that triggered the statement
+            tokens.insert(0, all_tokens[start - 1])
             if tokens[0] == Preprocessor('#define'):
                 define_statement = _analyze_define(tokens)
-                defines[define_statement.variable_name][len(define_statement.args)] = define_statement
+                defines[define_statement.variable_name][len(
+                    define_statement.args)] = define_statement
                 statements.append(define_statement)
             else:
                 statements.append(analyze_tokens(tokens))
@@ -560,7 +591,8 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
             if lvl_type == 'ifdef':
                 message = '#ifdef statement not closed'
 
-            raise SQFParenthesisError(get_coord(all_tokens[:start - 1]), message)
+            raise SQFParenthesisError(
+                get_coord(all_tokens[:start - 1]), message)
 
     if tokens:
         statements.append(analyze_tokens(tokens))
@@ -569,7 +601,8 @@ def parse_block(all_tokens, analyze_tokens, start=0, initial_lvls=None, stop_sta
 
 
 def parse(script):
-    tokens = [identify_token(x) for x in parse_strings_and_comments(tokenize(script))]
+    tokens = [identify_token(x)
+              for x in parse_strings_and_comments(tokenize(script))]
 
     result = parse_block(tokens + [EndOfFile()], _analyze_tokens)[0]
 

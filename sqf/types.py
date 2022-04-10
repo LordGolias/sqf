@@ -22,6 +22,7 @@ class ConstantValue(Type):
     """
     A constant (literal) value. For example, a number, a string, code.
     """
+
     def __init__(self, value=None):
         super().__init__()
         self._value = value
@@ -77,6 +78,7 @@ class Nothing(ConstantValue):
     """
     A type of unknown type
     """
+
     def __str__(self):
         return 'Nothing'
 
@@ -88,6 +90,7 @@ class Anything(Type):
     """
     A type of unknown type
     """
+
     def __repr__(self):
         return '<Anything>'
 
@@ -113,6 +116,7 @@ class Variable(Type):
     """
     A variable that holds values. It has a name (e.g. "_x").
     """
+
     def __init__(self, name):
         super().__init__()
         self._name = name
@@ -147,7 +151,8 @@ class _Statement(BaseTypeContainer):
         self._parenthesis = parenthesis
 
         if self._parenthesis:
-            tokens = [ParserKeyword(parenthesis[0])] + tokens + [ParserKeyword(parenthesis[1])]
+            tokens = [ParserKeyword(parenthesis[0])] + \
+                tokens + [ParserKeyword(parenthesis[1])]
 
         super().__init__(tokens)
         self._ending = None
@@ -156,7 +161,8 @@ class _Statement(BaseTypeContainer):
     def prepend(self, tokens):
         assert (isinstance(tokens, list))
         for i, s in enumerate(tokens):
-            assert (isinstance(s, (Type, Keyword, Preprocessor, Statement, ParserType)))
+            assert (isinstance(
+                s, (Type, Keyword, Preprocessor, Statement, ParserType)))
         self._tokens = tokens + self._tokens
 
     @property
@@ -214,7 +220,8 @@ class Array(Type, BaseTypeContainer):
         self.update_tokens()
 
     def update_tokens(self):
-        self._tokens = [ParserKeyword('[')] + list(self._with_commas()) + [ParserKeyword(']')]
+        self._tokens = [ParserKeyword(
+            '[')] + list(self._with_commas()) + [ParserKeyword(']')]
 
     def _with_commas(self):
         if self._values in [None, []]:
@@ -296,6 +303,7 @@ class Statement(_Statement, BaseType):
     The main class for holding statements. It is a BaseType because it can be nested, and
     it is a _Statement because it can hold elements.
     """
+
     def __init__(self, tokens, parenthesis=False, ending=None):
         if parenthesis:
             parenthesis = '()'
@@ -311,6 +319,7 @@ class Code(_Statement, Type):
     """
     The class that holds (non-interpreted) code.
     """
+
     def __init__(self, tokens=None):
         Type.__init__(self)
         if tokens is not None:
@@ -388,6 +397,7 @@ class File(Code):
     """
     Like code, but without parenthesis
     """
+
     def __init__(self, tokens):
         _Statement.__init__(self, tokens)
 

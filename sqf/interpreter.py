@@ -52,7 +52,8 @@ class Interpreter(BaseInterpreter):
             result = self.execute_single(statement=token)
         elif isinstance(token, Array):
             # empty statements are ignored
-            result = Array([self.execute_token(s)[1] for s in token.value if s])
+            result = Array([self.execute_token(s)[1]
+                           for s in token.value if s])
         elif token == Keyword('isServer'):
             result = Boolean(self.client.is_server)
         elif token == Keyword('isDedicated'):
@@ -92,7 +93,8 @@ class Interpreter(BaseInterpreter):
         # todo: replace all elif below by expressions
         elif len(tokens) == 2 and tokens[0] == Keyword('publicVariable'):
             if not isinstance(tokens[1], String) or tokens[1].value.startswith('_'):
-                raise SQFParserError(statement.position, 'Interpretation of "%s" failed' % statement)
+                raise SQFParserError(
+                    statement.position, 'Interpretation of "%s" failed' % statement)
 
             var_name = tokens[1].value
             scope = self.get_scope(var_name, 'missionNamespace')
@@ -100,11 +102,13 @@ class Interpreter(BaseInterpreter):
 
         elif len(tokens) == 2 and tokens[0] == Keyword('publicVariableServer'):
             if not isinstance(tokens[1], String) or tokens[1].value.startswith('_'):
-                raise SQFParserError(statement.position, 'Interpretation of "%s" failed' % statement)
+                raise SQFParserError(
+                    statement.position, 'Interpretation of "%s" failed' % statement)
 
             var_name = tokens[1].value
             scope = self.get_scope(var_name, 'missionNamespace')
-            self.simulation.broadcast(var_name, scope[var_name], -1)  # -1 => to server
+            self.simulation.broadcast(
+                var_name, scope[var_name], -1)  # -1 => to server
 
         elif len(tokens) == 2 and tokens[0] == Keyword('private'):
             if isinstance(values[1], String):
@@ -134,14 +138,16 @@ class Interpreter(BaseInterpreter):
                     lhs = self.get_variable(base_tokens[0])
 
                 if not isinstance(lhs, Variable) or not isinstance(rhs_v, Type):
-                    raise SQFParserError(statement.position, 'Interpretation of "%s" failed' % statement)
+                    raise SQFParserError(
+                        statement.position, 'Interpretation of "%s" failed' % statement)
 
                 scope = self.get_scope(lhs.name)
                 scope[lhs.name] = rhs_v
                 outcome = rhs
             elif op == Keyword('publicVariableClient'):
                 if not lhs_t == Number or rhs.value.startswith('_'):
-                    raise SQFParserError(statement.position, 'Interpretation of "%s" failed' % statement)
+                    raise SQFParserError(
+                        statement.position, 'Interpretation of "%s" failed' % statement)
                 client_id = lhs.value
                 var_name = rhs.value
                 scope = self.get_scope(var_name, 'missionNamespace')
@@ -150,11 +156,12 @@ class Interpreter(BaseInterpreter):
         elif len(tokens) == 1 and isinstance(tokens[0], (Type, Keyword)):
             outcome = values[0]
         else:
-            raise SQFParserError(statement.position, 'Interpretation of "%s" failed' % statement)
+            raise SQFParserError(statement.position,
+                                 'Interpretation of "%s" failed' % statement)
 
         if statement.ending:
             outcome = _outcome
-        assert(type(outcome) in (Nothing,Keyword) or not outcome.is_undefined)
+        assert(type(outcome) in (Nothing, Keyword) or not outcome.is_undefined)
         return outcome
 
 

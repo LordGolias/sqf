@@ -7,6 +7,7 @@ class WhileExpression(UnaryExpression):
     """
     Catches `While {}` expression and stores it as a WhileType
     """
+
     def __init__(self):
         super().__init__(Keyword('while'), Code, WhileType, lambda v, i: v)
 
@@ -71,7 +72,8 @@ class CaseExpression(UnaryExpression):
 
 class DefaultExpression(UnaryExpression):
     def __init__(self):
-        super().__init__(Keyword('default'), Type, SwitchType, lambda v, i: (self.keyword, v))
+        super().__init__(Keyword('default'), Type,
+                         SwitchType, lambda v, i: (self.keyword, v))
 
 
 class SwitchDoExpression(BinaryExpression):
@@ -91,7 +93,8 @@ class IfThenExpression(BinaryExpression):
 
 class ElseExpression(BinaryExpression):
     def __init__(self):
-        super().__init__(Code, Keyword('else'), Code, ElseType, lambda lhs, rhs, i: (lhs, rhs))
+        super().__init__(Code, Keyword('else'), Code,
+                         ElseType, lambda lhs, rhs, i: (lhs, rhs))
 
 
 class IfThenElseExpression(BinaryExpression):
@@ -127,7 +130,8 @@ class WithExpression(UnaryExpression):
 class WithDoExpression(BinaryExpression):
     def __init__(self, action=None):
         if action is None:
-            action = lambda lhs, rhs, i: i.execute_code(rhs, namespace_name=lhs.namespace.value)
+            def action(lhs, rhs, i): return i.execute_code(
+                rhs, namespace_name=lhs.namespace.value)
         super().__init__(WithType, Keyword('do'), Code, None, action)
 
 
@@ -162,9 +166,13 @@ COMMON_EXPRESSIONS = [
     IfThenExpression(),
     IfThenExitWithExpression(),
 
-    UnaryExpression(Keyword('params'), Array, Boolean, lambda rhs_v, i: i.add_params(rhs_v)),
-    BinaryExpression(Type, Keyword('params'), Array, Boolean, lambda lhs_v, rhs_v, i: i.add_params(rhs_v, lhs_v)),
+    UnaryExpression(Keyword('params'), Array, Boolean,
+                    lambda rhs_v, i: i.add_params(rhs_v)),
+    BinaryExpression(Type, Keyword('params'), Array, Boolean,
+                     lambda lhs_v, rhs_v, i: i.add_params(rhs_v, lhs_v)),
 
-    UnaryExpression(Keyword('call'), Code, None, lambda rhs_v, i: i.execute_code(rhs_v)),
-    BinaryExpression(Type, Keyword('call'), Code, None, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, extra_scope={"_this": lhs_v})),
+    UnaryExpression(Keyword('call'), Code, None,
+                    lambda rhs_v, i: i.execute_code(rhs_v)),
+    BinaryExpression(Type, Keyword('call'), Code, None, lambda lhs_v,
+                     rhs_v, i: i.execute_code(rhs_v, extra_scope={"_this": lhs_v})),
 ]

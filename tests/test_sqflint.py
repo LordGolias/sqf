@@ -52,8 +52,10 @@ class ParseCode(TestCase):
         self.assertTrue('is not a valid path' in str(context.exception))
 
     def test_exclude(self):
-        args = parse_args(['--exclude', 'tests/test_dir', '--exit', 'w', '--exclude', 'tests/test_dir/test.sqf'])
-        self.assertEqual(['tests/test_dir', 'tests/test_dir/test.sqf'], args.exclude)
+        args = parse_args(['--exclude', 'tests/test_dir', '--exit',
+                          'w', '--exclude', 'tests/test_dir/test.sqf'])
+        self.assertEqual(
+            ['tests/test_dir', 'tests/test_dir/test.sqf'], args.exclude)
 
     def test_exit_code(self):
         with captured_output():
@@ -89,7 +91,8 @@ class ParseCode(TestCase):
 
     def test_directory_run_with_exclusion(self):
         with captured_output() as (out, err):
-            entry_point(['--directory', 'tests/test_dir', '--exclude', 'subdir', '-x', 'test.\.sqf'])
+            entry_point(['--directory', 'tests/test_dir',
+                        '--exclude', 'subdir', '-x', 'test.\.sqf'])
 
         self.assertEqual(
             out.getvalue(),
@@ -98,7 +101,8 @@ class ParseCode(TestCase):
             'tests/test_dir/subdir EXCLUDED\n')
 
     def test_directory_run_to_file(self):
-        entry_point(['--directory', 'tests/test_dir', '-o', 'tests/result.txt'])
+        entry_point(['--directory', 'tests/test_dir',
+                    '-o', 'tests/result.txt'])
 
         with open('tests/result.txt') as f:
             result = f.read()

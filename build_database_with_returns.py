@@ -133,12 +133,12 @@ for line in data:
                              '{lhs_type}, ' \
                              'Keyword(\'{keyword}\'), ' \
                              '{rhs_type}, {return_type}{init_code})'.format(
-                    lhs_type=lhs_type.__name__,
-                    keyword=op_name,
-                    rhs_type=rhs_type.__name__,
-                    return_type=return_type.__name__,
-                    init_code=init_code
-                )
+                                 lhs_type=lhs_type.__name__,
+                                 keyword=op_name,
+                                 rhs_type=rhs_type.__name__,
+                                 return_type=return_type.__name__,
+                                 init_code=init_code
+                             )
                 expressions.append(expression)
     elif num_sections == 5:
         if return_type in TYPE_TO_INIT_ARGS:
@@ -149,11 +149,11 @@ for line in data:
             expression = 'UnaryExpression(' \
                          'Keyword(\'{keyword}\'), ' \
                          '{rhs_type}, {return_type}{init_code})'.format(
-                keyword=op_name,
-                rhs_type=rhs_type.__name__,
-                return_type=return_type.__name__,
-                init_code=init_code
-            )
+                             keyword=op_name,
+                             rhs_type=rhs_type.__name__,
+                             return_type=return_type.__name__,
+                             init_code=init_code
+                         )
             expressions.append(expression)
     else:
         if return_type in TYPE_TO_INIT_ARGS:
@@ -162,10 +162,10 @@ for line in data:
         expression = 'NullExpression(' \
                      'Keyword(\'{keyword}\'), ' \
                      '{return_type}{init_code})'.format(
-                keyword=op_name,
-                return_type=return_type.__name__,
-                init_code=init_code
-            )
+                         keyword=op_name,
+                         return_type=return_type.__name__,
+                         init_code=init_code
+                     )
         expressions.append(expression)
 
 preamble = r'''# This file is generated automatically by `build_database.py`. Change it there.

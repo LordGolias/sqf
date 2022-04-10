@@ -94,7 +94,8 @@ class BaseInterpreter:
                     self.exception(
                         SQFParserError(base_token.position, '`params` array element must have 2-4 elements'))
             else:
-                self.exception(SQFParserError(base_token.position, '`params` array element must be a string or array'))
+                self.exception(SQFParserError(
+                    base_token.position, '`params` array element must be a string or array'))
         return True
 
     def value(self, token, namespace_name=None):
@@ -144,11 +145,13 @@ class BaseInterpreter:
         """
         for variable in variables:
             if not isinstance(variable, String):
-                self.exception(SQFParserError(variable.position, 'Variable in private must be a string (is %s)' % type(variable)))
+                self.exception(SQFParserError(
+                    variable.position, 'Variable in private must be a string (is %s)' % type(variable)))
                 continue
 
             if not variable.value.startswith('_'):
-                self.exception(SQFParserError(variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % variable.value))
+                self.exception(SQFParserError(
+                    variable.position, 'Cannot make global variable "%s" private (underscore missing?)' % variable.value))
                 continue
             self._add_private(variable)
 

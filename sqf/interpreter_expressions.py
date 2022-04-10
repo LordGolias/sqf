@@ -69,7 +69,8 @@ class LogicalExpression(BinaryExpression):
         if isinstance(rhs, Code):
             result = interpreter.execute_code(rhs)
             if type(result) not in (Boolean, Nothing):
-                interpreter.exception(SQFParserError(rhs.position, 'code return must be a Boolean (returns %s)' % type(result).__name__))
+                interpreter.exception(SQFParserError(
+                    rhs.position, 'code return must be a Boolean (returns %s)' % type(result).__name__))
                 return None
         else:
             result = rhs
@@ -102,7 +103,8 @@ def _select_array(lhs, rhs, interpreter):
     count = rhs.value[1].value
 
     if start > len(lhs.value):
-        interpreter.exception(SQFParserError(lhs.position, 'Selecting element past size'))
+        interpreter.exception(SQFParserError(
+            lhs.position, 'Selecting element past size'))
 
     return lhs.value[start:start + count]
 
@@ -228,7 +230,8 @@ def parse_switch(interpreter, code):
 
         if values[0].keyword == Keyword('default'):
             if default_used:
-                interpreter.exception(SQFParserError(code.position, 'Switch code contains more than 1 `default`'))
+                interpreter.exception(SQFParserError(
+                    code.position, 'Switch code contains more than 1 `default`'))
             default_used = True
             assert(isinstance(values[0].result, Code))
             conditions.append(('default', values[0].result))
@@ -280,7 +283,8 @@ def execute_switch(interpreter, result, conditions):
 def _foreach_loop(interpreter, code, elements):
     outcome = Nothing()
     for i, x in enumerate(elements):
-        outcome = interpreter.execute_code(code, extra_scope={'_x': x, '_forEachIndex': Number(i)})
+        outcome = interpreter.execute_code(
+            code, extra_scope={'_x': x, '_forEachIndex': Number(i)})
     return outcome
 
 
@@ -289,7 +293,8 @@ def _forvar_loop_code(interpreter, token_name, start, stop, step, code):
     outcome.position = code.position
 
     for i in range(start, stop + 1, step):
-        outcome = interpreter.execute_code(code, extra_scope={token_name: Number(i)})
+        outcome = interpreter.execute_code(
+            code, extra_scope={token_name: Number(i)})
     return outcome
 
 
@@ -338,21 +343,27 @@ INTERPRETER_EXPRESSIONS = [
 
     ForFromToDoExpression(_forvar_loop),
     ForSpecDoExpression(_forspecs_loop),
-    SwitchDoExpression(lambda lhs, rhs, i: execute_switch(i, lhs.result, parse_switch(i, rhs))),
+    SwitchDoExpression(lambda lhs, rhs, i: execute_switch(
+        i, lhs.result, parse_switch(i, rhs))),
 
-    IfThenSpecExpression(lambda if_type, array, i: _if_then_else_code(i, if_type.condition.value, array.value[0], array.value[1])),
+    IfThenSpecExpression(lambda if_type, array, i: _if_then_else_code(
+        i, if_type.condition.value, array.value[0], array.value[1])),
     IfThenElseExpression(_if_then_else),
     IfThenExpression(_if_then_else),
     IfThenExitWithExpression(),
 
     # params
-    UnaryExpression(Keyword('params'), Array, Nothing, lambda rhs_v, i: i.add_params(rhs_v)),
-    BinaryExpression(Type, Keyword('params'), Array, Nothing, lambda lhs_v, rhs_v, i: i.add_params(rhs_v)),
+    UnaryExpression(Keyword('params'), Array, Nothing,
+                    lambda rhs_v, i: i.add_params(rhs_v)),
+    BinaryExpression(Type, Keyword('params'), Array, Nothing,
+                     lambda lhs_v, rhs_v, i: i.add_params(rhs_v)),
 
     # Unary
     UnaryExpression(Keyword('-'), Number, Number, Action(lambda x: -x.value)),
-    UnaryExpression(Keyword('floor'), Number, Number, Action(lambda x: math.floor(x.value))),
-    UnaryExpression(Keyword('reverse'), Array, Nothing, Action(lambda rhs_v: rhs_v.reverse())),
+    UnaryExpression(Keyword('floor'), Number, Number,
+                    Action(lambda x: math.floor(x.value))),
+    UnaryExpression(Keyword('reverse'), Array, Nothing,
+                    Action(lambda rhs_v: rhs_v.reverse())),
     # Binary
     BinaryExpression(Array, Keyword('set'), Array,
                      Nothing, Action(lambda lhs_v, rhs_v: lhs_v.set(rhs_v))),
@@ -360,8 +371,10 @@ INTERPRETER_EXPRESSIONS = [
     # Array related
     BinaryExpression(Array, Keyword('resize'), Number,
                      Nothing, Action(lambda lhs_v, rhs_v: lhs_v.resize(rhs_v.value))),
-    UnaryExpression(Keyword('count'), Array, Number, Action(lambda x: len(x.value))),
-    BinaryExpression(Type, Keyword('in'), Array, Boolean, Action(lambda x, array: x in array.value)),
+    UnaryExpression(Keyword('count'), Array, Number,
+                    Action(lambda x: len(x.value))),
+    BinaryExpression(Type, Keyword('in'), Array, Boolean,
+                     Action(lambda x, array: x in array.value)),
 
     BinaryExpression(Array, Keyword('select'), Number, None, _select),
     BinaryExpression(Array, Keyword('select'), Boolean, None, _select),
@@ -371,9 +384,12 @@ INTERPRETER_EXPRESSIONS = [
     BinaryExpression(String, Keyword('find'), String, Number,
                      Action(lambda lhs_v, rhs_v: lhs_v.value.find(rhs_v.value))),
 
-    BinaryExpression(Array, Keyword('pushBack'), Type, Number, Action(_pushBack)),
-    BinaryExpression(Array, Keyword('pushBackUnique'), Type, Number, Action(_pushBackUnique)),
-    BinaryExpression(Array, Keyword('append'), Array, Nothing, Action(lambda lhs_v, rhs_v: lhs_v.add(rhs_v.value))),
+    BinaryExpression(Array, Keyword('pushBack'),
+                     Type, Number, Action(_pushBack)),
+    BinaryExpression(Array, Keyword('pushBackUnique'),
+                     Type, Number, Action(_pushBackUnique)),
+    BinaryExpression(Array, Keyword('append'), Array, Nothing,
+                     Action(lambda lhs_v, rhs_v: lhs_v.add(rhs_v.value))),
 
     UnaryExpression(Keyword('toArray'), String, Array,
                     Action(lambda rhs_v: [Number(ord(s)) for s in rhs_v.value])),
@@ -381,26 +397,36 @@ INTERPRETER_EXPRESSIONS = [
                     Action(lambda rhs_v: '"'+''.join(chr(s.value) for s in rhs_v.value)+'"')),
 
     # code and namespaces
-    UnaryExpression(Keyword('call'), Code, None, lambda rhs_v, i: i.execute_code(rhs_v)),
-    BinaryExpression(Type, Keyword('call'), Code, None, lambda lhs_v, rhs_v, i: i.execute_code(rhs_v, extra_scope={"_this": lhs_v})),
+    UnaryExpression(Keyword('call'), Code, None,
+                    lambda rhs_v, i: i.execute_code(rhs_v)),
+    BinaryExpression(Type, Keyword('call'), Code, None, lambda lhs_v,
+                     rhs_v, i: i.execute_code(rhs_v, extra_scope={"_this": lhs_v})),
 
-    BinaryExpression(Namespace, Keyword('setVariable'), Array, Nothing, _setVariable),
+    BinaryExpression(Namespace, Keyword('setVariable'),
+                     Array, Nothing, _setVariable),
 
-    BinaryExpression(Namespace, Keyword('getVariable'), String, None, _getVariableString),
-    BinaryExpression(Namespace, Keyword('getVariable'), Array, None, _getVariableArray),
+    BinaryExpression(Namespace, Keyword('getVariable'),
+                     String, None, _getVariableString),
+    BinaryExpression(Namespace, Keyword('getVariable'),
+                     Array, None, _getVariableArray),
 
-    BinaryExpression(String, Keyword('addPublicVariableEventHandler'), Code, None, _addPublicVariableEventHandler),
+    BinaryExpression(String, Keyword('addPublicVariableEventHandler'),
+                     Code, None, _addPublicVariableEventHandler),
 
-    BinaryExpression(Array, Keyword('+'), Array, Array, Action(lambda lhs_v, rhs_v: lhs_v.value + rhs_v.value)),
-    BinaryExpression(Array, Keyword('-'), Array, Array, Action(_subtract_arrays)),
+    BinaryExpression(Array, Keyword('+'), Array, Array,
+                     Action(lambda lhs_v, rhs_v: lhs_v.value + rhs_v.value)),
+    BinaryExpression(Array, Keyword('-'), Array,
+                     Array, Action(_subtract_arrays)),
 
-    BinaryExpression(String, Keyword('+'), String, String, Action(lambda lhs, rhs: lhs.container + lhs.value + rhs.value + lhs.container)),
+    BinaryExpression(String, Keyword('+'), String, String, Action(lambda lhs,
+                     rhs: lhs.container + lhs.value + rhs.value + lhs.container)),
 ]
 
 for op in OP_COMPARISON:
     for lhs_rhs_type in [Number, String]:
         if lhs_rhs_type == Number or lhs_rhs_type == String and op in [Keyword('=='), Keyword('!=')]:
-            INTERPRETER_EXPRESSIONS.append(ComparisonExpression(op, lhs_rhs_type))
+            INTERPRETER_EXPRESSIONS.append(
+                ComparisonExpression(op, lhs_rhs_type))
 for op in OP_ARITHMETIC:
     INTERPRETER_EXPRESSIONS.append(ArithmeticExpression(op))
 for op in OP_LOGICAL:

@@ -7,7 +7,8 @@ KEYWORDS = {'=', '\\'}
 
 PREPROCESSORS_UNARY = {'#ifdef', '#ifndef', '#undef', '#include'}
 PREPROCESSORS_NULLARY = {'#else', '#endif'}
-PREPROCESSORS = {'#define'}.union(PREPROCESSORS_UNARY).union(PREPROCESSORS_NULLARY)
+PREPROCESSORS = {'#define'}.union(
+    PREPROCESSORS_UNARY).union(PREPROCESSORS_NULLARY)
 
 KEYWORDS = KEYWORDS.union(PREPROCESSORS)
 
@@ -30,13 +31,16 @@ for expression in EXPRESSIONS:
     KEYWORDS.add(op.value.lower())
 
 
-OP_ARITHMETIC = [Keyword(s) for s in ('+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')]
+OP_ARITHMETIC = [Keyword(s) for s in (
+    '+', '-', '*', '/', '%', 'mod', '^', 'max', 'floor')]
 
 OP_LOGICAL = [Keyword(s) for s in ('&&', 'and', '||', 'or')]
 
-OP_COMPARISON = [Keyword(s) for s in ('==', 'isequalto', '!=', '<', '>', '<=', '>=', '>>')]
+OP_COMPARISON = [Keyword(s) for s in (
+    '==', 'isequalto', '!=', '<', '>', '<=', '>=', '>>')]
 
-NAMESPACES = {'missionnamespace', 'profilenamespace', 'uinamespace', 'parsingnamespace'}
+NAMESPACES = {'missionnamespace', 'profilenamespace',
+              'uinamespace', 'parsingnamespace'}
 
 # namespaces are parsed as such
 KEYWORDS = KEYWORDS - NAMESPACES

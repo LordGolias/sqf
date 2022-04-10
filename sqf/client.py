@@ -60,7 +60,8 @@ class Simulation:
         self._clients.append(client)
 
         for var_name in self._broadcasted:
-            client.set_variable(var_name, self._broadcasted[var_name], broadcast=False)
+            client.set_variable(
+                var_name, self._broadcasted[var_name], broadcast=False)
 
         return len(self._clients) - 1
 

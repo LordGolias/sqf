@@ -145,7 +145,8 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('buttonaction'), Number, String),
     UnaryExpression(Keyword('buttonsetaction'), Array, Nothing),
     UnaryExpression(Keyword('calculatepath'), Array, Object),
-    UnaryExpression(Keyword('calculateplayervisibilitybyfriendly'), Boolean, Nothing),
+    UnaryExpression(
+        Keyword('calculateplayervisibilitybyfriendly'), Boolean, Nothing),
     UnaryExpression(Keyword('call'), Code, Anything),
     UnaryExpression(Keyword('camcommitted'), Object, Boolean),
     UnaryExpression(Keyword('camdestroy'), Object, Nothing),
@@ -362,7 +363,8 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('enablecaustics'), Boolean, Nothing),
     UnaryExpression(Keyword('enabledebriefingstats'), Array, Nothing),
     UnaryExpression(Keyword('enablediaglegend'), Boolean, Nothing),
-    UnaryExpression(Keyword('enabledynamicsimulationsystem'), Boolean, Nothing),
+    UnaryExpression(Keyword('enabledynamicsimulationsystem'),
+                    Boolean, Nothing),
     UnaryExpression(Keyword('enableengineartillery'), Boolean, Nothing),
     UnaryExpression(Keyword('enableenvironment'), Boolean, Nothing),
     UnaryExpression(Keyword('enableenvironment'), Array, Nothing),
@@ -690,9 +692,11 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('leaderboardinit'), String, Boolean),
     UnaryExpression(Keyword('leaderboardrequestrowsfriends'), String, Boolean),
     UnaryExpression(Keyword('leaderboardrequestrowsglobal'), Array, Boolean),
-    UnaryExpression(Keyword('leaderboardrequestrowsglobalarounduser'), Array, Boolean),
+    UnaryExpression(
+        Keyword('leaderboardrequestrowsglobalarounduser'), Array, Boolean),
     UnaryExpression(Keyword('leaderboardsrequestuploadscore'), Array, Boolean),
-    UnaryExpression(Keyword('leaderboardsrequestuploadscorekeepbest'), Array, Boolean),
+    UnaryExpression(
+        Keyword('leaderboardsrequestuploadscorekeepbest'), Array, Boolean),
     UnaryExpression(Keyword('leaderboardstate'), String, Number),
     UnaryExpression(Keyword('lifestate'), Object, String),
     UnaryExpression(Keyword('lightdetachobject'), Object, Nothing),
@@ -731,7 +735,8 @@ EXPRESSIONS = [
     UnaryExpression(Keyword('lnbsetpicturecolor'), Array, Nothing),
     UnaryExpression(Keyword('lnbsetpicturecolorright'), Array, Nothing),
     UnaryExpression(Keyword('lnbsetpicturecolorselected'), Array, Nothing),
-    UnaryExpression(Keyword('lnbsetpicturecolorselectedright'), Array, Nothing),
+    UnaryExpression(Keyword('lnbsetpicturecolorselectedright'),
+                    Array, Nothing),
     UnaryExpression(Keyword('lnbsetpictureright'), Array, Nothing),
     UnaryExpression(Keyword('lnbsettext'), Array, Nothing),
     UnaryExpression(Keyword('lnbsettextright'), Array, Nothing),
@@ -1303,11 +1308,13 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('addaction'), Array, Number),
     BinaryExpression(Object, Keyword('addbackpack'), String, Nothing),
     BinaryExpression(Object, Keyword('addbackpackcargo'), Array, Nothing),
-    BinaryExpression(Object, Keyword('addbackpackcargoglobal'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'addbackpackcargoglobal'), Array, Nothing),
     BinaryExpression(Object, Keyword('addbackpackglobal'), String, Nothing),
     BinaryExpression(Object, Keyword('addcuratoraddons'), Array, Nothing),
     BinaryExpression(Object, Keyword('addcuratorcameraarea'), Array, Nothing),
-    BinaryExpression(Object, Keyword('addcuratoreditableobjects'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'addcuratoreditableobjects'), Array, Nothing),
     BinaryExpression(Object, Keyword('addcuratoreditingarea'), Array, Nothing),
     BinaryExpression(Object, Keyword('addcuratorpoints'), Number, Nothing),
     BinaryExpression(Control, Keyword('addeditorobject'), Array, String),
@@ -1328,7 +1335,8 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('addmagazine'), Array, Nothing),
     BinaryExpression(Object, Keyword('addmagazineammocargo'), Array, Nothing),
     BinaryExpression(Object, Keyword('addmagazinecargo'), Array, Nothing),
-    BinaryExpression(Object, Keyword('addmagazinecargoglobal'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'addmagazinecargoglobal'), Array, Nothing),
     BinaryExpression(Object, Keyword('addmagazineglobal'), String, Nothing),
     BinaryExpression(Object, Keyword('addmagazines'), Array, Nothing),
     BinaryExpression(Object, Keyword('addmagazineturret'), Array, Nothing),
@@ -1338,14 +1346,18 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('addownedmine'), Object, Nothing),
     BinaryExpression(Object, Keyword('addplayerscores'), Array, Nothing),
     BinaryExpression(Object, Keyword('addprimaryweaponitem'), String, Nothing),
-    BinaryExpression(String, Keyword('addpublicvariableeventhandler'), Code, Nothing),
-    BinaryExpression(String, Keyword('addpublicvariableeventhandler'), Array, Nothing),
+    BinaryExpression(String, Keyword(
+        'addpublicvariableeventhandler'), Code, Nothing),
+    BinaryExpression(String, Keyword(
+        'addpublicvariableeventhandler'), Array, Nothing),
     BinaryExpression(Object, Keyword('addrating'), Number, Nothing),
     BinaryExpression(TeamMember, Keyword('addresources'), Array, Nothing),
     BinaryExpression(Object, Keyword('addscore'), Number, Nothing),
     BinaryExpression(Side, Keyword('addscoreside'), Number, Nothing),
-    BinaryExpression(Object, Keyword('addsecondaryweaponitem'), String, Nothing),
-    BinaryExpression(TeamMember, Keyword('addteammember'), TeamMember, Nothing),
+    BinaryExpression(Object, Keyword(
+        'addsecondaryweaponitem'), String, Nothing),
+    BinaryExpression(TeamMember, Keyword(
+        'addteammember'), TeamMember, Nothing),
     BinaryExpression(Object, Keyword('addtorque'), Array, Nothing),
     BinaryExpression(Object, Keyword('adduniform'), String, Nothing),
     BinaryExpression(Group, Keyword('addvehicle'), Object, Nothing),
@@ -1357,15 +1369,19 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('addweaponglobal'), String, Nothing),
     BinaryExpression(Object, Keyword('addweaponitem'), Array, Nothing),
     BinaryExpression(Object, Keyword('addweaponturret'), Array, Nothing),
-    BinaryExpression(Object, Keyword('addweaponwithattachmentscargo'), Array, Nothing),
-    BinaryExpression(Object, Keyword('addweaponwithattachmentscargoglobal'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'addweaponwithattachmentscargo'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'addweaponwithattachmentscargoglobal'), Array, Nothing),
     BinaryExpression(Object, Keyword('aimedattarget'), Array, Number),
     BinaryExpression(Control, Keyword('allow3dmode'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('allowcrewinimmobile'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('allowcuratorlogicignoreareas'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'allowcuratorlogicignoreareas'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('allowdamage'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('allowdammage'), Boolean, Nothing),
-    BinaryExpression(Control, Keyword('allowfileoperations'), Boolean, Nothing),
+    BinaryExpression(Control, Keyword(
+        'allowfileoperations'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('allowfleeing'), Number, Nothing),
     BinaryExpression(Group, Keyword('allowfleeing'), Number, Nothing),
     BinaryExpression(Array, Keyword('allowgetin'), Boolean, Nothing),
@@ -1413,7 +1429,8 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('camcommand'), String, Nothing),
     BinaryExpression(Object, Keyword('camcommit'), Number, Nothing),
     BinaryExpression(Object, Keyword('camcommitprepared'), Number, Nothing),
-    BinaryExpression(Object, Keyword('camconstuctionsetparams'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'camconstuctionsetparams'), Array, Nothing),
     BinaryExpression(String, Keyword('camcreate'), Array, Object),
     BinaryExpression(Object, Keyword('cameraeffect'), Array, Nothing),
     BinaryExpression(Object, Keyword('campreload'), Number, Nothing),
@@ -1466,9 +1483,12 @@ EXPRESSIONS = [
     BinaryExpression(Array, Keyword('commandmove'), Array, Nothing),
     BinaryExpression(Object, Keyword('commandradio'), String, Nothing),
     BinaryExpression(Array, Keyword('commandradio'), String, Nothing),
-    BinaryExpression(Object, Keyword('commandsuppressivefire'), Object, Nothing),
-    BinaryExpression(Object, Keyword('commandsuppressivefire'), Array, Nothing),
-    BinaryExpression(Array, Keyword('commandsuppressivefire'), Object, Nothing),
+    BinaryExpression(Object, Keyword(
+        'commandsuppressivefire'), Object, Nothing),
+    BinaryExpression(Object, Keyword(
+        'commandsuppressivefire'), Array, Nothing),
+    BinaryExpression(Array, Keyword(
+        'commandsuppressivefire'), Object, Nothing),
     BinaryExpression(Array, Keyword('commandsuppressivefire'), Array, Nothing),
     BinaryExpression(Object, Keyword('commandtarget'), Object, Nothing),
     BinaryExpression(Array, Keyword('commandtarget'), Object, Nothing),
@@ -1492,9 +1512,11 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('creatediarysubject'), Array, Number),
     BinaryExpression(Display, Keyword('createdisplay'), String, Display),
     BinaryExpression(Control, Keyword('createmenu'), Number, Nothing),
-    BinaryExpression(Display, Keyword('createmissiondisplay'), String, Display),
+    BinaryExpression(Display, Keyword(
+        'createmissiondisplay'), String, Display),
     BinaryExpression(Display, Keyword('createmissiondisplay'), Array, Display),
-    BinaryExpression(Display, Keyword('creatempcampaigndisplay'), String, Nothing),
+    BinaryExpression(Display, Keyword(
+        'creatempcampaigndisplay'), String, Nothing),
     BinaryExpression(Object, Keyword('createsimpletask'), Array, Task),
     BinaryExpression(String, Keyword('createsite'), Array, Object),
     BinaryExpression(TeamMember, Keyword('createtask'), Array, Task),
@@ -1510,7 +1532,8 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('ctremoverows'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrladdeventhandler'), Array, Number),
     BinaryExpression(Control, Keyword('ctrlanimatemodel'), Array, Nothing),
-    BinaryExpression(Control, Keyword('ctrlanimationphasemodel'), String, Number),
+    BinaryExpression(Control, Keyword(
+        'ctrlanimationphasemodel'), String, Number),
     BinaryExpression(Control, Keyword('ctrlchecked'), Number, Boolean),
     BinaryExpression(Control, Keyword('ctrlcommit'), Number, Nothing),
     BinaryExpression(Display, Keyword('ctrlcreate'), Array, Control),
@@ -1519,14 +1542,20 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('ctrlmapcursor'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlmapscreentoworld'), Array, Array),
     BinaryExpression(Control, Keyword('ctrlmapworldtoscreen'), Array, Array),
-    BinaryExpression(Control, Keyword('ctrlremovealleventhandlers'), String, Nothing),
-    BinaryExpression(Control, Keyword('ctrlremoveeventhandler'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlremovealleventhandlers'), String, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlremoveeventhandler'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetactivecolor'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetangle'), Array, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetautoscrolldelay'), Number, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetautoscrollrewind'), Boolean, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetautoscrollspeed'), Number, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetbackgroundcolor'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetautoscrolldelay'), Number, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetautoscrollrewind'), Boolean, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetautoscrollspeed'), Number, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetbackgroundcolor'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetchecked'), Boolean, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetchecked'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetdisabledcolor'), Array, Nothing),
@@ -1552,32 +1581,43 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('ctrlsetfontheighth4'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetfontheighth5'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetfontheighth6'), Number, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetfontheightsecondary'), Number, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetfontheightsecondary'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetfontp'), String, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetfontp'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetfontpb'), String, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetfontsecondary'), String, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetforegroundcolor'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetfontsecondary'), String, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetforegroundcolor'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetmodel'), String, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetmodeldirandup'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetmodelscale'), Number, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetpixelprecision'), Number, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetpixelprecision'), String, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetpixelprecision'), Number, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetpixelprecision'), String, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetposition'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetpositionh'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetpositionw'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetpositionx'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetpositiony'), Number, Nothing),
     BinaryExpression(Control, Keyword('ctrlsetscale'), Number, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsetstructuredtext'), String, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsetstructuredtext'), String, Nothing),
     BinaryExpression(Control, Keyword('ctrlsettext'), String, Nothing),
     BinaryExpression(Control, Keyword('ctrlsettextcolor'), Array, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsettextcolorsecondary'), Array, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsettextsecondary'), String, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsettextcolorsecondary'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsettextsecondary'), String, Nothing),
     BinaryExpression(Control, Keyword('ctrlsettooltip'), String, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsettooltipcolorbox'), Array, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsettooltipcolorshade'), Array, Nothing),
-    BinaryExpression(Control, Keyword('ctrlsettooltipcolortext'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsettooltipcolorbox'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsettooltipcolorshade'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'ctrlsettooltipcolortext'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctrlshow'), Boolean, Nothing),
     BinaryExpression(Control, Keyword('ctrowcontrols'), Number, Array),
     BinaryExpression(Control, Keyword('ctsetcursel'), Number, Nothing),
@@ -1587,7 +1627,8 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('ctsetvalue'), Array, Nothing),
     BinaryExpression(Control, Keyword('ctvalue'), Number, Number),
     BinaryExpression(Object, Keyword('curatorcoef'), String, Number),
-    BinaryExpression(Object, Keyword('currentmagazinedetailturret'), Array, String),
+    BinaryExpression(Object, Keyword(
+        'currentmagazinedetailturret'), Array, String),
     BinaryExpression(Object, Keyword('currentmagazineturret'), Array, String),
     BinaryExpression(Object, Keyword('currentweaponturret'), Array, String),
     BinaryExpression(Object, Keyword('customchat'), Array, Nothing),
@@ -1614,12 +1655,17 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('disableconversation'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('disablenvgequipment'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('disabletiequipment'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('disableuavconnectability'), Array, Nothing),
-    BinaryExpression(Display, Keyword('displayaddeventhandler'), Array, Number),
+    BinaryExpression(Object, Keyword(
+        'disableuavconnectability'), Array, Nothing),
+    BinaryExpression(Display, Keyword(
+        'displayaddeventhandler'), Array, Number),
     BinaryExpression(Display, Keyword('displayctrl'), Number, Control),
-    BinaryExpression(Display, Keyword('displayremovealleventhandlers'), String, Nothing),
-    BinaryExpression(Display, Keyword('displayremoveeventhandler'), Array, Nothing),
-    BinaryExpression(Display, Keyword('displayseteventhandler'), Array, Nothing),
+    BinaryExpression(Display, Keyword(
+        'displayremovealleventhandlers'), String, Nothing),
+    BinaryExpression(Display, Keyword(
+        'displayremoveeventhandler'), Array, Nothing),
+    BinaryExpression(Display, Keyword(
+        'displayseteventhandler'), Array, Nothing),
     BinaryExpression(Object, Keyword('distance'), Object, Number),
     BinaryExpression(Object, Keyword('distance'), Array, Number),
     BinaryExpression(Array, Keyword('distance'), Object, Number),
@@ -1673,7 +1719,8 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('drawrectangle'), Array, Nothing),
     BinaryExpression(Control, Keyword('drawtriangle'), Array, Nothing),
     BinaryExpression(Control, Keyword('editobject'), String, Anything),
-    BinaryExpression(Control, Keyword('editorseteventhandler'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'editorseteventhandler'), Array, Nothing),
     BinaryExpression(Code, Keyword('else'), Code, Array),
     BinaryExpression(Object, Keyword('emptypositions'), String, Number),
     BinaryExpression(Object, Keyword('enableai'), String, Nothing),
@@ -1681,19 +1728,24 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('enableaimprecision'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enableattack'), Boolean, Nothing),
     BinaryExpression(Group, Keyword('enableattack'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('enableautostartuprtd'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'enableautostartuprtd'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enableautotrimrtd'), Boolean, Boolean),
     BinaryExpression(Number, Keyword('enablechannel'), Boolean, Nothing),
     BinaryExpression(Number, Keyword('enablechannel'), Array, Nothing),
     BinaryExpression(Object, Keyword('enablecollisionwith'), Object, Nothing),
     BinaryExpression(Object, Keyword('enablecopilot'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('enabledynamicsimulation'), Boolean, Nothing),
-    BinaryExpression(Group, Keyword('enabledynamicsimulation'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'enabledynamicsimulation'), Boolean, Nothing),
+    BinaryExpression(Group, Keyword(
+        'enabledynamicsimulation'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enablefatigue'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enablegunlights'), String, Nothing),
     BinaryExpression(Group, Keyword('enablegunlights'), String, Nothing),
-    BinaryExpression(Object, Keyword('enableinfopanelcomponent'), Array, Boolean),
-    BinaryExpression(Array, Keyword('enableinfopanelcomponent'), Array, Boolean),
+    BinaryExpression(Object, Keyword(
+        'enableinfopanelcomponent'), Array, Boolean),
+    BinaryExpression(Array, Keyword(
+        'enableinfopanelcomponent'), Array, Boolean),
     BinaryExpression(Object, Keyword('enableirlasers'), Boolean, Nothing),
     BinaryExpression(Group, Keyword('enableirlasers'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enablemimics'), Boolean, Nothing),
@@ -1701,13 +1753,16 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('enablereload'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enableropeattach'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enablesimulation'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('enablesimulationglobal'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'enablesimulationglobal'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enablestamina'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('enableuavconnectability'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'enableuavconnectability'), Array, Nothing),
     BinaryExpression(Object, Keyword('enableuavwaypoints'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enablevehiclecargo'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('enablevehiclesensor'), Array, Nothing),
-    BinaryExpression(Object, Keyword('enableweapondisassembly'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'enableweapondisassembly'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('engineon'), Boolean, Nothing),
     BinaryExpression(Control, Keyword('evalobjectargument'), Array, Anything),
     BinaryExpression(Type, Keyword('exec'), String, Nothing),
@@ -1752,13 +1807,18 @@ EXPRESSIONS = [
     BinaryExpression(Array, Keyword('get3denattribute'), String, Array),
     BinaryExpression(String, Keyword('get3denattribute'), String, Array),
     BinaryExpression(Number, Keyword('get3denattribute'), String, Array),
-    BinaryExpression(String, Keyword('get3denmissionattribute'), String, Anything),
+    BinaryExpression(String, Keyword(
+        'get3denmissionattribute'), String, Anything),
     BinaryExpression(Object, Keyword('getartilleryeta'), Array, Number),
     BinaryExpression(Object, Keyword('getcargoindex'), Object, Number),
-    BinaryExpression(Object, Keyword('getcompatiblepylonmagazines'), String, Array),
-    BinaryExpression(Object, Keyword('getcompatiblepylonmagazines'), Number, Array),
-    BinaryExpression(String, Keyword('getcompatiblepylonmagazines'), String, Array),
-    BinaryExpression(String, Keyword('getcompatiblepylonmagazines'), Number, Array),
+    BinaryExpression(Object, Keyword(
+        'getcompatiblepylonmagazines'), String, Array),
+    BinaryExpression(Object, Keyword(
+        'getcompatiblepylonmagazines'), Number, Array),
+    BinaryExpression(String, Keyword(
+        'getcompatiblepylonmagazines'), String, Array),
+    BinaryExpression(String, Keyword(
+        'getcompatiblepylonmagazines'), Number, Array),
     BinaryExpression(Object, Keyword('getdir'), Object, Number),
     BinaryExpression(Object, Keyword('getdir'), Array, Number),
     BinaryExpression(Array, Keyword('getdir'), Object, Number),
@@ -1782,7 +1842,8 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('getreldir'), Array, Number),
     BinaryExpression(Object, Keyword('getrelpos'), Array, Array),
     BinaryExpression(Object, Keyword('getsoundcontroller'), String, Number),
-    BinaryExpression(Object, Keyword('getsoundcontrollerresult'), Config, Number),
+    BinaryExpression(Object, Keyword(
+        'getsoundcontrollerresult'), Config, Number),
     BinaryExpression(Object, Keyword('getspeed'), String, Number),
     BinaryExpression(Object, Keyword('getunittrait'), String, Anything),
     BinaryExpression(Display, Keyword('getvariable'), String, Anything),
@@ -1838,8 +1899,10 @@ EXPRESSIONS = [
     BinaryExpression(Array, Keyword('inareaarray'), Array, Array),
     BinaryExpression(Array, Keyword('inareaarray'), Location, Array),
     BinaryExpression(Object, Keyword('inflame'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('infopanelcomponentenabled'), Array, Boolean),
-    BinaryExpression(Array, Keyword('infopanelcomponentenabled'), Array, Boolean),
+    BinaryExpression(Object, Keyword(
+        'infopanelcomponentenabled'), Array, Boolean),
+    BinaryExpression(Array, Keyword(
+        'infopanelcomponentenabled'), Array, Boolean),
     BinaryExpression(Object, Keyword('infopanelcomponents'), String, Array),
     BinaryExpression(Array, Keyword('infopanelcomponents'), String, Array),
     BinaryExpression(Array, Keyword('inpolygon'), Array, Boolean),
@@ -1858,7 +1921,8 @@ EXPRESSIONS = [
     BinaryExpression(String, Keyword('iskindof'), String, Boolean),
     BinaryExpression(String, Keyword('iskindof'), Array, Boolean),
     BinaryExpression(Object, Keyword('iskindof'), String, Boolean),
-    BinaryExpression(Object, Keyword('issensortargetconfirmed'), Side, Boolean),
+    BinaryExpression(Object, Keyword(
+        'issensortargetconfirmed'), Side, Boolean),
     BinaryExpression(Object, Keyword('isuavconnectable'), Array, Boolean),
     BinaryExpression(Object, Keyword('isuniformallowed'), String, Boolean),
     BinaryExpression(Object, Keyword('isvehiclesensorenabled'), String, Array),
@@ -1897,14 +1961,20 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('lbsetdata'), Array, Nothing),
     BinaryExpression(Control, Keyword('lbsetpicture'), Array, Nothing),
     BinaryExpression(Control, Keyword('lbsetpicturecolor'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lbsetpicturecolordisabled'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lbsetpicturecolorselected'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lbsetpicturecolordisabled'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lbsetpicturecolorselected'), Array, Nothing),
     BinaryExpression(Control, Keyword('lbsetpictureright'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lbsetpicturerightcolor'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lbsetpicturerightcolordisabled'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lbsetpicturerightcolorselected'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lbsetpicturerightcolor'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lbsetpicturerightcolordisabled'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lbsetpicturerightcolorselected'), Array, Nothing),
     BinaryExpression(Control, Keyword('lbsetselectcolor'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lbsetselectcolorright'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lbsetselectcolorright'), Array, Nothing),
     BinaryExpression(Control, Keyword('lbsetselected'), Array, Nothing),
     BinaryExpression(Control, Keyword('lbsettext'), Array, Nothing),
     BinaryExpression(Control, Keyword('lbsettextright'), Array, Nothing),
@@ -1935,9 +2005,12 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('lnbsetdata'), Array, Nothing),
     BinaryExpression(Control, Keyword('lnbsetpicture'), Array, Nothing),
     BinaryExpression(Control, Keyword('lnbsetpicturecolor'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lnbsetpicturecolorright'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lnbsetpicturecolorselected'), Array, Nothing),
-    BinaryExpression(Control, Keyword('lnbsetpicturecolorselectedright'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lnbsetpicturecolorright'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lnbsetpicturecolorselected'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'lnbsetpicturecolorselectedright'), Array, Nothing),
     BinaryExpression(Control, Keyword('lnbsetpictureright'), Array, Nothing),
     BinaryExpression(Control, Keyword('lnbsettext'), Array, Nothing),
     BinaryExpression(Control, Keyword('lnbsettextright'), Array, Nothing),
@@ -2069,7 +2142,8 @@ EXPRESSIONS = [
     BinaryExpression(Array, Keyword('pushbackunique'), Type, Number),
     BinaryExpression(Number, Keyword('radiochanneladd'), Array, Nothing),
     BinaryExpression(Number, Keyword('radiochannelremove'), Array, Nothing),
-    BinaryExpression(Number, Keyword('radiochannelsetcallsign'), String, Nothing),
+    BinaryExpression(Number, Keyword(
+        'radiochannelsetcallsign'), String, Nothing),
     BinaryExpression(Number, Keyword('radiochannelsetlabel'), String, Nothing),
     BinaryExpression(Number, Keyword('random'), Number, Number),
     BinaryExpression(Number, Keyword('random'), Array, Number),
@@ -2078,20 +2152,27 @@ EXPRESSIONS = [
     BinaryExpression(Type, Keyword('remoteexec'), Array, Anything),
     BinaryExpression(Type, Keyword('remoteexeccall'), Array, Anything),
     BinaryExpression(Object, Keyword('removeaction'), Number, Nothing),
-    BinaryExpression(Object, Keyword('removealleventhandlers'), String, Nothing),
-    BinaryExpression(Object, Keyword('removeallmpeventhandlers'), String, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removealleventhandlers'), String, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removeallmpeventhandlers'), String, Nothing),
     BinaryExpression(Object, Keyword('removecuratoraddons'), Array, Nothing),
-    BinaryExpression(Object, Keyword('removecuratorcameraarea'), Number, Nothing),
-    BinaryExpression(Object, Keyword('removecuratoreditableobjects'), Array, Nothing),
-    BinaryExpression(Object, Keyword('removecuratoreditingarea'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removecuratorcameraarea'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removecuratoreditableobjects'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removecuratoreditingarea'), Number, Nothing),
     BinaryExpression(Control, Keyword('removedrawicon'), Array, Nothing),
     BinaryExpression(Control, Keyword('removedrawlinks'), Array, Nothing),
     BinaryExpression(Object, Keyword('removeeventhandler'), Array, Nothing),
     BinaryExpression(Group, Keyword('removegroupicon'), Number, Nothing),
     BinaryExpression(Object, Keyword('removehandgunitem'), String, Nothing),
     BinaryExpression(Object, Keyword('removeitem'), String, Nothing),
-    BinaryExpression(Object, Keyword('removeitemfrombackpack'), String, Nothing),
-    BinaryExpression(Object, Keyword('removeitemfromuniform'), String, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removeitemfrombackpack'), String, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removeitemfromuniform'), String, Nothing),
     BinaryExpression(Object, Keyword('removeitemfromvest'), String, Nothing),
     BinaryExpression(Object, Keyword('removeitems'), String, Nothing),
     BinaryExpression(Object, Keyword('removemagazine'), String, Nothing),
@@ -2104,12 +2185,16 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('removemenuitem'), String, Nothing),
     BinaryExpression(Object, Keyword('removempeventhandler'), Array, Nothing),
     BinaryExpression(Object, Keyword('removeownedmine'), Object, Nothing),
-    BinaryExpression(Object, Keyword('removeprimaryweaponitem'), String, Nothing),
-    BinaryExpression(Object, Keyword('removesecondaryweaponitem'), String, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removeprimaryweaponitem'), String, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removesecondaryweaponitem'), String, Nothing),
     BinaryExpression(Object, Keyword('removesimpletask'), Task, Nothing),
-    BinaryExpression(TeamMember, Keyword('removeteammember'), TeamMember, Nothing),
+    BinaryExpression(TeamMember, Keyword(
+        'removeteammember'), TeamMember, Nothing),
     BinaryExpression(Object, Keyword('removeweapon'), String, Nothing),
-    BinaryExpression(Object, Keyword('removeweaponattachmentcargo'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'removeweaponattachmentcargo'), Array, Nothing),
     BinaryExpression(Object, Keyword('removeweaponcargo'), Array, Nothing),
     BinaryExpression(Object, Keyword('removeweaponglobal'), String, Nothing),
     BinaryExpression(Object, Keyword('removeweaponturret'), Array, Nothing),
@@ -2159,9 +2244,11 @@ EXPRESSIONS = [
     BinaryExpression(Type, Keyword('set3denattribute'), Array, Boolean),
     BinaryExpression(Type, Keyword('set3denlayer'), Number, Boolean),
     BinaryExpression(Array, Keyword('set3denlogictype'), String, Nothing),
-    BinaryExpression(String, Keyword('set3denmissionattribute'), Array, Nothing),
+    BinaryExpression(String, Keyword(
+        'set3denmissionattribute'), Array, Nothing),
     BinaryExpression(Array, Keyword('set3denobjecttype'), String, Nothing),
-    BinaryExpression(Object, Keyword('setactualcollectivertd'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setactualcollectivertd'), Number, Nothing),
     BinaryExpression(Object, Keyword('setairplanethrottle'), Number, Nothing),
     BinaryExpression(Object, Keyword('setairportside'), Side, Nothing),
     BinaryExpression(Number, Keyword('setairportside'), Side, Nothing),
@@ -2188,10 +2275,13 @@ EXPRESSIONS = [
     BinaryExpression(Group, Keyword('setcombatmode'), String, Nothing),
     BinaryExpression(TeamMember, Keyword('setcombatmode'), String, Nothing),
     BinaryExpression(Object, Keyword('setconvoyseparation'), Number, Nothing),
-    BinaryExpression(Object, Keyword('setcuratorcameraareaceiling'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setcuratorcameraareaceiling'), Number, Nothing),
     BinaryExpression(Object, Keyword('setcuratorcoef'), Array, Nothing),
-    BinaryExpression(Object, Keyword('setcuratoreditingareatype'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('setcuratorwaypointcost'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setcuratoreditingareatype'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setcuratorwaypointcost'), Number, Nothing),
     BinaryExpression(Object, Keyword('setcurrenttask'), Task, Nothing),
     BinaryExpression(Group, Keyword('setcurrentwaypoint'), Array, Nothing),
     BinaryExpression(Object, Keyword('setcustomaimcoef'), Number, Nothing),
@@ -2206,8 +2296,10 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('setdrawicon'), Array, Nothing),
     BinaryExpression(Object, Keyword('setdriveonpath'), Array, Nothing),
     BinaryExpression(Object, Keyword('setdropinterval'), Number, Nothing),
-    BinaryExpression(String, Keyword('setdynamicsimulationdistance'), Number, Nothing),
-    BinaryExpression(String, Keyword('setdynamicsimulationdistancecoef'), Number, Nothing),
+    BinaryExpression(String, Keyword(
+        'setdynamicsimulationdistance'), Number, Nothing),
+    BinaryExpression(String, Keyword(
+        'setdynamicsimulationdistancecoef'), Number, Nothing),
     BinaryExpression(Control, Keyword('seteditormode'), String, Nothing),
     BinaryExpression(Control, Keyword('seteditorobjectscope'), Array, Nothing),
     BinaryExpression(Object, Keyword('seteffectcondition'), String, Nothing),
@@ -2217,7 +2309,8 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('setfaceanimation'), Number, Nothing),
     BinaryExpression(Object, Keyword('setfatigue'), Number, Nothing),
     BinaryExpression(Object, Keyword('setfeaturetype'), Number, Boolean),
-    BinaryExpression(Object, Keyword('setflaganimationphase'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setflaganimationphase'), Number, Nothing),
     BinaryExpression(Object, Keyword('setflagowner'), Object, Nothing),
     BinaryExpression(Object, Keyword('setflagside'), Side, Nothing),
     BinaryExpression(Object, Keyword('setflagtexture'), String, Nothing),
@@ -2255,7 +2348,8 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('setlightbrightness'), Number, Nothing),
     BinaryExpression(Object, Keyword('setlightcolor'), Array, Nothing),
     BinaryExpression(Object, Keyword('setlightdaylight'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('setlightflaremaxdistance'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setlightflaremaxdistance'), Number, Nothing),
     BinaryExpression(Object, Keyword('setlightflaresize'), Number, Nothing),
     BinaryExpression(Object, Keyword('setlightintensity'), Number, Nothing),
     BinaryExpression(Number, Keyword('setlightnings'), Number, Nothing),
@@ -2294,10 +2388,12 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('setnamesound'), String, Nothing),
     BinaryExpression(Control, Keyword('setobjectarguments'), Array, Anything),
     BinaryExpression(Object, Keyword('setobjectmaterial'), Array, Nothing),
-    BinaryExpression(Object, Keyword('setobjectmaterialglobal'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setobjectmaterialglobal'), Array, Nothing),
     BinaryExpression(Control, Keyword('setobjectproxy'), Array, Anything),
     BinaryExpression(Object, Keyword('setobjecttexture'), Array, Nothing),
-    BinaryExpression(Object, Keyword('setobjecttextureglobal'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setobjecttextureglobal'), Array, Nothing),
     BinaryExpression(Number, Keyword('setovercast'), Number, Nothing),
     BinaryExpression(Object, Keyword('setowner'), Number, Boolean),
     BinaryExpression(Object, Keyword('setoxygenremaining'), Number, Nothing),
@@ -2306,8 +2402,10 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('setparticlefire'), Array, Nothing),
     BinaryExpression(Object, Keyword('setparticleparams'), Array, Nothing),
     BinaryExpression(Object, Keyword('setparticlerandom'), Array, Nothing),
-    BinaryExpression(Object, Keyword('setpilotcameradirection'), Array, Nothing),
-    BinaryExpression(Object, Keyword('setpilotcamerarotation'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setpilotcameradirection'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setpilotcamerarotation'), Array, Nothing),
     BinaryExpression(Object, Keyword('setpilotcameratarget'), Object, Boolean),
     BinaryExpression(Object, Keyword('setpilotcameratarget'), Array, Boolean),
     BinaryExpression(Object, Keyword('setpilotlight'), Boolean, Nothing),
@@ -2333,10 +2431,13 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('setrotorbrakertd'), Number, Nothing),
     BinaryExpression(Object, Keyword('setshotparents'), Array, Nothing),
     BinaryExpression(Location, Keyword('setside'), Side, Nothing),
-    BinaryExpression(Task, Keyword('setsimpletaskalwaysvisible'), Boolean, Nothing),
+    BinaryExpression(Task, Keyword(
+        'setsimpletaskalwaysvisible'), Boolean, Nothing),
     BinaryExpression(Task, Keyword('setsimpletaskcustomdata'), Array, Nothing),
-    BinaryExpression(Task, Keyword('setsimpletaskdescription'), Array, Nothing),
-    BinaryExpression(Task, Keyword('setsimpletaskdestination'), Array, Nothing),
+    BinaryExpression(Task, Keyword(
+        'setsimpletaskdescription'), Array, Nothing),
+    BinaryExpression(Task, Keyword(
+        'setsimpletaskdestination'), Array, Nothing),
     BinaryExpression(Task, Keyword('setsimpletasktarget'), Array, Nothing),
     BinaryExpression(Task, Keyword('setsimpletasktype'), String, Nothing),
     BinaryExpression(Location, Keyword('setsize'), Array, Nothing),
@@ -2373,7 +2474,8 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('setunitpos'), String, Nothing),
     BinaryExpression(Object, Keyword('setunitposweak'), String, Nothing),
     BinaryExpression(Object, Keyword('setunitrank'), String, Nothing),
-    BinaryExpression(Object, Keyword('setunitrecoilcoefficient'), Number, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setunitrecoilcoefficient'), Number, Nothing),
     BinaryExpression(Object, Keyword('setunittrait'), Array, Nothing),
     BinaryExpression(Object, Keyword('setunloadincombat'), Array, Nothing),
     BinaryExpression(Object, Keyword('setuseractiontext'), Array, Nothing),
@@ -2398,25 +2500,35 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('setvehiclelock'), String, Nothing),
     BinaryExpression(Object, Keyword('setvehicleposition'), Array, Boolean),
     BinaryExpression(Object, Keyword('setvehicleradar'), Number, Nothing),
-    BinaryExpression(Object, Keyword('setvehiclereceiveremotetargets'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('setvehiclereportownposition'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('setvehiclereportremotetargets'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setvehiclereceiveremotetargets'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setvehiclereportownposition'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setvehiclereportremotetargets'), Boolean, Nothing),
     BinaryExpression(Object, Keyword('setvehicletipars'), Array, Nothing),
     BinaryExpression(Object, Keyword('setvehiclevarname'), String, Nothing),
     BinaryExpression(Object, Keyword('setvelocity'), Array, Nothing),
     BinaryExpression(Object, Keyword('setvelocitymodelspace'), Array, Nothing),
-    BinaryExpression(Object, Keyword('setvelocitytransformation'), Array, Nothing),
-    BinaryExpression(Control, Keyword('setvisibleiftreecollapsed'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'setvelocitytransformation'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'setvisibleiftreecollapsed'), Array, Nothing),
     BinaryExpression(Object, Keyword('setwantedrpmrtd'), Array, Nothing),
     BinaryExpression(Number, Keyword('setwaves'), Number, Nothing),
     BinaryExpression(Array, Keyword('setwaypointbehaviour'), String, Nothing),
     BinaryExpression(Array, Keyword('setwaypointcombatmode'), String, Nothing),
-    BinaryExpression(Array, Keyword('setwaypointcompletionradius'), Number, Nothing),
-    BinaryExpression(Array, Keyword('setwaypointdescription'), String, Nothing),
-    BinaryExpression(Array, Keyword('setwaypointforcebehaviour'), Boolean, Nothing),
+    BinaryExpression(Array, Keyword(
+        'setwaypointcompletionradius'), Number, Nothing),
+    BinaryExpression(Array, Keyword(
+        'setwaypointdescription'), String, Nothing),
+    BinaryExpression(Array, Keyword(
+        'setwaypointforcebehaviour'), Boolean, Nothing),
     BinaryExpression(Array, Keyword('setwaypointformation'), String, Nothing),
-    BinaryExpression(Array, Keyword('setwaypointhouseposition'), Number, Nothing),
-    BinaryExpression(Array, Keyword('setwaypointloiterradius'), Number, Nothing),
+    BinaryExpression(Array, Keyword(
+        'setwaypointhouseposition'), Number, Nothing),
+    BinaryExpression(Array, Keyword(
+        'setwaypointloiterradius'), Number, Nothing),
     BinaryExpression(Array, Keyword('setwaypointloitertype'), String, Nothing),
     BinaryExpression(Array, Keyword('setwaypointname'), String, Nothing),
     BinaryExpression(Array, Keyword('setwaypointposition'), Array, Nothing),
@@ -2426,7 +2538,8 @@ EXPRESSIONS = [
     BinaryExpression(Array, Keyword('setwaypointtimeout'), Array, Nothing),
     BinaryExpression(Array, Keyword('setwaypointtype'), String, Nothing),
     BinaryExpression(Array, Keyword('setwaypointvisible'), Boolean, Nothing),
-    BinaryExpression(Object, Keyword('setweaponreloadingtime'), Array, Boolean),
+    BinaryExpression(Object, Keyword(
+        'setweaponreloadingtime'), Array, Boolean),
     BinaryExpression(Number, Keyword('setwinddir'), Number, Nothing),
     BinaryExpression(Number, Keyword('setwindforce'), Number, Nothing),
     BinaryExpression(Number, Keyword('setwindstr'), Number, Nothing),
@@ -2458,7 +2571,8 @@ EXPRESSIONS = [
     BinaryExpression(Object, Keyword('switchlight'), String, Nothing),
     BinaryExpression(Object, Keyword('switchmove'), String, Nothing),
     BinaryExpression(Object, Keyword('synchronizeobjectsadd'), Array, Nothing),
-    BinaryExpression(Object, Keyword('synchronizeobjectsremove'), Array, Nothing),
+    BinaryExpression(Object, Keyword(
+        'synchronizeobjectsremove'), Array, Nothing),
     BinaryExpression(Object, Keyword('synchronizetrigger'), Array, Nothing),
     BinaryExpression(Array, Keyword('synchronizewaypoint'), Array, Nothing),
     BinaryExpression(Object, Keyword('synchronizewaypoint'), Array, Nothing),
@@ -2473,7 +2587,8 @@ EXPRESSIONS = [
     BinaryExpression(Number, Keyword('tofixed'), Number, String),
     BinaryExpression(Object, Keyword('triggerattachobject'), Number, Nothing),
     BinaryExpression(Object, Keyword('triggerattachvehicle'), Array, Nothing),
-    BinaryExpression(Object, Keyword('triggerdynamicsimulation'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'triggerdynamicsimulation'), Boolean, Nothing),
     BinaryExpression(Type, Keyword('try'), Code, TryType),
     BinaryExpression(Object, Keyword('turretlocal'), Array, Boolean),
     BinaryExpression(Object, Keyword('turretowner'), Array, Number),
@@ -2491,12 +2606,17 @@ EXPRESSIONS = [
     BinaryExpression(Control, Keyword('tvsetdata'), Array, Nothing),
     BinaryExpression(Control, Keyword('tvsetpicture'), Array, Nothing),
     BinaryExpression(Control, Keyword('tvsetpicturecolor'), Array, Nothing),
-    BinaryExpression(Control, Keyword('tvsetpicturecolordisabled'), Array, Nothing),
-    BinaryExpression(Control, Keyword('tvsetpicturecolorselected'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'tvsetpicturecolordisabled'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'tvsetpicturecolorselected'), Array, Nothing),
     BinaryExpression(Control, Keyword('tvsetpictureright'), Array, Nothing),
-    BinaryExpression(Control, Keyword('tvsetpicturerightcolor'), Array, Nothing),
-    BinaryExpression(Control, Keyword('tvsetpicturerightcolordisabled'), Array, Nothing),
-    BinaryExpression(Control, Keyword('tvsetpicturerightcolorselected'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'tvsetpicturerightcolor'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'tvsetpicturerightcolordisabled'), Array, Nothing),
+    BinaryExpression(Control, Keyword(
+        'tvsetpicturerightcolorselected'), Array, Nothing),
     BinaryExpression(Control, Keyword('tvsetselectcolor'), Array, Nothing),
     BinaryExpression(Control, Keyword('tvsettext'), Array, Nothing),
     BinaryExpression(Control, Keyword('tvsettooltip'), Array, Nothing),
@@ -2513,7 +2633,8 @@ EXPRESSIONS = [
     BinaryExpression(TeamMember, Keyword('unregistertask'), String, Boolean),
     BinaryExpression(Control, Keyword('updatedrawicon'), Array, Nothing),
     BinaryExpression(Control, Keyword('updatemenuitem'), Array, Nothing),
-    BinaryExpression(Object, Keyword('useaudiotimeformoves'), Boolean, Nothing),
+    BinaryExpression(Object, Keyword(
+        'useaudiotimeformoves'), Boolean, Nothing),
     BinaryExpression(Array, Keyword('vectoradd'), Array, Array),
     BinaryExpression(Array, Keyword('vectorcos'), Array, Number),
     BinaryExpression(Array, Keyword('vectorcrossproduct'), Array, Array),
@@ -2523,10 +2644,12 @@ EXPRESSIONS = [
     BinaryExpression(Array, Keyword('vectordotproduct'), Array, Number),
     BinaryExpression(Array, Keyword('vectorfromto'), Array, Array),
     BinaryExpression(Object, Keyword('vectormodeltoworld'), Array, Array),
-    BinaryExpression(Object, Keyword('vectormodeltoworldvisual'), Array, Array),
+    BinaryExpression(Object, Keyword(
+        'vectormodeltoworldvisual'), Array, Array),
     BinaryExpression(Array, Keyword('vectormultiply'), Number, Array),
     BinaryExpression(Object, Keyword('vectorworldtomodel'), Array, Array),
-    BinaryExpression(Object, Keyword('vectorworldtomodelvisual'), Array, Array),
+    BinaryExpression(Object, Keyword(
+        'vectorworldtomodelvisual'), Array, Array),
     BinaryExpression(Object, Keyword('vehiclechat'), String, Nothing),
     BinaryExpression(Object, Keyword('vehicleradio'), String, Nothing),
     BinaryExpression(Array, Keyword('waypointattachobject'), Object, Nothing),
@@ -2585,7 +2708,8 @@ EXPRESSIONS = [
     NullExpression(Keyword('curatorselected'), Array),
     NullExpression(Keyword('current3denoperation'), String),
     NullExpression(Keyword('currentchannel'), Number),
-    NullExpression(Keyword('currentnamespace'), Namespace, action=lambda i: 'missionNamespace'),
+    NullExpression(Keyword('currentnamespace'), Namespace,
+                   action=lambda i: 'missionNamespace'),
     NullExpression(Keyword('cursorobject'), Object),
     NullExpression(Keyword('cursortarget'), Object),
     NullExpression(Keyword('customwaypointposition'), Array),
@@ -2690,7 +2814,8 @@ EXPRESSIONS = [
     NullExpression(Keyword('missionconfigfile'), Config),
     NullExpression(Keyword('missiondifficulty'), Number),
     NullExpression(Keyword('missionname'), String),
-    NullExpression(Keyword('missionnamespace'), Namespace, action=lambda i: 'missionNamespace'),
+    NullExpression(Keyword('missionnamespace'), Namespace,
+                   action=lambda i: 'missionNamespace'),
     NullExpression(Keyword('missionstart'), Array),
     NullExpression(Keyword('missionversion'), Number),
     NullExpression(Keyword('moonintensity'), Number),
@@ -2703,7 +2828,8 @@ EXPRESSIONS = [
     NullExpression(Keyword('opfor'), Side),
     NullExpression(Keyword('overcast'), Number),
     NullExpression(Keyword('overcastforecast'), Number),
-    NullExpression(Keyword('parsingnamespace'), Namespace, action=lambda i: 'missionNamespace'),
+    NullExpression(Keyword('parsingnamespace'), Namespace,
+                   action=lambda i: 'missionNamespace'),
     NullExpression(Keyword('particlesquality'), Number),
     NullExpression(Keyword('pi'), Number),
     NullExpression(Keyword('pixelgrid'), Number),
@@ -2717,7 +2843,8 @@ EXPRESSIONS = [
     NullExpression(Keyword('playerside'), Side),
     NullExpression(Keyword('productversion'), Array),
     NullExpression(Keyword('profilename'), String),
-    NullExpression(Keyword('profilenamespace'), Namespace, action=lambda i: 'missionNamespace'),
+    NullExpression(Keyword('profilenamespace'), Namespace,
+                   action=lambda i: 'missionNamespace'),
     NullExpression(Keyword('profilenamesteam'), String),
     NullExpression(Keyword('radiovolume'), Number),
     NullExpression(Keyword('rain'), Number),
@@ -2774,7 +2901,8 @@ EXPRESSIONS = [
     NullExpression(Keyword('time'), Number),
     NullExpression(Keyword('timemultiplier'), Number),
     NullExpression(Keyword('true'), Boolean),
-    NullExpression(Keyword('uinamespace'), Namespace, action=lambda i: 'missionNamespace'),
+    NullExpression(Keyword('uinamespace'), Namespace,
+                   action=lambda i: 'missionNamespace'),
     NullExpression(Keyword('userinputdisabled'), Boolean),
     NullExpression(Keyword('vehicles'), Array),
     NullExpression(Keyword('viewdistance'), Number),

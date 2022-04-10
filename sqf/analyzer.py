@@ -45,6 +45,7 @@ class UnexecutedCode:
     A piece of code that needs to be re-run on a contained env to check for issues.
     We copy the state of the analyzer (namespaces) so we get what that code would run.
     """
+
     def __init__(self, code, analyzer):
         self.namespaces = deepcopy(analyzer._namespaces)
         self.namespace_name = analyzer.current_namespace.name
@@ -121,15 +122,18 @@ class Analyzer(BaseInterpreter):
                 result = self.private_default_class()
             result.position = token.position
 
-            key = '%s_%s_%s' % (namespace_name, scope.level, scope.normalize(token.name))
+            key = '%s_%s_%s' % (namespace_name, scope.level,
+                                scope.normalize(token.name))
             if key in self.variable_uses:
                 self.variable_uses[key]['count'] += 1
 
         elif isinstance(token, Array) and not token.is_undefined:
-            result = Array([self.value(self.execute_token(s)) for s in token.value])
+            result = Array([self.value(self.execute_token(s))
+                           for s in token.value])
             result.position = token.position
         else:
-            null_expressions = values_to_expressions([token], EXPRESSIONS_MAP, EXPRESSIONS)
+            null_expressions = values_to_expressions(
+                [token], EXPRESSIONS_MAP, EXPRESSIONS)
             if null_expressions:
                 result = null_expressions[0].execute([token], self)
             else:
@@ -137,7 +141,8 @@ class Analyzer(BaseInterpreter):
             result.position = token.position
 
         if isinstance(result, Code) and self.code_key(result) not in self._unexecuted_codes:
-            self._unexecuted_codes[self.code_key(result)] = UnexecutedCode(result, self)
+            self._unexecuted_codes[self.code_key(
+                result)] = UnexecutedCode(result, self)
 
         return result
 
@@ -205,11 +210,13 @@ class Analyzer(BaseInterpreter):
             # collect `private` statements that have a variable but were not collected by the assignment operator
             # this check is made at the scope level
             for private in self.privates:
-                self.exception(SQFWarning(private.position, 'private argument must be a string.'))
+                self.exception(SQFWarning(private.position,
+                               'private argument must be a string.'))
 
             # this check is made at the scope level
             for token in self.unevaluated_interpreter_tokens:
-                self.exception(SQFWarning(token.position, 'helper type "%s" not evaluated' % token.__class__.__name__))
+                self.exception(SQFWarning(
+                    token.position, 'helper type "%s" not evaluated' % token.__class__.__name__))
 
             # this check is made at script level
             if not delete_mode:
@@ -230,7 +237,8 @@ class Analyzer(BaseInterpreter):
     def _add_private(self, variable):
         super()._add_private(variable)
         scope = self.current_scope
-        key = '%s_%s_%s' % (self.current_namespace.name, scope.level, scope.normalize(variable.value))
+        key = '%s_%s_%s' % (self.current_namespace.name,
+                            scope.level, scope.normalize(variable.value))
         self.variable_uses[key] = {'count': 0, 'variable': variable}
 
     def assign(self, lhs, rhs_v):
@@ -289,10 +297,12 @@ class Analyzer(BaseInterpreter):
             return base_tokens[0]
         elif base_tokens[0] == Preprocessor("#include"):
             if len(base_tokens) != 2:
-                exception = SQFParserError(base_tokens[0].position, "#include requires one argument")
+                exception = SQFParserError(
+                    base_tokens[0].position, "#include requires one argument")
                 self.exception(exception)
             elif type(self.execute_token(base_tokens[1])) != String:
-                exception = SQFParserError(base_tokens[0].position, "#include first argument must be a string")
+                exception = SQFParserError(
+                    base_tokens[0].position, "#include first argument must be a string")
                 self.exception(exception)
             return outcome
         elif isinstance(base_tokens[0], Keyword) and base_tokens[0].value in PREPROCESSORS:
@@ -318,7 +328,8 @@ class Analyzer(BaseInterpreter):
                 outcome.position = rhs.position
                 self.privates.add(outcome)
             else:
-                self.exception(SQFParserError(base_tokens[0].position, '`private` used incorrectly'))
+                self.exception(SQFParserError(
+                    base_tokens[0].position, '`private` used incorrectly'))
             return outcome
         # assignment operator
         elif len(base_tokens) == 3 and base_tokens[1] == Keyword('='):
@@ -330,7 +341,8 @@ class Analyzer(BaseInterpreter):
                 lhs = self.get_variable(base_tokens[0])
 
             if not isinstance(lhs, Variable):
-                self.exception(SQFParserError(base_tokens[0].position, 'lhs of assignment operator must be a variable'))
+                self.exception(SQFParserError(
+                    base_tokens[0].position, 'lhs of assignment operator must be a variable'))
             else:
                 # if the rhs_v is code and calls `lhs` (recursion) it will assume lhs is anything (and not Nothing)
                 scope = self.get_scope(lhs.name)
@@ -377,7 +389,8 @@ class Analyzer(BaseInterpreter):
 
         # try to find a match for any expression, both typed and un-typed
         case_found = None
-        possible_expressions = values_to_expressions(values, EXPRESSIONS_MAP, EXPRESSIONS)
+        possible_expressions = values_to_expressions(
+            values, EXPRESSIONS_MAP, EXPRESSIONS)
         for case in possible_expressions:
             if case.is_signature_match(values):  # match first occurrence
                 case_found = case
@@ -389,8 +402,10 @@ class Analyzer(BaseInterpreter):
                 # parse and execute the string that is code (to count usage of variables)
                 if case_found.keyword == Keyword('isnil') and type(values[1]) == String or \
                    case_found.keyword == Keyword('configClasses'):
-                    code_position = {'isnil': 1, 'configclasses': 0}[case_found.keyword.unique_token]
-                    extra_scope = {'isnil': None, 'configclasses': {'_x': Anything()}}[case_found.keyword.unique_token]
+                    code_position = {'isnil': 1, 'configclasses': 0}[
+                        case_found.keyword.unique_token]
+                    extra_scope = {'isnil': None, 'configclasses': {
+                        '_x': Anything()}}[case_found.keyword.unique_token]
 
                     # when the string is undefined, there is no need to evaluate it.
                     if not values[code_position].is_undefined:
@@ -433,11 +448,13 @@ class Analyzer(BaseInterpreter):
                 # execute all pieces of code
                 if t_or_v == Code and isinstance(value, Code) and self.code_key(value) not in self._executed_codes:
                     if case_found.keyword == Keyword('spawn'):
-                        self.execute_unexecuted_code(self.code_key(value), extra_scope, True)
+                        self.execute_unexecuted_code(
+                            self.code_key(value), extra_scope, True)
                         # this code was executed, so it does not need to be evaluated on an un-executed env.
                         del self._unexecuted_codes[self.code_key(value)]
                     else:
-                        self.execute_code(value, extra_scope=extra_scope, namespace_name=self.current_namespace.name, delete_mode=True)
+                        self.execute_code(
+                            value, extra_scope=extra_scope, namespace_name=self.current_namespace.name, delete_mode=True)
 
                 # remove evaluated interpreter tokens
                 if isinstance(value, InterpreterType) and value in self.unevaluated_interpreter_tokens:
@@ -462,11 +479,13 @@ class Analyzer(BaseInterpreter):
                 keyword_name = possible_expressions[0].types_or_values[0].value
 
                 message = 'Unary operator "%s" only accepts argument of types [%s] (rhs is %s)' % \
-                          (keyword_name, ','.join(types_or_values), values[1].__class__.__name__)
+                          (keyword_name, ','.join(types_or_values),
+                           values[1].__class__.__name__)
             elif isinstance(possible_expressions[0], BinaryExpression):
                 types_or_values = []
                 for exp in possible_expressions:
-                    types_or_values.append('(%s,%s)' % (exp.types_or_values[0].__name__, exp.types_or_values[2].__name__))
+                    types_or_values.append('(%s,%s)' % (
+                        exp.types_or_values[0].__name__, exp.types_or_values[2].__name__))
 
                 keyword_name = possible_expressions[0].types_or_values[1].value
 
@@ -486,7 +505,8 @@ class Analyzer(BaseInterpreter):
             outcome = Anything()
             outcome.position = base_tokens[0].position
         else:
-            helper = ' '.join(['<%s(%s)>' % (type(t).__name__, t) for t in tokens])
+            helper = ' '.join(['<%s(%s)>' % (type(t).__name__, t)
+                              for t in tokens])
             self.exception(
                 SQFParserError(base_tokens[-1].position, 'can\'t interpret statement (missing ;?): %s' % helper))
             # so the error does not propagate further
@@ -494,7 +514,7 @@ class Analyzer(BaseInterpreter):
             outcome.position = base_tokens[0].position
 
         if isinstance(outcome, InterpreterType) and \
-            outcome not in self.unevaluated_interpreter_tokens and type(outcome) not in (SwitchType, PrivateType, DefineStatement):
+                outcome not in self.unevaluated_interpreter_tokens and type(outcome) not in (SwitchType, PrivateType, DefineStatement):
             # switch type can be not evaluated, e.g. for `case A; case B: {}`
             self.unevaluated_interpreter_tokens.append(outcome)
 
@@ -513,7 +533,8 @@ class Analyzer(BaseInterpreter):
     def execute_other(self, statement):
         if isinstance(statement, Comment):
             string = str(statement)[2:]
-            matches = [x for x in self.COMMENTS_FOR_PRIVATE if string.startswith(x)]
+            matches = [
+                x for x in self.COMMENTS_FOR_PRIVATE if string.startswith(x)]
             if matches:
                 length = len(matches[0]) + 1  # +1 for the space
                 try:
@@ -527,7 +548,8 @@ class Analyzer(BaseInterpreter):
                             token = token.base_tokens[0]
                         self.current_scope[token.value] = Anything()
                 except Exception:
-                    self.exception(SQFWarning(statement.position, '{0} comment must be `//{0} ["var1",...]`'.format(matches[0])))
+                    self.exception(SQFWarning(
+                        statement.position, '{0} comment must be `//{0} ["var1",...]`'.format(matches[0])))
 
 
 def analyze(statement, analyzer=None):

@@ -7,8 +7,8 @@ This project contains a parser, static analyzer and interpreter for
 SQF (Arma scripting language), written in Python.
 It can be used to:
 
-* syntax-check and static analyze SQF files and projects
-* execute SQF on a limited virtual environment
+- syntax-check and static analyze SQF files and projects
+- execute SQF on a limited virtual environment
 
 ## Problem it solves
 
@@ -46,7 +46,7 @@ Behind the curtains, the analyzer uses a parser to convert SQF code in a set of 
 ### Interpreter example
 
 The interpreter is able to run scripts on an emulated (and limited) environment.
-The interpreter is obviously *not intended* to run Arma simulation; it is
+The interpreter is obviously _not intended_ to run Arma simulation; it is
 aimed for you, moder, run tests of your scripts (e.g. Unit Tests)
 without having to run the game.
 
@@ -58,7 +58,7 @@ without having to run the game.
 
 ## Requirements and installation
 
-This code is written in Python 3 and has no dependencies. You can install it using 
+This code is written in Python 3 and has no dependencies. You can install it using
 
     pip3 install sqflint
 
@@ -74,9 +74,9 @@ can be found in `tests`. Run them using standard Python unittest:
 This package is compatible with known editors, and can be used to efficiently write SQF
 with them. See the respective projects for more details:
 
-* [AtomLinter](https://atomlinter.github.io/): [linter-sqf](https://github.com/LordGolias/linter-sqf)
-* [SublimeLinter](http://www.sublimelinter.com/en/latest/): [SublimeLinter-contrib-sqflint](https://github.com/LordGolias/SublimeLinter-contrib-sqflint)
-* [ALE](https://github.com/dense-analysis/ale): [vim-sqflint-ale](https://github.com/jonpas/vim-sqflint-ale)
+- [AtomLinter](https://atomlinter.github.io/): [linter-sqf](https://github.com/LordGolias/linter-sqf)
+- [SublimeLinter](http://www.sublimelinter.com/en/latest/): [SublimeLinter-contrib-sqflint](https://github.com/LordGolias/SublimeLinter-contrib-sqflint)
+- [ALE](https://github.com/dense-analysis/ale): [vim-sqflint-ale](https://github.com/jonpas/vim-sqflint-ale)
 
 ## Code organization
 
@@ -84,10 +84,10 @@ This code contains essentially 4 components, a **tokenizer**, a **parser**, **an
 
 ### Interpreter
 
-The interpreter is a class that executes parsed scripts. It receives a 
+The interpreter is a class that executes parsed scripts. It receives a
 `Statement` and executes it as per described in the [Arma 3' wiki](https://community.bistudio.com/wiki).
-To automatically initialise the interpreter and execute code, run `interpret`: 
- 
+To automatically initialise the interpreter and execute code, run `interpret`:
+
     >>> from sqf.interpreter import interpret
     >>> script = '''
     a = 0;
@@ -109,7 +109,7 @@ and `getVariable` to interact with other namespaces.
 `sqf.tests.test_interpreter` contains the tests of the implemented functionality.
 
 The source is in `sqf/interpreter.py`, the tests in `tests/test_interpreter.py`.
-The main loop of the interpreter is defined in `sqf/interpreter.py`, and the 
+The main loop of the interpreter is defined in `sqf/interpreter.py`, and the
 expressions it evaluates are defined in `sqf/expressions.py`.
 
 ### Analyzer
@@ -119,7 +119,7 @@ The source is in `sqf/analyzer.py`, the tests in `tests/test_analyzer.py`.
 
 ### Parser
 
-The parser transforms a string into a nested `Statement`, i.e. 
+The parser transforms a string into a nested `Statement`, i.e.
 a nested list of instances of `types`, operators, and keywords defined in SQF.
 For example,
 
@@ -137,7 +137,7 @@ To transform the script into tokens used in the parser, the tokenizer is called.
 
 ### Tokenizer
 
-The tokenizer transforms a string into a list of tokens split by the 
+The tokenizer transforms a string into a list of tokens split by the
 relevant tokens of SQF. E.g.
 
     >>> from sqf.base_tokenizer import tokenize

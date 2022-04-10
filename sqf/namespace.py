@@ -4,6 +4,7 @@ class Scope:
     and has no function to the scope itself.
     The values are case insensitive because SQF variables are case-insensitive.
     """
+
     def __init__(self, level, values=None):
         if values is None:
             values = {}

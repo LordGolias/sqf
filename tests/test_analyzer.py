@@ -284,7 +284,8 @@ class GeneralTestCase(TestCase):
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
-        self.assertTrue(errors[0].message.startswith('error:Binary operator "+" arguments must be ['))
+        self.assertTrue(errors[0].message.startswith(
+            'error:Binary operator "+" arguments must be ['))
 
     def test_error_in(self):
         code = '_door ()'
@@ -401,13 +402,15 @@ class GeneralTestCase(TestCase):
         code = 'with uinamespace do {x = 2}'
         analyzer = analyze(parse(code))
         self.assertEqual(len(analyzer.exceptions), 0)
-        self.assertEqual(Anything(), analyzer['x'])  # missionnamespace is empty
+        # missionnamespace is empty
+        self.assertEqual(Anything(), analyzer['x'])
         self.assertEqual(Number(), analyzer.namespace('uinamespace')['x'])
 
     def test_with_namespace(self):
         code = 'with uinamespace do {with missionnamespace do {x = 2}}'
         analyzer = analyze(parse(code))
-        self.assertEqual(Number, type(analyzer['x']))  # missionnamespace was used
+        # missionnamespace was used
+        self.assertEqual(Number, type(analyzer['x']))
         self.assertNotIn('x', analyzer.namespace('uinamespace'))
 
     def test_call(self):
@@ -894,11 +897,13 @@ class NestedCode(TestCase):
         self.assertEqual(analyzer.exceptions, [])
 
     def test_call_within(self):
-        analyzer = analyze(parse('x = 0; call {call {x = x + 1; call {x = x + 2}}}'))
+        analyzer = analyze(
+            parse('x = 0; call {call {x = x + 1; call {x = x + 2}}}'))
         self.assertEqual(analyzer.exceptions, [])
 
     def test_call_within_this(self):
-        analyzer = analyze(parse('x = {if (call _this) exitWith {call _this}}'))
+        analyzer = analyze(
+            parse('x = {if (call _this) exitWith {call _this}}'))
         self.assertEqual(analyzer.exceptions, [])
 
 
@@ -920,7 +925,8 @@ class Params(TestCase):
         self.assertEqual(analyzer.exceptions, [])
 
     def test_many_call(self):
-        analyzer = analyze(parse('x = {params ["_x", "_y"]; _x;_y}; [1,2] call x'))
+        analyzer = analyze(
+            parse('x = {params ["_x", "_y"]; _x;_y}; [1,2] call x'))
         self.assertEqual(analyzer.exceptions, [])
 
     def test_with_default(self):
@@ -1093,6 +1099,7 @@ class UndefinedValues(TestCase):
     """
     Test what happens when a value is not defined.
     """
+
     def test_anything(self):
         code = 'y = (count x)'
         analyzer = analyze(parse(code))
@@ -1205,12 +1212,14 @@ class UndefinedValues(TestCase):
 
     def test_forspecs(self):
         # undefined -> do not execute
-        analyzer = analyze(parse('y = 0; for [{x = 1},{x <= z},{x = x + 1}] do {y = y + 1}'))
+        analyzer = analyze(
+            parse('y = 0; for [{x = 1},{x <= z},{x = x + 1}] do {y = y + 1}'))
         self.assertEqual(analyzer.exceptions, [])
         self.assertEqual(Number(), analyzer['y'])
 
         # undefined -> test
-        analyzer = analyze(parse('y = 0; for [{x = 1},{x <= z},{x = x + 1}] do {!1}'))
+        analyzer = analyze(
+            parse('y = 0; for [{x = 1},{x <= z},{x = x + 1}] do {!1}'))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 1)
 
@@ -1342,7 +1351,8 @@ class SpecialComment(TestCase):
         analyzer = analyze(parse(code))
         errors = analyzer.exceptions
         self.assertEqual(len(errors), 2)
-        self.assertEqual(errors[0].message, 'warning:USES_VARIABLES comment must be `//USES_VARIABLES ["var1",...]`')
+        self.assertEqual(
+            errors[0].message, 'warning:USES_VARIABLES comment must be `//USES_VARIABLES ["var1",...]`')
 
     def test_var_type(self):
         code = '//USES_VARIABLES ["_x"];\n' \
@@ -1378,6 +1388,7 @@ class StringAsCodeFunctions(TestCase):
     """
     Tests functions that are passed a string which is compiled to code.
     """
+
     def test_isNil(self):
         code = 'private _var = A getVariable "x"; x = isNil "_var";'
         analyzer = analyze(parse(code))
@@ -1392,7 +1403,8 @@ class StringAsCodeFunctions(TestCase):
         code = 'x = isNil "(_var";'
         analyzer = analyze(parse(code))
         self.assertEqual(len(analyzer.exceptions), 1)
-        self.assertTrue('Parenthesis "(" not closed' in analyzer.exceptions[0].message)
+        self.assertTrue(
+            'Parenthesis "(" not closed' in analyzer.exceptions[0].message)
 
     def test_isNil_function(self):
         code = 'x = isNil format []\n'

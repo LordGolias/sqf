@@ -25,7 +25,8 @@ class TestTypesToString(TestCase):
         self.assertEqual('Nothing', str(Nothing()))
 
     def test_code(self):
-        self.assertEqual('{_x=2;}', str(Code([Statement([V('_x'), Keyword('='), N(2)], ending=';')])))
+        self.assertEqual('{_x=2;}', str(
+            Code([Statement([V('_x'), Keyword('='), N(2)], ending=';')])))
 
 
 class CaseInsensitiveTests(TestCase):
@@ -48,20 +49,20 @@ class TestGetPosition(TestCase):
         #  */
         # _x=3'
         s = Statement([
-                Statement([
-                    V('_x'),
-                    Keyword('='),
-                    N(2)], ending=';'),
-                Statement([
-                    Statement([Comment('/* the two \n the three\n the four\n */'),
-                               EndOfLine('\n'),
-                               V('_x')]),
-                    Keyword('='),
-                    N(3)
-                ])
+            Statement([
+                V('_x'),
+                Keyword('='),
+                N(2)], ending=';'),
+            Statement([
+                Statement([Comment('/* the two \n the three\n the four\n */'),
+                           EndOfLine('\n'),
+                           V('_x')]),
+                Keyword('='),
+                N(3)
+            ])
         ])
 
-        s.set_position((1,1))
+        s.set_position((1, 1))
 
         self.assertEqual(Keyword('='), s[1][1])
         self.assertEqual((5, 3), s[1][1].position)

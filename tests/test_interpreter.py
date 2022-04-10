@@ -257,16 +257,19 @@ class IfThen(TestCase):
         self.assertEqual(N(2), outcome)
         self.assertEqual(N(2), interpreter['_x'])
 
-        interpreter, outcome = interpret('if (false) then [{_x = 2}, {_x = 3}]')
+        interpreter, outcome = interpret(
+            'if (false) then [{_x = 2}, {_x = 3}]')
         self.assertEqual(N(3), outcome)
         self.assertEqual(N(3), interpreter['_x'])
 
     def test_then_else(self):
-        interpreter, outcome = interpret('if (true) then {_x = 2} else {_x = 3}')
+        interpreter, outcome = interpret(
+            'if (true) then {_x = 2} else {_x = 3}')
         self.assertEqual(N(2), outcome)
         self.assertEqual(N(2), interpreter['_x'])
 
-        interpreter, outcome = interpret('if (false) then {_x = 2} else {_x = 3}')
+        interpreter, outcome = interpret(
+            'if (false) then {_x = 2} else {_x = 3}')
         self.assertEqual(N(3), outcome)
         self.assertEqual(N(3), interpreter['_x'])
 
@@ -280,11 +283,13 @@ class IfThen(TestCase):
 
 class Loops(TestCase):
     def test_while(self):
-        interpreter, outcome = interpret('_x = 0; while {_x != 10} do {_x = _x + 1};')
+        interpreter, outcome = interpret(
+            '_x = 0; while {_x != 10} do {_x = _x + 1};')
         self.assertEqual(N(10), interpreter['_x'])
 
     def test_forspec(self):
-        interpreter, outcome = interpret('_y = 0; for [{_x = 1},{_x <= 10},{_x = _x + 1}] do {_y = _y + 2}')
+        interpreter, outcome = interpret(
+            '_y = 0; for [{_x = 1},{_x <= 10},{_x = _x + 1}] do {_y = _y + 2}')
         self.assertEqual(N(20), interpreter['_y'])
         self.assertEqual(N(11), interpreter['_x'])
         self.assertEqual(N(20), outcome)
@@ -311,7 +316,8 @@ class Loops(TestCase):
     def test_for_var_step(self):
         test = 'y = []; for "_i" from 1 to 10 step 2 do {y pushBack _i;};'
         interpreter, outcome = interpret(test)
-        self.assertEqual(Array([N(1), N(3), N(5), N(7), N(9)]), interpreter['y'])
+        self.assertEqual(
+            Array([N(1), N(3), N(5), N(7), N(9)]), interpreter['y'])
 
     def test_forvar_edges(self):
         # see comments on https://community.bistudio.com/wiki/for_var
@@ -322,7 +328,8 @@ class Loops(TestCase):
         self.assertEqual(N(0), interpreter['y'])
 
         # start < end => never runs
-        interpreter, _ = interpret('y = -10; for "_i" from 0 to -1 do {y = _i;};')
+        interpreter, _ = interpret(
+            'y = -10; for "_i" from 0 to -1 do {y = _i;};')
         self.assertEqual(N(-10), interpreter['y'])
 
         # do not overwrite globals
@@ -332,7 +339,8 @@ class Loops(TestCase):
         # nested
         test = '_array = []; for "_i" from 0 to 1 do {for "_i" from 0 to 1 do {_array pushBack _i;}; _array pushBack _i;};'
         interpreter, _ = interpret(test)
-        self.assertEqual(Array([N(0), N(1), N(0), N(0), N(1), N(1)]), interpreter['_array'])
+        self.assertEqual(
+            Array([N(0), N(1), N(0), N(0), N(1), N(1)]), interpreter['_array'])
 
     def test_foreach(self):
         test = 'y = 0; {y = y + _x + _foreachindex} forEach [1,2]'
@@ -374,7 +382,8 @@ class Switch(TestCase):
     def test_syntax_error(self):
         # 2 defaults error
         with self.assertRaises(SQFParserError) as cm:
-            interpret('switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
+            interpret(
+                'switch (0) do {case (1): {"one"}; default {"as"}; default {"ass"}}')
         self.assertEqual((1, 14), cm.exception.position)
 
         # more than one code
@@ -418,10 +427,12 @@ class Scopes(TestCase):
         interpreter, outcome = interpret('_x = 1; if true then {_x}')
         self.assertEqual(N(1), outcome)
 
-        interpreter, outcome = interpret('_x = 1; if (true) then {private "_x"; _x}')
+        interpreter, outcome = interpret(
+            '_x = 1; if (true) then {private "_x"; _x}')
         self.assertEqual(Nothing(), outcome)
 
-        interpreter, outcome = interpret('_x = 1; if (true) then {private "_x"; _x = 2}')
+        interpreter, outcome = interpret(
+            '_x = 1; if (true) then {private "_x"; _x = 2}')
         self.assertEqual(N(2), outcome)
         self.assertEqual(N(1), interpreter['_x'])
 
@@ -447,7 +458,8 @@ class Scopes(TestCase):
 class Namespaces(TestCase):
 
     def test_setvariable(self):
-        interpreter, outcome = interpret('missionNamespace setVariable ["_x", 2];')
+        interpreter, outcome = interpret(
+            'missionNamespace setVariable ["_x", 2];')
 
         self.assertEqual(N(2), interpreter.namespace('missionNamespace')['_x'])
 
@@ -457,7 +469,8 @@ class Namespaces(TestCase):
         self.assertEqual(Nothing(), interpreter['_x'])
 
     def test_getvariable(self):
-        interpreter, outcome = interpret('uiNamespace setVariable ["_x", 2]; uiNamespace getVariable "_x"')
+        interpreter, outcome = interpret(
+            'uiNamespace setVariable ["_x", 2]; uiNamespace getVariable "_x"')
         self.assertEqual(N(2), outcome)
 
         interpreter, outcome = interpret('uiNamespace getVariable ["_x", 2]')
@@ -475,7 +488,8 @@ class Operators(TestCase):
 
     def test_resize_array(self):
         interpreter = interpret('_x = [1,2]; _x resize 4')[0]
-        self.assertEqual(Array([N(1), N(2), Nothing(), Nothing()]), interpreter['_x'])
+        self.assertEqual(
+            Array([N(1), N(2), Nothing(), Nothing()]), interpreter['_x'])
 
         interpreter = interpret('_x = [1,2,3,4]; _x resize 2')[0]
         self.assertEqual(Array([N(1), N(2)]), interpreter['_x'])
